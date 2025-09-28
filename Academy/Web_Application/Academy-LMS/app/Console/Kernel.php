@@ -23,6 +23,12 @@ class Kernel extends ConsoleKernel
         if (config('performance.query_cache.enabled', false)) {
             $schedule->command('cache:prune-stale-tags')->daily();
         }
+
+        $schedule->command('horizon:snapshot')
+            ->everyFiveMinutes()
+            ->environments(['staging', 'production'])
+            ->onOneServer()
+            ->withoutOverlapping();
     }
 
     /**
