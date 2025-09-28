@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\frontend;
 use App\Models\Knowledge_base_topick;
 use App\Models\Knowledge_base;
-use Illuminate\Support\Facades\DB;
-
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
@@ -17,8 +15,9 @@ class KnowledgeBaseTopicController extends Controller
      */
     public function index()
     {
-
-        $articles = Knowledge_base::orderBy('updated_at', 'desc')->paginate(10);
+        $articles = Knowledge_base::query()
+            ->orderByDesc('updated_at')
+            ->keysetPaginate(null, 'updated_at');
 
         return view('frontend.default.knowledge_base_topics.index', ['articles'=> $articles]);
     }

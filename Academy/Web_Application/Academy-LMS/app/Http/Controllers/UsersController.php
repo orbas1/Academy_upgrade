@@ -13,6 +13,7 @@ use App\Models\Message;
 use App\Models\MessageThread;
 use App\Models\User;
 use App\Models\ZapierSetting;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -28,12 +29,13 @@ class UsersController extends Controller
 
     public function admin_index(Request $request)
     {
-        $query = User::where('role', 'admin');
-        if (isset($_GET['search']) && $_GET['search'] != '') {
-            $query = $query->where('name', 'LIKE', '%' . $_GET['search'] . '%')
-                        ->orWhere('email', 'LIKE', '%' . $_GET['search'] . '%');
-        }
-        $page_data['admins'] = $query->paginate(10);
+        $query = User::query()->where('role', 'admin');
+
+        $search = trim((string) $request->query('search', ''));
+        $this->applyUserSearch($query, $search);
+
+        $page_data['admins'] = $query->keysetPaginate($this->resolvePerPage($request));
+
         return view('admin.admin.index', $page_data);
     }
 
@@ -180,14 +182,15 @@ class UsersController extends Controller
         }
     }
 
-    public function instructor_index()
+    public function instructor_index(Request $request)
     {
-        $query = User::where('role', 'instructor');
-        if (isset($_GET['search']) && $_GET['search'] != '') {
-            $query = $query->where('name', 'LIKE', '%' . $_GET['search'] . '%')
-                ->orWhere('email', 'LIKE', '%' . $_GET['search'] . '%');
-        }
-        $page_data['instructors'] = $query->paginate(10);
+        $query = User::query()->where('role', 'instructor');
+
+        $search = trim((string) $request->query('search', ''));
+        $this->applyUserSearch($query, $search);
+
+        $page_data['instructors'] = $query->keysetPaginate($this->resolvePerPage($request));
+
         return view('admin.instructor.index', $page_data);
     }
 
@@ -199,6 +202,29 @@ class UsersController extends Controller
     {
         $page_data['instructor'] = User::where('id', $id)->first();
         return view('admin.instructor.edit_instructor', $page_data);
+    }
+
+    protected function applyUserSearch(EloquentBuilder $query, string $search): void
+    {
+        if ($search === '') {
+            return;
+        }
+
+        $query->where(function (EloquentBuilder $builder) use ($search) {
+            $builder->where('name', 'LIKE', "%{$search}%")
+                ->orWhere('email', 'LIKE', "%{$search}%");
+        });
+    }
+
+    protected function resolvePerPage(Request $request): int
+    {
+        $default = (int) config('database_performance.keyset.default_per_page', 20);
+        $max = (int) config('database_performance.keyset.max_per_page', 100);
+        $parameter = config('database_performance.keyset.page_parameter', 'per_page');
+
+        $perPage = (int) $request->integer($parameter, $default);
+
+        return max(1, min($perPage, $max));
     }
     public function instructor_store(Request $request, $id = '')
     {
