@@ -12,7 +12,17 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        if (config('performance.warmup.enabled', false)) {
+            $schedule->command('app:cache-warm')
+                ->dailyAt(config('performance.warmup.schedule', '02:00'))
+                ->environments(['staging', 'production'])
+                ->withoutOverlapping()
+                ->runInBackground();
+        }
+
+        if (config('performance.query_cache.enabled', false)) {
+            $schedule->command('cache:prune-stale-tags')->daily();
+        }
     }
 
     /**
