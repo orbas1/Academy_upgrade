@@ -21,6 +21,7 @@ class Kernel extends HttpKernel
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+        \App\Http\Middleware\EnsureSecurityHeaders::class,
     ];
 
     /**
@@ -73,5 +74,6 @@ class Kernel extends HttpKernel
         'ip.detector'              => \App\Http\Middleware\IpDetectorMiddleware::class,
         'record.exists'            => \App\Http\Middleware\RecordVerification::class,
         'webConfig'            => \App\Http\Middleware\WebConfig::class,
+        'security.headers'     => \App\Http\Middleware\EnsureSecurityHeaders::class,
     ];
 }
