@@ -76,5 +76,6 @@ class Kernel extends HttpKernel
         'webConfig'            => \App\Http\Middleware\WebConfig::class,
         'security.headers'     => \App\Http\Middleware\EnsureSecurityHeaders::class,
         'admin.ip'                 => \App\Http\Middleware\AdminIpAllowlist::class,
+        'audit.log'                => \App\Http\Middleware\RecordAdminAction::class,
     ];
 }
