@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\Security\TooManyDevicesException;
 use App\Models\CartItem;
 use App\Models\Category;
 use App\Models\Course;
@@ -24,9 +25,18 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use DB;
 use Illuminate\Support\Facades\Log;
+use App\Support\Security\TwoFactorAuthenticator;
+use App\Services\Security\DeviceTrustService;
+use Illuminate\Support\Facades\Cache;
 
 class ApiController extends Controller
 {
+    public function __construct(
+        private readonly TwoFactorAuthenticator $twoFactor,
+        private readonly DeviceTrustService $deviceTrust
+    ) {
+    }
+
 
     //student login function
     public function login(Request $request)
@@ -34,6 +44,7 @@ class ApiController extends Controller
         $fields = $request->validate([
             'email' => 'required|string',
             'password' => 'required|string',
+            'device_token' => 'nullable|string|max:255',
         ]);
 
         // Check email
@@ -52,7 +63,30 @@ class ApiController extends Controller
             }
         } else if ($user->role == 'student') {
 
-            // $user->tokens()->delete();
+            $deviceToken = $fields['device_token'] ?? $request->header('X-Device-Id');
+
+            if ($user->hasTwoFactorEnabled() && ! $this->deviceTrust->deviceIsTrusted($user, $deviceToken)) {
+                $challenge = Str::random(64);
+                Cache::put($this->apiChallengeCacheKey($challenge), [
+                    'user_id' => $user->id,
+                    'device_token' => $deviceToken,
+                    'ip' => $request->ip(),
+                ], now()->addMinutes(10));
+
+                return response([
+                    'two_factor_required' => true,
+                    'challenge_token' => $challenge,
+                    'message' => 'Two-factor authentication required.',
+                ], 202);
+            }
+
+            try {
+                $this->deviceTrust->recordLogin($user, $deviceToken, $request->ip(), null);
+            } catch (TooManyDevicesException $exception) {
+                return response([
+                    'message' => $exception->getMessage(),
+                ], 423);
+            }
 
             $token = $user->createToken('auth-token')->plainTextToken;
 
@@ -73,6 +107,70 @@ class ApiController extends Controller
                 'message' => 'User not found!',
             ], 400);
         }
+    }
+
+    public function verifyTwoFactor(Request $request)
+    {
+        $data = $request->validate([
+            'challenge_token' => 'required|string',
+            'code' => 'required|string|max:255',
+            'remember_device' => 'sometimes|boolean',
+        ]);
+
+        $cacheKey = $this->apiChallengeCacheKey($data['challenge_token']);
+        $payload = Cache::pull($cacheKey);
+
+        if (! $payload) {
+            return response([
+                'message' => 'Challenge token is invalid or has expired.',
+            ], 422);
+        }
+
+        $user = User::where('id', $payload['user_id'] ?? null)->where('status', 1)->first();
+
+        if (! $user) {
+            return response([
+                'message' => 'User not found!',
+            ], 404);
+        }
+
+        $code = trim($data['code']);
+
+        if (! $this->twoFactor->verify($user, $code) && ! $this->twoFactor->useRecoveryCode($user, $code)) {
+            Cache::put($cacheKey, $payload, now()->addMinutes(5));
+
+            return response([
+                'message' => 'Invalid authentication code.',
+            ], 422);
+        }
+
+        try {
+            $this->deviceTrust->recordLogin(
+                $user,
+                $payload['device_token'] ?? null,
+                $payload['ip'] ?? $request->ip(),
+                null,
+                $request->boolean('remember_device')
+            );
+        } catch (TooManyDevicesException $exception) {
+            return response([
+                'message' => $exception->getMessage(),
+            ], 423);
+        }
+
+        $token = $user->createToken('auth-token')->plainTextToken;
+        $user->photo = get_photo('user_image', $user->photo);
+
+        return response([
+            'message' => 'Login successful',
+            'user' => $user,
+            'token' => $token,
+        ], 201);
+    }
+
+    private function apiChallengeCacheKey(string $token): string
+    {
+        return 'two-factor-api-'.$token;
     }
 
     public function signup(Request $request)

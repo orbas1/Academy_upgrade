@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Notifications\CustomEmailVerificationNotification;
 use App\Notifications\CustomResetPasswordNotification;
+use Illuminate\Support\Facades\Crypt;
 
 class User extends Authenticatable implements MustVerifyEmail
 
@@ -38,6 +39,8 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     /**
@@ -47,7 +50,44 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'two_factor_confirmed_at' => 'datetime',
+        'two_factor_recovery_codes' => 'array',
     ];
+
+    public function hasTwoFactorEnabled(): bool
+    {
+        return ! is_null($this->two_factor_confirmed_at);
+    }
+
+    public function getTwoFactorSecret(): ?string
+    {
+        if (! $this->two_factor_secret) {
+            return null;
+        }
+
+        try {
+            return Crypt::decryptString($this->two_factor_secret);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    public function setTwoFactorSecret(?string $secret): void
+    {
+        $this->forceFill([
+            'two_factor_secret' => $secret ? Crypt::encryptString($secret) : null,
+            'two_factor_confirmed_at' => null,
+        ])->save();
+    }
+
+    public function clearTwoFactorCredentials(): void
+    {
+        $this->forceFill([
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => null,
+            'two_factor_confirmed_at' => null,
+        ])->save();
+    }
 
     public function sendEmailVerificationNotification()
     {

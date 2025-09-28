@@ -22,6 +22,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::post('/login', [ApiController::class, 'login']);
+Route::post('/two-factor/verify', [ApiController::class, 'verifyTwoFactor']);
 Route::post('/signup', [ApiController::class, 'signup']);
 Route::post('/forgot_password', [ApiController::class, 'forgot_password']);
 

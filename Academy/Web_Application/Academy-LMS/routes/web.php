@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\frontend\HomeController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\Security\TwoFactorAuthenticationController;
+use App\Http\Controllers\Security\DeviceSessionController;
 
 //Cache clear route
 Route::get('/clear-cache', function () {
@@ -45,6 +47,16 @@ Route::get('closed_back_to_mobile_ber', function () {
 
 //Mobile payment redirect
 Route::get('payment/web_redirect_to_pay_fee', [PaymentController::class, 'webRedirectToPayFee'])->name('payment.web_redirect_to_pay_fee');
+
+Route::middleware(['auth'])->group(function () {
+    Route::post('two-factor/prepare', [TwoFactorAuthenticationController::class, 'prepare'])->name('two-factor.prepare');
+    Route::post('two-factor/confirm', [TwoFactorAuthenticationController::class, 'confirm'])->name('two-factor.confirm');
+    Route::delete('two-factor', [TwoFactorAuthenticationController::class, 'disable'])->name('two-factor.disable');
+    Route::post('two-factor/recovery-codes', [TwoFactorAuthenticationController::class, 'regenerateRecoveryCodes'])->name('two-factor.recovery');
+
+    Route::delete('devices/{device}', [DeviceSessionController::class, 'destroy'])->name('devices.destroy');
+    Route::patch('devices/{device}/trust', [DeviceSessionController::class, 'updateTrust'])->name('devices.trust');
+});
 
 //Installation routes
 Route::controller(InstallController::class)->group(function () {

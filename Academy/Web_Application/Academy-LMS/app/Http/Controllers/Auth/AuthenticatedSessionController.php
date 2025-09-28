@@ -2,24 +2,30 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Exceptions\Security\TooManyDevicesException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\DeviceIp;
 use App\Providers\RouteServiceProvider;
+use App\Services\Security\DeviceTrustService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
-use Illuminate\Support\Facades\Session;
-use DB;
-use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Session;
+use Illuminate\View\View;
+use DB;
+use Illuminate\Database\Schema\Blueprint;
 
 class AuthenticatedSessionController extends Controller
 {
+    public function __construct(private readonly DeviceTrustService $deviceTrust)
+    {
+    }
+
     /**
      * Display the login view.
      */
@@ -142,74 +148,49 @@ class AuthenticatedSessionController extends Controller
         }
 
         $request->authenticate();
+
+        $user = Auth::user();
+
+        $deviceToken = $request->input('user_agent') ?: $request->header('X-Device-Id');
+        $ipAddress = $request->getClientIp();
+
+        if ($user && $user->hasTwoFactorEnabled() && ! $this->deviceTrust->deviceIsTrusted($user, $deviceToken)) {
+            $request->session()->put('login.two_factor.id', $user->id);
+            $request->session()->put('login.two_factor.remember', $request->boolean('remember'));
+            $request->session()->put('login.two_factor.device_token', $deviceToken);
+            $request->session()->put('login.two_factor.ip', $ipAddress);
+
+            Auth::logout();
+
+            return redirect()->route('two-factor.challenge');
+        }
+
         $request->session()->regenerate();
 
-        if (Auth::check() && auth()->user()->role != 'admin' && get_settings('device_limitation') != 0) {
-            $user = Auth::user();
-            $current_ip = request()->getClientIp();
-            $session_id = $request->session()->getId();
+        if ($user) {
+            try {
+                $this->deviceTrust->recordLogin($user, $deviceToken, $ipAddress, $request->session()->getId());
+            } catch (TooManyDevicesException $exception) {
+                Auth::guard('web')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                Session::flash('success', $exception->getMessage());
 
-            // $raw_user_agent = request()->header('user-agent');
-            // $current_user_agent = base64_encode($user->id . $raw_user_agent);
-            $raw_user_agent = $request->input('user_agent');
-            $current_user_agent =  $raw_user_agent;
-            $allowed_devices = get_settings('device_limitation') ?? 1;
+                return redirect(route('login'));
+            } catch (\Swift_TransportException $e) {
+                Session::flash('error', 'We could not send the email. Please try again later.');
+                Auth::guard('web')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
 
-            // Fetch all devices linked to user
-            $logged_in_devices = DeviceIp::where('user_id', $user->id)->get();
+                return redirect(route('login'));
+            } catch (\Exception $e) {
+                Session::flash('error', 'Something went wrong. Please try again.');
+                Auth::guard('web')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
 
-            $already_logged_in = $logged_in_devices->contains('user_agent', $current_user_agent);
-
-            if ($already_logged_in) {
-                // ✅ Already known device, just update session ID
-
-                DeviceIp::where('user_id', $user->id)
-                    ->where('user_agent', $current_user_agent)
-                    ->update([
-                        'session_id' => $session_id,
-                        'updated_at' => now(),
-                    ]);
-            } else {
-                if ($logged_in_devices->count() < $allowed_devices) {
-
-                    // ✅ New device, but still under limit
-                    DeviceIp::insert([
-                        'user_id'    => $user->id,
-                        'ip_address' => $current_ip,
-                        'session_id' => $session_id,
-                        'user_agent' => $current_user_agent,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                } else {
-                    $oldest_logged_device = DeviceIp::where('user_id', $user->id)->orderBy('id', 'asc')->first();
-                    // ❌ Device limit exceeded — send verification email
-                    $data = [
-                        'verification_link' => route('login', ['user_agent' => $oldest_logged_device->user_agent]),
-                    ];
-
-                    try {
-                        Mail::send('email.new_device_login_verification', $data, function ($message) use ($user) {
-                            $message->to($user->email, $user->name)->subject('New login confirmation');
-                        });
-
-                        Auth::guard('web')->logout();
-                        $request->session()->invalidate();
-                        $request->session()->regenerateToken();
-
-                        Session::flash('success', get_phrase('A confirmation email has been sent. Please check your inbox to confirm access to this account from this device.'));
-                        return redirect(route('login'));
-                    } catch (\Swift_TransportException $e) {
-                        Session::flash('error', 'We could not send the email. Please try again later.');
-                    } catch (\Exception $e) {
-                        Session::flash('error', 'Something went wrong. Please try again.');
-                    }
-
-                    Auth::guard('web')->logout();
-                    $request->session()->invalidate();
-                    $request->session()->regenerateToken();
-                    return redirect(route('login'));
-                }
+                return redirect(route('login'));
             }
         }
 

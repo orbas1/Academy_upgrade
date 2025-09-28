@@ -48,7 +48,7 @@ use Illuminate\Support\Facades\Route;
 |
  */
 
-Route::name('admin.')->prefix('admin')->middleware('admin')->group(function () {
+Route::name('admin.')->prefix('admin')->middleware(['admin', 'admin.ip'])->group(function () {
 
     //dashboard
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
