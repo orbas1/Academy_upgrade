@@ -10,6 +10,7 @@ use Laravel\Sanctum\HasApiTokens;
 use App\Notifications\CustomEmailVerificationNotification;
 use App\Notifications\CustomResetPasswordNotification;
 use Illuminate\Support\Facades\Crypt;
+use App\Casts\EncryptedAttribute;
 
 class User extends Authenticatable implements MustVerifyEmail
 
@@ -52,6 +53,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
         'two_factor_confirmed_at' => 'datetime',
         'two_factor_recovery_codes' => 'array',
+        'skills' => EncryptedAttribute::class,
+        'social_links' => EncryptedAttribute::class,
+        'about' => EncryptedAttribute::class,
     ];
 
     public function hasTwoFactorEnabled(): bool
