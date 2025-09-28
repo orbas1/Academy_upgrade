@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Services\Security\UploadSecurityService;
 use App\Support\Authorization\RoleMatrix;
+use App\Support\Database\KeysetPaginator;
+use App\Support\Database\MySqlPerformanceConfigurator;
 use App\Support\Security\TwoFactorAuthenticator;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
@@ -55,5 +57,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrap();
+
+        KeysetPaginator::register();
+        MySqlPerformanceConfigurator::applyFromConfig();
     }
 }
