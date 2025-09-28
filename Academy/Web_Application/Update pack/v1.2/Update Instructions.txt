@@ -1,0 +1,23 @@
+Please follow the instructions carefully.
+
+N.B :
+ - BEFORE UPDATING TO THE LATEST VERSION, WE HIGHLY RECOMMEND YOU KEEP A BACKUP OF YOUR APPLICATION.
+
+ - Before updating to version 1.2, make sure that you currently running your product on version 1.1
+
+
+Let's proceed,
+Step 1: Go to system settings from the settings menu in the admin panel
+
+Step 2: Move to the section 'Update Product' on that page.
+
+Step 3: Upload the file 'update_1.2.zip' which is located at Update pack > v1.2 > update_1.2.zip,  folder inside your copy of Academy LMS downloaded from Codecanyon.
+
+Step 4 (FINAL STEP):  Hit the button 'Update'.
+
+
+- If you encounter any layout-related issues, clear your browser cache. Press the following shortcut keys to clear your browser cache.
+	a. For Windows: Ctrl + Shift + R
+	b. For Mac: Command + Shift + R
+
+- That's it.

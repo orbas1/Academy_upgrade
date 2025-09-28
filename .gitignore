@@ -1,0 +1,32 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Composer / PHP
+vendor/
+# Keep composer.lock for apps; comment out next line if you want to commit it
+# composer.lock
+
+# Laravel / PHP frameworks
+.env
+.env.*.backup
+/storage/*.key
+/storage/app/public/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+/storage/logs/*
+/bootstrap/cache/*
+/public/storage
+
+# Build outputs
+dist/
+build/
