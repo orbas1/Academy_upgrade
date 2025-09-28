@@ -75,5 +75,6 @@ class Kernel extends HttpKernel
         'record.exists'            => \App\Http\Middleware\RecordVerification::class,
         'webConfig'            => \App\Http\Middleware\WebConfig::class,
         'security.headers'     => \App\Http\Middleware\EnsureSecurityHeaders::class,
+        'admin.ip'                 => \App\Http\Middleware\AdminIpAllowlist::class,
     ];
 }

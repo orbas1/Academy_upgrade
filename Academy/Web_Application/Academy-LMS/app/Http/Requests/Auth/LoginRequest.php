@@ -29,6 +29,7 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+            'user_agent' => ['nullable', 'string', 'max:255'],
         ];
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\student;
 
 use App\Http\Controllers\Controller;
+use App\Models\DeviceIp;
 use App\Models\FileUploader;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -11,12 +12,25 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Support\Security\TwoFactorAuthenticator;
 
 class MyProfileController extends Controller
 {
     public function index()
     {
-        $page_data['user_details'] = User::find(auth()->user()->id);
+        $user = User::find(auth()->user()->id);
+        $twoFactor = app(TwoFactorAuthenticator::class);
+
+        $page_data['user_details'] = $user;
+        $page_data['two_factor_enabled'] = $user->hasTwoFactorEnabled();
+        $page_data['two_factor_secret'] = $twoFactor->getSecret($user);
+        $page_data['two_factor_qr'] = $twoFactor->provisioningUri($user);
+        $page_data['two_factor_recovery_codes'] = session('two_factor_recovery_codes', []);
+        $page_data['device_sessions'] = DeviceIp::where('user_id', $user->id)
+            ->orderByDesc('last_seen_at')
+            ->orderByDesc('updated_at')
+            ->get();
+        $page_data['trusted_ttl_days'] = config('security.two_factor.remember_device_ttl');
         $view_path                 = 'frontend.' . get_frontend_settings('theme') . '.student.my_profile.index';
         return view($view_path, $page_data);
     }
