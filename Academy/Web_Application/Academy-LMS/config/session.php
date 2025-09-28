@@ -155,7 +155,10 @@ return [
     |
     */
 
-    'domain' => env('SESSION_DOMAIN'),
+    'domain' => env(
+        'SESSION_DOMAIN',
+        parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST) ?: null
+    ),
 
     /*
     |--------------------------------------------------------------------------
@@ -168,7 +171,7 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => filter_var(env('SESSION_SECURE_COOKIE', true), FILTER_VALIDATE_BOOLEAN),
 
     /*
     |--------------------------------------------------------------------------
@@ -196,6 +199,6 @@ return [
     |
     */
 
-    'same_site' => null,
+    'same_site' => env('SESSION_SAME_SITE', 'strict'),
 
 ];
