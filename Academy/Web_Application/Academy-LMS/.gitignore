@@ -27,4 +27,3 @@ yarn-error.log
 
 # Ignore macOS .DS_Store files
 .DS_Store
-/config/database.php

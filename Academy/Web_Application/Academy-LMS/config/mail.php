@@ -102,6 +102,8 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    'horizon_notifications_to' => env('MAIL_HORIZON_NOTIFICATIONS_TO'),
+
     /*
     |--------------------------------------------------------------------------
     | Markdown Mail Settings

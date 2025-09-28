@@ -13,7 +13,26 @@ return [
     |
     */
 
-    'default' => env('QUEUE_CONNECTION', 'sync'),
+    'default' => env('QUEUE_CONNECTION', 'redis'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Named Queues
+    |--------------------------------------------------------------------------
+    |
+    | Central place to reference the logical queues used across the
+    | application. These values are re-used by Horizon to coordinate
+    | concurrency and scaling per workload.
+    |
+    */
+
+    'queues' => [
+        'default' => env('QUEUE_DEFAULT', 'default'),
+        'notifications' => env('QUEUE_NOTIFICATIONS', 'notifications'),
+        'media' => env('QUEUE_MEDIA', 'media'),
+        'webhooks' => env('QUEUE_WEBHOOKS', 'webhooks'),
+        'search' => env('QUEUE_SEARCH', 'search-index'),
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -64,10 +83,12 @@ return [
 
         'redis' => [
             'driver' => 'redis',
-            'connection' => 'default',
-            'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => 90,
-            'block_for' => null,
+            'connection' => env('QUEUE_REDIS_CONNECTION', 'horizon'),
+            'queue' => env('QUEUE_DEFAULT', 'default'),
+            'retry_after' => (int) env('QUEUE_RETRY_AFTER', 120),
+            'block_for' => env('QUEUE_BLOCK_FOR') !== null
+                ? (int) env('QUEUE_BLOCK_FOR', 5)
+                : null,
             'after_commit' => false,
         ],
 
