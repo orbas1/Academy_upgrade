@@ -19,5 +19,7 @@ class ParmissionCheckRoute
 
             return $next($request);
         }
+
+        abort(403, 'You do not have permission to access this route.');
     }
 }

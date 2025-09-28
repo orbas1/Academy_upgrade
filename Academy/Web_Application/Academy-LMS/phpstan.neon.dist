@@ -1,0 +1,17 @@
+includes:
+  - vendor/larastan/larastan/extension.neon
+  - phpstan-baseline.neon
+
+parameters:
+  paths:
+    - app
+    - database
+    - routes
+  level: 6
+  treatPhpDocTypesAsCertain: true
+  reportUnmatchedIgnoredErrors: false
+  tmpDir: storage/app/phpstan
+  ignoreErrors:
+    - '#Call to an undefined method Illuminate\\Support\\Facades\\.*#'
+    - '#Access to an undefined property Illuminate\\.*#'
+  tipsOfTheDay: false
