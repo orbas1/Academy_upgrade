@@ -1,0 +1,19 @@
+version: 1
+allow-licenses:
+  - MIT
+  - Apache-2.0
+  - BSD-2-Clause
+  - BSD-3-Clause
+  - LGPL-2.1
+  - LGPL-3.0
+  - MPL-2.0
+  - ISC
+  - Python-2.0
+  - Zlib
+deny-licenses:
+  - AGPL-3.0
+  - GPL-3.0
+  - SSPL-1.0
+  - BUSL-1.1
+  - Elastic-2.0
+severity-cutoff: moderate
