@@ -38,6 +38,7 @@ Delivery is organized into three parallel but coordinated workstreams (Laravel c
    * Enable Composer 2 memory limit overrides for CI.
 2. **Dependency uplift**
    * Lock platform to PHP 8.3.0, upgrade to `laravel/framework:^11`, update supporting packages, remove deprecated dependencies (SwiftMailer).
+   * Execute scripted workflow via `tools/preflight/laravel11_upgrade.sh` (supports `--dry-run` and `--rollback`) to capture logs under `storage/upgrade/`.
    * Introduce dev tooling (`larastan`, `phpstan`) and configure baseline.
 3. **Bootstrap modernization**
    * Adopt Laravel 11 bootstrap pipeline (`bootstrap/app.php`), migrate middleware registration, consolidate HTTP kernel definitions.
