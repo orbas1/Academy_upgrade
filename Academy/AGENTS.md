@@ -1373,3 +1373,55 @@ server {
 114. [ ] **Section 19 – Risks & Mitigations:** Monitor risk triggers and implement mitigation playbooks. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
 115. [ ] **Section 20 – Documentation & Handover:** Deliver API docs, ERDs, runbooks, SOPs, and checklists for transition. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
 116. [ ] **Final Deliverables Recap:** Confirm all code, migrations, tests, pipelines, mobile assets, dashboards, templates, and monitoring artifacts are complete per closing deliverables list. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
+## Current Codebase State
+
+### Repository layout
+- **Web application** lives under `Web_Application/Academy-LMS` and is a monolithic Laravel 11 project that still reflects the legacy Academy LMS course-centric domain. Its structure relies on large controller directories (for example `app/Http/Controllers/frontend`, `app/Http/Controllers/Admin`, `app/Http/Controllers/student`) and an extensive list of Eloquent models covering courses, assignments, payments, bootcamps, etc., but there is no modular separation for communities, membership tiers, or social feeds.
+- **Student mobile app** under `Student Mobile APP/academy_lms_app` is a Flutter 3 project configured with `provider`, `http`, and basic local `sqflite` helpers. It targets the same course catalog flows as the legacy LMS and does not implement the Riverpod-based architecture, background tasks, or realtime features described in the upgrade scope.
+- The repo also carries historical update packs and installation SQL inside `Web_Application/Academy-LMS/upload`, indicating reliance on manual patching rather than automated migrations or CI pipelines.
+
+### Section 1 – Domain & Data Foundations
+- Database migrations (`database/migrations`) create tables for courses, categories, lessons, quizzes, payments, etc. There are no schemas for communities, levels, points, leaderboards, geo-feeds, or paywall tiers. Seeders focus on LMS defaults; no staged community data or large dataset performance tooling exists.
+- Models in `app/Models` mirror the LMS focus (Course, Enrollment, Lesson, Quiz, Wishlist, etc.) with no domain objects for communities, memberships, feed posts, comments, follows, or device registrations.
+- Helpers like `app/Helpers/Common_helper.php` still power global queries and view composers, showing absence of a domain-driven service layer expected by the upgrade.
+
+### Section 2 – Backend Services & APIs
+- `routes/api.php` exposes Sanctum-protected endpoints strictly for LMS flows (login, signup, categories, wishlist, cart, course progress, Zoom meetings). There are no controllers or resources for community feeds, notifications, leaderboard, geo features, or subscription tiers.
+- Policy, rate-limiting, and request validation are minimal. API controllers return arrays/json directly without Resources/DTO layering, and there is no OpenAPI generation or versioning strategy.
+- Background jobs/queues are limited to legacy Laravel defaults; no dedicated services exist for points accrual, paywall enforcement, or realtime event broadcasting.
+
+### Section 3 – Web Experience & Admin
+- Frontend views are Blade templates under `resources/views/frontend/default` with jQuery-era partials and CSS from `public/assets`. There is no componentized SPA, virtualized feed, notification bell, or responsive design tokens aligning to the new design system.
+- Admin dashboards in `resources/views/admin` cover LMS activities (courses, instructors, students, earnings) but lack the prescribed Moderation, Members, Levels, Points Rules, Paywalls/Tiers, Revenue, Geo, or Settings tabs. Analytics charts are absent; only static tables/forms are present.
+- Internationalization is handled via custom helpers (`get_phrase`) reading from database tables, not ICU message catalogs; RTL/layout tokens are not defined.
+
+### Section 4 – Mobile App Status
+- The Flutter app keeps a provider-based state management approach (`lib/providers`) and imperative networking via `http`. There is no Riverpod, Dio/Retrofit stack, nor generated models via `freezed`/`json_serializable` despite the package being listed.
+- Offline features are limited to a bespoke `sqflite` cache for downloaded videos (`DatabaseHelper`). There is no Hive-backed feed cache, background sync, or retry queue.
+- Realtime presence, push notifications, deep links, maps, Stripe mobile flows, and device registration APIs are absent. Authentication persists tokens in `shared_preferences` without secure storage or refresh handling.
+- Screen coverage (`lib/screens`) targets catalog browsing, course playback, wishlist, cart, and profile settings. Community feeds, leaderboards, subscription tiers, notifications center, or geo/classroom tabs do not exist.
+
+### Sections 5 & 10 – Security, Infrastructure, and Operations
+- Middleware focuses on legacy auth/role checks; there is no evidence of enhanced security headers, device trust, audit trails, abuse mitigation, or secrets management beyond `.env` defaults.
+- File uploads rely on Intervention Image and manual validation; antivirus scanning, signed URL expirations, and storage lifecycle policies are not implemented.
+- There are no infrastructure-as-code manifests, CI/CD pipelines, or automated deployment scripts in the repository. Installation relies on manual steps documented in `upload` packages.
+
+### Sections 6 & 7 – Analytics and Admin Enhancements
+- There is no analytics instrumentation, event taxonomy, or batching (neither in Laravel nor Flutter). No dashboards, charts, or retention metrics exist in the admin panel.
+- Role management remains basic (admin, instructor, student) without RBAC matrices, audit logging, or scheduled digests/automation jobs (leaderboard recalculations, etc.).
+
+### Section 8 – Search
+- Search functionality is limited to controller methods querying MySQL directly; no Meilisearch/OpenSearch integration, synonym management, or typeahead UI is present.
+
+### Section 9 – Messaging & Notifications
+- Notifications are handled through database/email templates under `resources/views/email`, but there is no modular messaging pipeline, provider abstraction, segmentation, or push notification support.
+- User preference management for notifications is minimal; unsubscribe flows rely on manual toggles without policy-backed enforcement.
+
+### Sections 11–18 – Migration, Testing, and Governance
+- Beyond basic migration files, there are no migration plans, expand/contract strategies, or rollback automation documented in code.
+- Automated testing is nearly empty: only Laravel stub tests (`tests/Feature/ExampleTest.php`, `tests/Unit/ExampleTest.php`, `ProfileTest.php`) and the default Flutter `widget_test.dart` exist. There are no feature, E2E, load, or security tests.
+- No QA tooling (Pest, Playwright, k6, etc.), coverage enforcement, or fixture management is configured.
+- Documentation centers on installation guides; there are no runbooks, SOPs, or governance artifacts for analytics, privacy, or rollout guardrails.
+
+### Overall readiness assessment
+- The current stack delivers an LMS-oriented product rather than the community-centric experience detailed in the upgrade roadmap. Major foundational work is required across backend domain modeling, API surface, frontend/mobile experiences, security, analytics, and DevOps before the upgrade acceptance criteria can be met.
