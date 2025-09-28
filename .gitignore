@@ -30,3 +30,14 @@ vendor/
 # Build outputs
 dist/
 build/
+# macOS junk
+.DS_Store
+__MACOSX/
+**/._*
+
+# Archives / update packs
+*.zip
+*.rar
+*.7z
+Academy/Web_Application/Update pack/
+Academy/Web_Application/Academy-LMS.zip
