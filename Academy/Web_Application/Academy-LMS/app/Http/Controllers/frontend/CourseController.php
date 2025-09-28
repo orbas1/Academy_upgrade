@@ -2,92 +2,46 @@
 
 namespace App\Http\Controllers\frontend;
 
+use App\Domain\Courses\Contracts\CourseCatalogReader;
+use App\Domain\Courses\DTO\CourseFiltersData;
 use App\Http\Controllers\Controller;
-use App\Models\Category;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\Section;
-use App\Models\User;
-use App\Models\Wishlist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 
 class CourseController extends Controller
 {
+    public function __construct(private readonly CourseCatalogReader $courseCatalogReader)
+    {
+    }
+
     public function index(Request $request, $category = '')
     {
-        $layout              = Session::has('view') ? session('view') : 'grid';
-        $page_data['layout'] = $layout;
+        $layout = Session::has('view') ? session('view') : 'grid';
 
-        $query = Course::join('users', 'courses.user_id', '=', 'users.id')
-            ->select('courses.*', 'users.name as instructor_name', 'users.email as instructor_email', 'users.photo as instructor_image')
-            ->where('courses.status', 'active');
+        $result = $this->courseCatalogReader->fetchCatalog(
+            CourseFiltersData::fromRequest($request, $category),
+            $layout
+        );
 
-        // filter by category
-        if ($category != '') {
-            $category_details = Category::where('slug', $request->category)->first();
-            if ($category_details->parent_id > 0) {
-                $page_data['child_cat'] = $request->category;
-                $query                  = $query->where('category_id', $category_details->id);
-            } else {
-                $sub_cat_id              = Category::where('parent_id', $category_details->id)->pluck('id')->toArray();
-                $sub_cat_id[] = $category_details->id;
-                $query                   = $query->whereIn('category_id', $sub_cat_id);
-                $page_data['parent_cat'] = $request->category;
-            }
+        $page_data = [
+            'layout' => $result->layout,
+            'courses' => $result->courses,
+            'wishlist' => $result->wishlistCourseIds,
+            'category_details' => $result->category,
+        ];
+
+        if ($result->parentCategorySlug) {
+            $page_data['parent_cat'] = $result->parentCategorySlug;
         }
 
-        // searched courses
-        if (request()->has('search')) {
-            $query->where(function ($query) {
-                $query->where('courses.title', 'LIKE', '%' . request()->input('search') . '%');
-                $query->orWhere('courses.short_description', 'LIKE', '%' . request()->input('search') . '%');
-                $query->orWhere('courses.level', 'LIKE', '%' . request()->input('search') . '%');
-                $query->orWhere('courses.meta_keywords', 'LIKE', '%' . request()->input('search') . '%');
-                $query->orWhere('courses.meta_description', 'LIKE', '%' . request()->input('search') . '%');
-                $query->orWhere('courses.description', 'LIKE', '%' . request()->input('search') . '%');
-            });
+        if ($result->childCategorySlug) {
+            $page_data['child_cat'] = $result->childCategorySlug;
         }
 
-        // filter by price
-        if (request()->has('price')) {
-            $price = request()->query('price');
-            if ($price == 'paid') {
-                $query = $query->where('is_paid', 1);
-            } elseif ($price == 'discount') {
-                $query = $query->where('discount_flag', 1);
-            } elseif ($price == 'free') {
-                $query = $query->where('is_paid', 0);
-            }
-        }
-
-        // filter by level
-        if (request()->has('level')) {
-            $level = request()->query('level');
-            $query = $query->where('level', $level);
-        }
-
-        // filter by language
-        if (request()->has('language')) {
-            $language = request()->query('language');
-            $query    = $query->where('language', $language);
-        }
-
-        // filter by rating
-        if (request()->has('rating')) {
-            $rating = request()->query('rating');
-            $query  = $query->where('average_rating', $rating);
-        }
-
-        $wishlist = [];
-        if (isset(auth()->user()->id)) {
-            $wishlist = Wishlist::where('user_id', auth()->user()->id)->pluck('course_id')->toArray();
-        }
-
-        $page_data['courses']  = $query->latest('id')->paginate($layout == 'grid' ? 9 : 5)->appends($request->query());
-        $page_data['wishlist'] = $wishlist;
-        $page_data['category_details'] = Category::where('slug', $category)->first();
         return view('frontend' . '.' . get_frontend_settings('theme') . '.course.index', $page_data);
     }
 
