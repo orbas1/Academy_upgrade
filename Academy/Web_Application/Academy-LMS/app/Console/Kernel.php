@@ -54,6 +54,22 @@ class Kernel extends ConsoleKernel
             ->onOneServer()
             ->withoutOverlapping()
             ->runInBackground();
+
+        foreach (config('storage_lifecycle.profiles', []) as $profile => $settings) {
+            $backup = $settings['backup'] ?? null;
+            if (! is_array($backup) || empty($backup['enabled'])) {
+                continue;
+            }
+
+            $cron = $backup['cron'] ?? '0 3 * * *';
+
+            $schedule->command("storage:backup {$profile}")
+                ->cron($cron)
+                ->environments(['staging', 'production'])
+                ->withoutOverlapping()
+                ->onOneServer()
+                ->runInBackground();
+        }
     }
 
     /**

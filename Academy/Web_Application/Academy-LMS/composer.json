@@ -10,6 +10,7 @@
     "require": {
         "php": "^8.1",
         "firebase/php-jwt": "^6.10",
+        "aws/aws-sdk-php": "^3.305",
         "guzzlehttp/guzzle": "^7.2",
         "intervention/image": "^2.7",
         "laravel/octane": "^2.5",

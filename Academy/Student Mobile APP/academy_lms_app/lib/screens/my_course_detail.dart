@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously, avoid_print
 
+import 'package:academy_lms_app/features/storage/data/storage_recovery_service.dart';
 import 'package:academy_lms_app/screens/course_detail.dart';
 import 'package:academy_lms_app/screens/image_viewer_Screen.dart';
 import 'package:academy_lms_app/widgets/appbar_one.dart';
@@ -59,6 +60,9 @@ class _MyCourseDetailScreenState extends State<MyCourseDetailScreen>
   dynamic courseTitle;
   dynamic sectionTitle;
   dynamic thumbnail;
+
+  final StorageRecoveryService _storageRecoveryService =
+      StorageRecoveryService();
 
   @override
   void initState() {
@@ -381,11 +385,53 @@ Future<String> getGoogleDriveDownloadUrl(String fileId) async {
     }
   }
 
-  void _launchURL(lessonUrl) async {
-    if (await canLaunch(lessonUrl)) {
-      await launch(lessonUrl);
-    } else {
-      throw 'Could not launch $lessonUrl';
+  Future<void> _launchURL(String lessonUrl) async {
+    final uri = Uri.tryParse(lessonUrl);
+
+    if (uri == null) {
+      await _handleArchivedAsset(lessonUrl, 'Invalid URL');
+      return;
+    }
+
+    try {
+      final canOpen = await canLaunchUrl(uri);
+      if (!canOpen) {
+        throw Exception('Launcher unavailable for $lessonUrl');
+      }
+
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        throw Exception('Launcher rejected $lessonUrl');
+      }
+    } catch (error) {
+      await _handleArchivedAsset(lessonUrl, error);
+    }
+  }
+
+  Future<void> _handleArchivedAsset(String lessonUrl, Object error) async {
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      final result =
+          await _storageRecoveryService.requestRestoreFromUrl(lessonUrl);
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            '${result.message} We\'ll notify you when it\'s ready (typically ${result.estimatedMinutes ~/ 60}h).',
+          ),
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    } catch (restoreError) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'We couldn\'t open this file or schedule a restore. Please retry later. (${restoreError.toString()})',
+          ),
+          duration: const Duration(seconds: 6),
+        ),
+      );
     }
   }
 
