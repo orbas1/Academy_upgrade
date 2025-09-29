@@ -71,6 +71,14 @@ class MeilisearchClient
     }
 
     /**
+     * @param array<string, mixed> $payload
+     */
+    public function search(string $index, array $payload): array
+    {
+        return $this->request('post', "/indexes/{$index}/search", $payload);
+    }
+
+    /**
      * @param array<int, int|string> $identifiers
      */
     public function deleteDocuments(string $index, array $identifiers): array

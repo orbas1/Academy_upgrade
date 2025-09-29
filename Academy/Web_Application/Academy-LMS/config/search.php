@@ -191,6 +191,26 @@ return [
     'visibility' => [
         'token_secret' => env('SEARCH_VISIBILITY_TOKEN_SECRET', env('APP_KEY')),
         'ttl' => (int) env('SEARCH_VISIBILITY_TOKEN_TTL', 900),
+        'index_filters' => [
+            'posts' => "visibility IN ['public', 'community', 'paid']",
+            'communities' => "visibility IN ['public', 'private', 'unlisted']",
+            'comments' => "post_visibility IN ['public', 'community', 'paid']",
+        ],
+    ],
+
+    'query' => [
+        'default_limit' => 20,
+        'max_limit' => 50,
+    ],
+
+    'admin_tools' => [
+        'default_limit' => 50,
+        'max_limit' => 100,
+        'flag_filters' => [
+            'flagged' => "moderation.state = 'flagged'",
+            'reported' => 'reports.pending > 0',
+            'spam' => 'moderation.spam_score >= 0.8',
+        ],
     ],
 
     'sync' => [
