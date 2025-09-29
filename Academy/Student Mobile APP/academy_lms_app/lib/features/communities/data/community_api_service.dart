@@ -9,6 +9,7 @@ import '../models/community_member.dart';
 import '../models/community_notification.dart';
 import '../models/community_notification_preferences.dart';
 import '../models/community_summary.dart';
+import 'paginated_response.dart';
 
 class CommunityApiService {
   CommunityApiService({http.Client? client, String? authToken})
@@ -43,7 +44,7 @@ class CommunityApiService {
     return Uri.parse('$normalizedBase$path').replace(queryParameters: cleanQuery.isEmpty ? null : cleanQuery);
   }
 
-  Future<List<CommunitySummary>> fetchCommunities({
+  Future<PaginatedResponse<CommunitySummary>> fetchCommunities({
     String filter = 'all',
     int pageSize = 20,
     String? cursor,
@@ -66,13 +67,17 @@ class CommunityApiService {
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     final data = body['data'] as List<dynamic>? ?? <dynamic>[];
+    final meta = body['meta'] as Map<String, dynamic>?;
 
-    return data
-        .map((dynamic item) => CommunitySummary.fromJson(item as Map<String, dynamic>))
-        .toList(growable: false);
+    return PaginatedResponse<CommunitySummary>(
+      items: data
+          .map((dynamic item) => CommunitySummary.fromJson(item as Map<String, dynamic>))
+          .toList(growable: false),
+      nextCursor: meta?['next_cursor'] as String?,
+    );
   }
 
-  Future<List<CommunityFeedItem>> fetchFeed(
+  Future<PaginatedResponse<CommunityFeedItem>> fetchFeed(
     int communityId, {
     String filter = 'new',
     String? cursor,
@@ -96,10 +101,14 @@ class CommunityApiService {
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     final data = body['data'] as List<dynamic>? ?? <dynamic>[];
+    final meta = body['meta'] as Map<String, dynamic>?;
 
-    return data
-        .map((dynamic item) => CommunityFeedItem.fromJson(item as Map<String, dynamic>))
-        .toList(growable: false);
+    return PaginatedResponse<CommunityFeedItem>(
+      items: data
+          .map((dynamic item) => CommunityFeedItem.fromJson(item as Map<String, dynamic>))
+          .toList(growable: false),
+      nextCursor: meta?['next_cursor'] as String?,
+    );
   }
 
   Future<CommunityMember?> fetchMembership(int communityId) async {
@@ -206,7 +215,7 @@ class CommunityApiService {
         .toList(growable: false);
   }
 
-  Future<List<CommunityNotification>> fetchNotifications(
+  Future<PaginatedResponse<CommunityNotification>> fetchNotifications(
     int communityId, {
     String? cursor,
     int pageSize = 20,
@@ -228,10 +237,14 @@ class CommunityApiService {
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     final data = body['data'] as List<dynamic>? ?? <dynamic>[];
+    final meta = body['meta'] as Map<String, dynamic>?;
 
-    return data
-        .map((dynamic item) => CommunityNotification.fromJson(item as Map<String, dynamic>))
-        .toList(growable: false);
+    return PaginatedResponse<CommunityNotification>(
+      items: data
+          .map((dynamic item) => CommunityNotification.fromJson(item as Map<String, dynamic>))
+          .toList(growable: false),
+      nextCursor: meta?['next_cursor'] as String?,
+    );
   }
 
   Future<CommunityNotificationPreferences> fetchNotificationPreferences(int communityId) async {

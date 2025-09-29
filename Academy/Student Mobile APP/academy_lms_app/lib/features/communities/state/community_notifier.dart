@@ -14,12 +14,19 @@ class CommunityNotifier extends ChangeNotifier {
 
   final CommunityRepository _repository;
 
+  final Map<int, String> _activeFeedFilters = <int, String>{};
+  final Map<String, bool> _feedHasMore = <String, bool>{};
+  final Map<String, bool> _feedLoadingMore = <String, bool>{};
+
   List<CommunitySummary> _communities = <CommunitySummary>[];
   List<CommunityFeedItem> _feed = <CommunityFeedItem>[];
   List<CommunityLeaderboardEntry> _leaderboard = <CommunityLeaderboardEntry>[];
   bool _loading = false;
   bool _membershipLoading = false;
   bool _mutatingMembership = false;
+  bool _loadingMoreCommunities = false;
+  bool _communitiesHasMore = false;
+  String _currentCommunitiesFilter = 'all';
   String? _error;
   CommunityMember? _membership;
 
@@ -29,6 +36,9 @@ class CommunityNotifier extends ChangeNotifier {
   bool get isLoading => _loading;
   bool get isMembershipLoading => _membershipLoading;
   bool get isMutatingMembership => _mutatingMembership;
+  bool get isLoadingMoreCommunities => _loadingMoreCommunities;
+  bool get canLoadMoreCommunities => _communitiesHasMore;
+  String get currentCommunitiesFilter => _currentCommunitiesFilter;
   String? get error => _error;
   CommunityMember? get membership => _membership;
   bool get isMember => _membership?.isActive ?? false;
@@ -37,28 +47,128 @@ class CommunityNotifier extends ChangeNotifier {
     _repository.updateAuthToken(token);
   }
 
-  Future<void> refreshCommunities() async {
+  Future<void> refreshCommunities({String filter = 'all', int pageSize = 20}) async {
     _setLoading(true);
     try {
-      _communities = await _repository.loadCommunities();
+      _currentCommunitiesFilter = filter;
+      final response = await _repository.loadCommunities(
+        filter: filter,
+        resetCursor: true,
+        pageSize: pageSize,
+      );
+      _communities = response.items;
+      _communitiesHasMore = response.hasMore;
       _error = null;
     } catch (err) {
+      _communitiesHasMore = false;
       _error = err.toString();
     } finally {
       _setLoading(false);
     }
   }
 
-  Future<void> refreshFeed(int communityId) async {
-    _setLoading(true);
+  Future<void> loadMoreCommunities({int pageSize = 20}) async {
+    if (_loadingMoreCommunities || !_repository.hasMoreCommunities(filter: _currentCommunitiesFilter)) {
+      _communitiesHasMore = _repository.hasMoreCommunities(filter: _currentCommunitiesFilter);
+      return;
+    }
+
+    _loadingMoreCommunities = true;
+    notifyListeners();
+
     try {
-      _feed = await _repository.loadFeed(communityId);
+      final response = await _repository.loadMoreCommunities(
+        filter: _currentCommunitiesFilter,
+        pageSize: pageSize,
+      );
+      if (response.items.isNotEmpty) {
+        _communities = <CommunitySummary>[..._communities, ...response.items];
+      }
+      _communitiesHasMore = response.hasMore;
       _error = null;
     } catch (err) {
       _error = err.toString();
     } finally {
+      _loadingMoreCommunities = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshFeed(
+    int communityId, {
+    String filter = 'new',
+    int pageSize = 20,
+  }) async {
+    _setLoading(true);
+    try {
+      final response = await _repository.loadFeed(
+        communityId,
+        filter: filter,
+        resetCursor: true,
+        pageSize: pageSize,
+      );
+      _activeFeedFilters[communityId] = filter;
+      _feed = response.items;
+      _feedHasMore[_feedKey(communityId, filter)] = response.hasMore;
+      _error = null;
+    } catch (err) {
+      _feedHasMore[_feedKey(communityId, filter)] = false;
+      _error = err.toString();
+    } finally {
       _setLoading(false);
     }
+  }
+
+  Future<void> loadMoreFeed(
+    int communityId, {
+    int pageSize = 20,
+  }) async {
+    final filter = _activeFeedFilters[communityId] ?? 'new';
+    final key = _feedKey(communityId, filter);
+
+    if (_feedLoadingMore[key] == true || !_repository.hasMoreFeed(communityId, filter: filter)) {
+      _feedHasMore[key] = _repository.hasMoreFeed(communityId, filter: filter);
+      return;
+    }
+
+    _feedLoadingMore[key] = true;
+    notifyListeners();
+
+    try {
+      final response = await _repository.loadMoreFeed(
+        communityId,
+        filter: filter,
+        pageSize: pageSize,
+      );
+
+      if (response.items.isNotEmpty) {
+        _feed = <CommunityFeedItem>[..._feed, ...response.items];
+      }
+
+      _feedHasMore[key] = response.hasMore;
+      _error = null;
+    } catch (err) {
+      _error = err.toString();
+    } finally {
+      _feedLoadingMore[key] = false;
+      notifyListeners();
+    }
+  }
+
+  bool canLoadMoreFeed(
+    int communityId, {
+    String? filter,
+  }) {
+    final resolvedFilter = filter ?? _activeFeedFilters[communityId] ?? 'new';
+    return _feedHasMore[_feedKey(communityId, resolvedFilter)] ?? false;
+  }
+
+  bool isFeedLoadingMore(
+    int communityId, {
+    String? filter,
+  }) {
+    final resolvedFilter = filter ?? _activeFeedFilters[communityId] ?? 'new';
+    return _feedLoadingMore[_feedKey(communityId, resolvedFilter)] ?? false;
   }
 
   Future<void> refreshMembership(int communityId) async {
@@ -101,6 +211,7 @@ class CommunityNotifier extends ChangeNotifier {
     try {
       await _repository.leaveCommunity(communityId);
       _membership = null;
+      _purgeFeedState(communityId);
       _communities = _communities
           .map(
             (summary) => summary.id == communityId
@@ -182,6 +293,14 @@ class CommunityNotifier extends ChangeNotifier {
     _mutatingMembership = value;
     notifyListeners();
   }
+
+  void _purgeFeedState(int communityId) {
+    _activeFeedFilters.remove(communityId);
+    _feedHasMore.removeWhere((key, _) => key.startsWith('$communityId::'));
+    _feedLoadingMore.removeWhere((key, _) => key.startsWith('$communityId::'));
+  }
+
+  String _feedKey(int communityId, String filter) => '$communityId::$filter';
 
   @override
   void dispose() {
