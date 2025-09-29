@@ -13,6 +13,7 @@ import 'providers/community_defaults.dart';
 import 'providers/courses.dart';
 import 'providers/misc_provider.dart';
 import 'providers/my_courses.dart';
+import 'providers/notification_preferences.dart';
 import 'providers/search_results.dart';
 import 'providers/search_visibility.dart';
 import 'screens/account_remove_screen.dart';
@@ -20,6 +21,13 @@ import 'screens/category_details.dart';
 import 'screens/course_detail.dart';
 import 'screens/courses_screen.dart';
 import 'screens/sub_category.dart';
+import 'services/messaging/deep_link_handler.dart';
+import 'services/messaging/push_notification_router.dart';
+
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+final DeepLinkHandler deepLinkHandler = DeepLinkHandler(navigatorKey: appNavigatorKey);
+final PushNotificationRouter pushNotificationRouter =
+    PushNotificationRouter(deepLinkHandler: deepLinkHandler);
 
 void main() {
   Logger.root.onRecord.listen((LogRecord rec) {
@@ -37,11 +45,16 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<DeepLinkHandler>.value(value: deepLinkHandler),
+        Provider<PushNotificationRouter>.value(value: pushNotificationRouter),
         ChangeNotifierProvider(
           create: (ctx) => Auth(),
         ),
         ChangeNotifierProvider(
           create: (ctx) => Categories(),
+        ),
+        ChangeNotifierProvider(
+          create: (ctx) => NotificationPreferencesProvider(),
         ),
         ChangeNotifierProvider(
           create: (ctx) => CommunityDefaultsProvider()..hydrateFromSeed(),
@@ -84,6 +97,7 @@ class MyApp extends StatelessWidget {
             useMaterial3: true,
           ),
           debugShowCheckedModeBanner: false,
+          navigatorKey: appNavigatorKey,
           home: const SplashScreen(),
           routes: {
             '/home': (ctx) => const TabsScreen(

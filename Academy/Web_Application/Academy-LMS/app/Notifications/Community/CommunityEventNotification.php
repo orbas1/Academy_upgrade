@@ -22,7 +22,8 @@ class CommunityEventNotification extends Notification implements ShouldQueue
         public int $communityId,
         public string $eventKey,
         public array $data = [],
-        public array $channels = ['database']
+        public array $channels = ['database'],
+        public array $meta = []
     ) {
         $this->onQueue('notifications');
     }
@@ -38,6 +39,7 @@ class CommunityEventNotification extends Notification implements ShouldQueue
             'community_id' => $this->communityId,
             'event' => $this->eventKey,
             'data' => $this->data,
+            'meta' => $this->meta,
         ];
     }
 
@@ -48,23 +50,35 @@ class CommunityEventNotification extends Notification implements ShouldQueue
 
     public function toMail(mixed $notifiable): MailMessage
     {
-        $mail = (new MailMessage())
-            ->subject($this->subject())
-            ->line(Arr::get($this->data, 'message', 'You have a new community update.'))
-            ->action(
-                Arr::get($this->data, 'cta.label', 'View update'),
-                Arr::get($this->data, 'cta.url', url('/communities'))
-            );
+        $renderer = app(\App\Services\Messaging\TemplateRenderer::class);
+        $template = $this->meta['template'] ?? null;
+        $locale = $this->meta['locale'] ?? null;
 
-        if ($preview = Arr::get($this->data, 'preview')) {
-            $mail->line((string) $preview);
-        }
-
-        return $mail;
+        return $renderer->buildMailMessage(
+            notifiable: $notifiable,
+            eventKey: $this->eventKey,
+            data: $this->data,
+            template: $template,
+            locale: $locale,
+        );
     }
 
     protected function subject(): string
     {
         return Arr::get($this->data, 'subject', 'Community update');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toPush(mixed $notifiable): array
+    {
+        return [
+            'title' => Arr::get($this->data, 'subject', 'Community update'),
+            'body' => Arr::get($this->data, 'message', ''),
+            'community_id' => $this->communityId,
+            'event' => $this->eventKey,
+            'cta' => Arr::get($this->data, 'cta', []),
+        ];
     }
 }

@@ -7,6 +7,7 @@ import '../models/community_feed_item.dart';
 import '../models/community_leaderboard_entry.dart';
 import '../models/community_member.dart';
 import '../models/community_notification.dart';
+import '../models/community_notification_preferences.dart';
 import '../models/community_summary.dart';
 
 class CommunityApiService {
@@ -220,6 +221,49 @@ class CommunityApiService {
     return data
         .map((dynamic item) => CommunityNotification.fromJson(item as Map<String, dynamic>))
         .toList(growable: false);
+  }
+
+  Future<CommunityNotificationPreferences> fetchNotificationPreferences(int communityId) async {
+    final response = await _client.get(
+      _buildUri('/api/v1/communities/$communityId/notification-preferences'),
+      headers: {'Accept': 'application/json'},
+    );
+
+    if (response.statusCode != 200) {
+      throw http.ClientException('Unable to load notification preferences', response.request?.url);
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return CommunityNotificationPreferences.fromJson(body['data'] as Map<String, dynamic>);
+  }
+
+  Future<CommunityNotificationPreferences> updateNotificationPreferences(
+    int communityId, {
+    required CommunityNotificationPreferences preferences,
+  }) async {
+    final response = await _client.put(
+      _buildUri('/api/v1/communities/$communityId/notification-preferences'),
+      headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+      body: jsonEncode(preferences.toJson()),
+    );
+
+    if (response.statusCode != 200) {
+      throw http.ClientException('Unable to update notification preferences', response.request?.url);
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return CommunityNotificationPreferences.fromJson(body['data'] as Map<String, dynamic>);
+  }
+
+  Future<void> resetNotificationPreferences(int communityId) async {
+    final response = await _client.delete(
+      _buildUri('/api/v1/communities/$communityId/notification-preferences'),
+      headers: {'Accept': 'application/json'},
+    );
+
+    if (response.statusCode != 204) {
+      throw http.ClientException('Unable to reset notification preferences', response.request?.url);
+    }
   }
 
   Future<void> dispose() async {
