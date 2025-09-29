@@ -207,6 +207,7 @@ return [
         App\Providers\CacheServiceProvider::class,
         App\Support\Providers\DomainServiceProvider::class,
         App\Providers\HorizonServiceProvider::class,
+        App\Providers\CommunityServiceProvider::class,
         App\Providers\SearchServiceProvider::class,
 
         /*
