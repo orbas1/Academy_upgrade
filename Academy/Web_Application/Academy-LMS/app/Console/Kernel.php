@@ -30,6 +30,13 @@ class Kernel extends ConsoleKernel
             ->onOneServer()
             ->withoutOverlapping();
 
+        $schedule->command('queues:monitor')
+            ->everyFiveMinutes()
+            ->environments(['staging', 'production'])
+            ->onOneServer()
+            ->withoutOverlapping()
+            ->runInBackground();
+
         $schedule->command('communities:maintain --prune')
             ->dailyAt('01:30')
             ->onOneServer()

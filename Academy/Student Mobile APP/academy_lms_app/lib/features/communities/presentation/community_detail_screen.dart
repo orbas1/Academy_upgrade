@@ -23,6 +23,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
   final ScrollController _feedController = ScrollController();
   bool _bootstrapped = false;
   String? _lastError;
+  String? _lastWarning;
 
   @override
   void initState() {
@@ -77,6 +78,18 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
               SnackBar(
                 content: Text(error),
                 behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+
+          final warning = notifier.consumeQueueWarning();
+          if (warning != null && warning != _lastWarning && mounted) {
+            _lastWarning = warning;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(warning),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: Colors.orange.shade700,
               ),
             );
           }
