@@ -5,22 +5,112 @@ import '../models/community_notification.dart';
 import '../models/community_notification_preferences.dart';
 import '../models/community_summary.dart';
 import 'community_api_service.dart';
+import 'paginated_response.dart';
 
 class CommunityRepository {
   CommunityRepository({CommunityApiService? api}) : _api = api ?? CommunityApiService();
 
   final CommunityApiService _api;
+  final Map<String, String?> _communityCursors = <String, String?>{};
+  final Map<String, String?> _feedCursors = <String, String?>{};
+  final Map<int, String?> _notificationCursors = <int, String?>{};
 
   void updateAuthToken(String? token) {
     _api.updateAuthToken(token);
   }
 
-  Future<List<CommunitySummary>> loadCommunities({String filter = 'all'}) {
-    return _api.fetchCommunities(filter: filter);
+  Future<PaginatedResponse<CommunitySummary>> loadCommunities({
+    String filter = 'all',
+    bool resetCursor = false,
+    int pageSize = 20,
+  }) async {
+    if (resetCursor) {
+      _communityCursors.remove(filter);
+    }
+
+    final response = await _api.fetchCommunities(
+      filter: filter,
+      pageSize: pageSize,
+      cursor: resetCursor ? null : _communityCursors[filter],
+    );
+
+    _communityCursors[filter] = response.nextCursor;
+    return response;
   }
 
-  Future<List<CommunityFeedItem>> loadFeed(int communityId, {String filter = 'new'}) {
-    return _api.fetchFeed(communityId, filter: filter);
+  Future<PaginatedResponse<CommunitySummary>> loadMoreCommunities({
+    String filter = 'all',
+    int pageSize = 20,
+  }) {
+    if (!hasMoreCommunities(filter: filter)) {
+      return Future.value(PaginatedResponse<CommunitySummary>.empty());
+    }
+
+    return loadCommunities(filter: filter, pageSize: pageSize);
+  }
+
+  bool hasMoreCommunities({String filter = 'all'}) {
+    final cursor = _communityCursors[filter];
+    return cursor != null && cursor.isNotEmpty;
+  }
+
+  void resetCommunitiesPaging({String filter = 'all'}) {
+    _communityCursors.remove(filter);
+  }
+
+  Future<PaginatedResponse<CommunityFeedItem>> loadFeed(
+    int communityId, {
+    String filter = 'new',
+    bool resetCursor = false,
+    int pageSize = 20,
+  }) async {
+    final key = _feedKey(communityId, filter);
+
+    if (resetCursor) {
+      _feedCursors.remove(key);
+    }
+
+    final response = await _api.fetchFeed(
+      communityId,
+      filter: filter,
+      cursor: resetCursor ? null : _feedCursors[key],
+      pageSize: pageSize,
+    );
+
+    _feedCursors[key] = response.nextCursor;
+    return response;
+  }
+
+  Future<PaginatedResponse<CommunityFeedItem>> loadMoreFeed(
+    int communityId, {
+    String filter = 'new',
+    int pageSize = 20,
+  }) {
+    final key = _feedKey(communityId, filter);
+    if (!hasMoreFeed(communityId, filter: filter)) {
+      return Future.value(PaginatedResponse<CommunityFeedItem>.empty());
+    }
+
+    return loadFeed(
+      communityId,
+      filter: filter,
+      pageSize: pageSize,
+    );
+  }
+
+  bool hasMoreFeed(
+    int communityId, {
+    String filter = 'new',
+  }) {
+    final cursor = _feedCursors[_feedKey(communityId, filter)];
+    return cursor != null && cursor.isNotEmpty;
+  }
+
+  void resetFeedPaging(
+    int communityId, {
+    String filter = 'new',
+  }) {
+    _feedCursors.remove(_feedKey(communityId, filter));
   }
 
   Future<CommunityMember?> loadMembership(int communityId) {
@@ -32,6 +122,8 @@ class CommunityRepository {
   }
 
   Future<void> leaveCommunity(int communityId) {
+    resetFeedPaging(communityId);
+    _notificationCursors.remove(communityId);
     return _api.leaveCommunity(communityId);
   }
 
@@ -57,8 +149,46 @@ class CommunityRepository {
     return _api.fetchLeaderboard(communityId, period: period);
   }
 
-  Future<List<CommunityNotification>> loadNotifications(int communityId, {String? cursor}) {
-    return _api.fetchNotifications(communityId, cursor: cursor);
+  Future<PaginatedResponse<CommunityNotification>> loadNotifications(
+    int communityId, {
+    bool resetCursor = false,
+    int pageSize = 20,
+  }) async {
+    if (resetCursor) {
+      _notificationCursors.remove(communityId);
+    }
+
+    final response = await _api.fetchNotifications(
+      communityId,
+      cursor: resetCursor ? null : _notificationCursors[communityId],
+      pageSize: pageSize,
+    );
+
+    _notificationCursors[communityId] = response.nextCursor;
+    return response;
+  }
+
+  Future<PaginatedResponse<CommunityNotification>> loadMoreNotifications(
+    int communityId, {
+    int pageSize = 20,
+  }) {
+    if (!hasMoreNotifications(communityId)) {
+      return Future.value(PaginatedResponse<CommunityNotification>.empty());
+    }
+
+    return loadNotifications(
+      communityId,
+      pageSize: pageSize,
+    );
+  }
+
+  bool hasMoreNotifications(int communityId) {
+    final cursor = _notificationCursors[communityId];
+    return cursor != null && cursor.isNotEmpty;
+  }
+
+  void resetNotificationsPaging(int communityId) {
+    _notificationCursors.remove(communityId);
   }
 
   Future<CommunityNotificationPreferences> loadNotificationPreferences(int communityId) {
@@ -78,5 +208,10 @@ class CommunityRepository {
 
   Future<void> dispose() async {
     await _api.dispose();
+    _communityCursors.clear();
+    _feedCursors.clear();
+    _notificationCursors.clear();
   }
+
+  String _feedKey(int communityId, String filter) => '$communityId::$filter';
 }
