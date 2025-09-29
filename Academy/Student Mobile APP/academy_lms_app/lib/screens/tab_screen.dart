@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:academy_lms_app/features/communities/presentation/community_explorer_screen.dart';
 
 
 class TabsScreen extends StatefulWidget {
@@ -46,9 +47,23 @@ class _TabsScreenState extends State<TabsScreen> {
   }
 
   List<Widget> _pages() {
-    return isLoggedIn
-        ? [HomeScreen(), MyCoursesScreen(), CartScreen(), AccountScreen()]
-        : [HomeScreen(), LoginScreen(), LoginScreen(), LoginScreen()];
+    if (isLoggedIn) {
+      return [
+        HomeScreen(),
+        const CommunityExplorerScreen(),
+        MyCoursesScreen(),
+        CartScreen(),
+        AccountScreen(),
+      ];
+    }
+
+    return [
+      HomeScreen(),
+      const LoginScreen(),
+      const LoginScreen(),
+      const LoginScreen(),
+      const LoginScreen(),
+    ];
   }
 
   void _selectPage(int index) {
@@ -70,7 +85,7 @@ class _TabsScreenState extends State<TabsScreen> {
               index: _selectedPageIndex,
               children: _pages(),
             ),
-      floatingActionButton: _selectedPageIndex != 2
+      floatingActionButton: _selectedPageIndex != 3
           ? FloatingActionButton(
               onPressed: () {
                 Navigator.push(
@@ -112,6 +127,25 @@ class _TabsScreenState extends State<TabsScreen> {
               ),
             ),
             title: 'Home',
+          ),
+          TabItem(
+            icon: Padding(
+              padding: const EdgeInsets.all(2.0),
+              child: SvgPicture.asset(
+                'assets/icons/global.svg',
+                colorFilter:
+                    const ColorFilter.mode(kGreyLightColor, BlendMode.srcIn),
+              ),
+            ),
+            activeIcon: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: SvgPicture.asset(
+                'assets/icons/global.svg',
+                colorFilter:
+                    const ColorFilter.mode(kDefaultColor, BlendMode.srcIn),
+              ),
+            ),
+            title: 'Communities',
           ),
           TabItem(
             icon: Padding(

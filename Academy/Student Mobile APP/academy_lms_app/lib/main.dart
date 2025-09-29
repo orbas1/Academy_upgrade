@@ -23,6 +23,7 @@ import 'screens/courses_screen.dart';
 import 'screens/sub_category.dart';
 import 'services/messaging/deep_link_handler.dart';
 import 'services/messaging/push_notification_router.dart';
+import 'features/communities/state/community_notifier.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 final DeepLinkHandler deepLinkHandler = DeepLinkHandler(navigatorKey: appNavigatorKey);
@@ -58,6 +59,14 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (ctx) => CommunityDefaultsProvider()..hydrateFromSeed(),
+        ),
+        ChangeNotifierProxyProvider<Auth, CommunityNotifier>(
+          create: (ctx) => CommunityNotifier(),
+          update: (ctx, auth, notifier) {
+            final communityNotifier = notifier ?? CommunityNotifier();
+            communityNotifier.updateAuthToken(auth.token);
+            return communityNotifier;
+          },
         ),
         ChangeNotifierProvider(
           create: (ctx) => Languages(),
