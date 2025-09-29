@@ -58,6 +58,32 @@ class MeilisearchClient
         return $this->request('patch', "/indexes/{$index}/settings", $payload);
     }
 
+    /**
+     * @param array<int, array<string, mixed>> $documents
+     */
+    public function upsertDocuments(string $index, array $documents): array
+    {
+        if (empty($documents)) {
+            return [];
+        }
+
+        return $this->request('post', "/indexes/{$index}/documents", $documents);
+    }
+
+    /**
+     * @param array<int, int|string> $identifiers
+     */
+    public function deleteDocuments(string $index, array $identifiers): array
+    {
+        if (empty($identifiers)) {
+            return [];
+        }
+
+        return $this->request('post', "/indexes/{$index}/documents/delete", [
+            'ids' => array_values($identifiers),
+        ]);
+    }
+
     protected function request(string $method, string $path, array $payload = []): array
     {
         $request = $this->baseRequest();
