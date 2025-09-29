@@ -59,6 +59,7 @@ Route::group(['middleware', ['auth:sanctum']], function () {
     Route::get('/toggle_cart_items', [ApiController::class, 'toggle_cart_items']);
     Route::get('/save_course_progress', [ApiController::class, 'save_course_progress']);
     Route::post('/logout', [ApiController::class, 'logout']);
+    Route::post('/storage/restore', [\App\Http\Controllers\Api\StorageController::class, 'requestRestore']);
 
     //Zoom live class
     Route::get('zoom/settings', [ApiController::class, 'zoom_settings']);
