@@ -110,6 +110,8 @@
     <script src="{{ asset('assets/backend/js/script.js') }}"></script>
     <script src="{{ asset('assets/backend/js/custom.js') }}"></script>
 
+    @vite('resources/js/performance-hints.js')
+
     @include('instructor.toaster')
     @include('instructor.common_scripts')
     @include('instructor.init')
