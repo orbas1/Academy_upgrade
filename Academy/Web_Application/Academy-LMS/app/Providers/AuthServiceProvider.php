@@ -97,5 +97,13 @@ class AuthServiceProvider extends ServiceProvider
 
             return $matrix->allows($user, 'paywall.manage', $context);
         });
+
+        Gate::define('search.audit', function (User $user) use ($matrix) {
+            return $matrix->allows($user, 'search.audit');
+        });
+
+        Gate::define('search.saved', function (User $user) use ($matrix) {
+            return $matrix->allows($user, 'search.saved');
+        });
     }
 }

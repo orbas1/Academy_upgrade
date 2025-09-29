@@ -4,7 +4,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\frontend\CourseController;
 use App\Http\Controllers\ApiController;
+use App\Http\Controllers\Api\V1\Admin\AdminSavedSearchController;
+use App\Http\Controllers\Api\V1\Admin\AdminSearchController;
 use App\Http\Controllers\Api\V1\Community\SearchAuthorizationController;
+use App\Http\Controllers\Api\V1\Community\SearchQueryController;
 
 
 /*
@@ -66,5 +69,20 @@ Route::group(['middleware', ['auth:sanctum']], function () {
 Route::prefix('v1')->group(function () {
     Route::get('/search/visibility-token', [SearchAuthorizationController::class, 'token'])
         ->middleware('throttle:120,1');
+
+    Route::post('/search/query', SearchQueryController::class)
+        ->middleware('throttle:240,1');
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/admin/search/audit', [AdminSearchController::class, 'audit'])
+            ->middleware('throttle:180,1');
+
+        Route::get('/admin/search/saved-queries', [AdminSavedSearchController::class, 'index'])
+            ->middleware('throttle:180,1');
+        Route::post('/admin/search/saved-queries', [AdminSavedSearchController::class, 'store'])
+            ->middleware('throttle:120,1');
+        Route::delete('/admin/search/saved-queries/{savedQuery}', [AdminSavedSearchController::class, 'destroy'])
+            ->middleware('throttle:120,1');
+    });
 });
 

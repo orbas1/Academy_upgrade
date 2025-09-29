@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'package:academy_lms_app/features/search/models/search_visibility_token.dart';
+
 import '../constants.dart';
+import '../providers/auth.dart';
+import '../providers/search_results.dart';
+import '../providers/search_visibility.dart';
 import '../widgets/custom_text.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -19,13 +26,53 @@ class _SearchScreenState extends State<SearchScreen> {
     super.initState();
   }
 
+  Future<void> _performSearch(BuildContext context) async {
+    final query = _keywordController.text.trim();
+    if (query.isEmpty) {
+      await context.read<SearchResultsProvider>().search(
+            query: '',
+            index: 'posts',
+            visibilityToken: const SearchVisibilityToken(
+              token: '',
+              filters: <String>[],
+              issuedAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+              expiresAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+            ),
+          );
+      return;
+    }
+
+    final visibilityProvider = context.read<SearchVisibilityProvider>();
+    final authToken = context.read<Auth>().token;
+
+    if (visibilityProvider.token == null || visibilityProvider.token!.isExpired) {
+      await visibilityProvider.refreshToken();
+    }
+
+    final visibilityToken = visibilityProvider.token;
+
+    if (visibilityToken == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to fetch search visibility token.')),
+      );
+      return;
+    }
+
+    await context.read<SearchResultsProvider>().search(
+          query: query,
+          index: 'posts',
+          visibilityToken: visibilityToken,
+          authToken: authToken,
+        );
+  }
+
   void _selectPage(int index) {
     setState(() {
       _selectedPageIndex = index;
     });
   }
 
-  InputDecoration getInputDecoration(String hintext) {
+  InputDecoration getInputDecoration(String hintext, VoidCallback onSubmit) {
     return InputDecoration(
       enabledBorder: OutlineInputBorder(
         borderRadius: const BorderRadius.all(Radius.circular(16.0)),
@@ -52,6 +99,10 @@ class _SearchScreenState extends State<SearchScreen> {
         Icons.search,
         color: kGreyLightColor,
       ),
+      suffixIcon: IconButton(
+        icon: const Icon(Icons.arrow_circle_right),
+        onPressed: onSubmit,
+      ),
       hintStyle: const TextStyle(color: Colors.black54, fontSize: 16),
       hintText: hintext,
       fillColor: kInputBoxBackGroundColor,
@@ -76,28 +127,76 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: TextFormField(
                     style: const TextStyle(fontSize: 14),
                     decoration: getInputDecoration(
-                      'Search',
+                      'Search for communities or posts',
+                      () => _performSearch(context),
                     ),
                     controller: _keywordController,
                     keyboardType: TextInputType.text,
-                    validator: (value) {
-                      if (value!.isEmpty) {
-                        return 'Keyword cannot be empty';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      _keywordController.text = value as String;
-                    },
+                    onFieldSubmitted: (_) => _performSearch(context),
                   ),
                 ),
-                const SizedBox(height: 30),
-                
-                const CustomText(
-                  text: 'Type in search bar...',
-                  colors: kGreyLightColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w400,
+                const SizedBox(height: 24),
+                Consumer<SearchResultsProvider>(
+                  builder: (context, provider, child) {
+                    if (provider.isLoading) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+
+                    if (provider.errorMessage != null) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Text(
+                          provider.errorMessage!,
+                          style: const TextStyle(color: Colors.redAccent),
+                        ),
+                      );
+                    }
+
+                    final hits = provider.hits;
+
+                    if (hits.isEmpty) {
+                      return const CustomText(
+                        text: 'Type in search bar and press enter to search',
+                        colors: kGreyLightColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w400,
+                      );
+                    }
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: hits.length,
+                      separatorBuilder: (_, __) => const Divider(),
+                      itemBuilder: (ctx, index) {
+                        final hit = hits[index];
+                        final title = hit['title'] ?? hit['name'] ?? hit['slug'] ?? 'Result';
+                        final subtitle = hit['excerpt'] ?? hit['tagline'] ?? hit['body'];
+
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                          title: Text(
+                            title.toString(),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: subtitle != null
+                              ? Text(
+                                  subtitle.toString(),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                )
+                              : null,
+                          trailing: Text(
+                            provider.response?.index ?? 'posts',
+                            style: const TextStyle(fontSize: 12, color: kGreyLightColor),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
               ],
             ),

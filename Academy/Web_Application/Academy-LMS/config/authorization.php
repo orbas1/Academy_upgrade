@@ -29,6 +29,8 @@ return [
             'post.update',
             'post.pin',
             'member.ban',
+            'search.audit',
+            'search.saved',
         ],
         'owner' => [
             'community.view',
@@ -38,6 +40,8 @@ return [
             'post.pin',
             'member.ban',
             'paywall.manage',
+            'search.audit',
+            'search.saved',
         ],
         'admin' => ['*'],
     ],

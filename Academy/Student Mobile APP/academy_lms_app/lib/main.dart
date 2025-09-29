@@ -13,6 +13,7 @@ import 'providers/community_defaults.dart';
 import 'providers/courses.dart';
 import 'providers/misc_provider.dart';
 import 'providers/my_courses.dart';
+import 'providers/search_results.dart';
 import 'providers/search_visibility.dart';
 import 'screens/account_remove_screen.dart';
 import 'screens/category_details.dart';
@@ -69,6 +70,9 @@ class MyApp extends StatelessWidget {
             visibilityProvider.updateAuthToken(auth.token);
             return visibilityProvider;
           },
+        ),
+        ChangeNotifierProvider(
+          create: (ctx) => SearchResultsProvider(),
         ),
       ],
       child: Consumer<Auth>(
