@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Domain\Communities\Models;
+
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class CommunityPaywallAccess extends Model
+{
+    use HasFactory;
+
+    protected $table = 'community_paywall_access';
+
+    protected $guarded = [];
+
+    protected $casts = [
+        'metadata' => 'array',
+        'access_starts_at' => 'datetime',
+        'access_ends_at' => 'datetime',
+    ];
+
+    public function community(): BelongsTo
+    {
+        return $this->belongsTo(Community::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function grantedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'granted_by');
+    }
+
+    public function subscriptionTier(): BelongsTo
+    {
+        return $this->belongsTo(CommunitySubscriptionTier::class, 'subscription_tier_id');
+    }
+}
