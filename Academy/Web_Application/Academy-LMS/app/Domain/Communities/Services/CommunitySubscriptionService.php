@@ -3,9 +3,12 @@
 namespace App\Domain\Communities\Services;
 
 use App\Domain\Communities\Models\Community;
+use App\Domain\Communities\Models\CommunityMember;
 use App\Domain\Communities\Models\CommunityPaywallAccess;
 use App\Domain\Communities\Models\CommunitySubscription;
 use App\Domain\Communities\Models\CommunitySubscriptionTier;
+use App\Events\Community\PaymentSucceeded;
+use App\Events\Community\SubscriptionStarted;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +33,17 @@ class CommunitySubscriptionService
                 ]
             );
 
+            $membership = $this->ensureMembership($community, $user);
+
             $this->grantAccess($community, $user, $tier, $payload['access_expires_at'] ?? null, $payload['granted_by'] ?? null);
+
+            $subscription->refresh();
+            $membership->loadMissing(['user', 'community']);
+
+            if (in_array($subscription->status, ['active', 'trialing'], true)) {
+                event(new SubscriptionStarted($membership, $subscription));
+                event(new PaymentSucceeded($membership, $subscription));
+            }
 
             return $subscription;
         });
@@ -75,10 +88,20 @@ class CommunitySubscriptionService
             ]
         );
 
+        $membership = $this->ensureMembership($community, $user);
+
         if (($payload['status'] ?? 'active') !== 'active') {
             $this->cancel($subscription, isset($payload['ended_at']) ? CarbonImmutable::parse($payload['ended_at']) : null);
         } else {
             $this->grantAccess($community, $user, $tier, $payload['access_expires_at'] ?? null, $payload['granted_by'] ?? null);
+            $subscription->refresh();
+            $membership->loadMissing(['user', 'community']);
+
+            event(new SubscriptionStarted($membership, $subscription));
+
+            if (($payload['paid'] ?? true) === true) {
+                event(new PaymentSucceeded($membership, $subscription));
+            }
         }
 
         return $subscription;
@@ -98,6 +121,29 @@ class CommunitySubscriptionService
                 'granted_by' => $grantedBy,
             ]
         );
+    }
+
+    protected function ensureMembership(Community $community, User $user): CommunityMember
+    {
+        $membership = CommunityMember::firstOrCreate(
+            [
+                'community_id' => $community->getKey(),
+                'user_id' => $user->getKey(),
+            ],
+            [
+                'role' => 'member',
+                'status' => 'active',
+                'joined_at' => CarbonImmutable::now(),
+                'last_seen_at' => CarbonImmutable::now(),
+                'is_online' => false,
+            ]
+        );
+
+        if ($membership->status !== 'active') {
+            $membership->forceFill(['status' => 'active'])->save();
+        }
+
+        return $membership;
     }
 }
 

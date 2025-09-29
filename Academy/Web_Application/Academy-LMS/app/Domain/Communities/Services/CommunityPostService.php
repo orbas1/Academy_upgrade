@@ -6,6 +6,7 @@ use App\Domain\Communities\Models\Community;
 use App\Domain\Communities\Models\CommunityMember;
 use App\Domain\Communities\Models\CommunityPost;
 use App\Domain\Communities\Models\CommunitySubscriptionTier;
+use App\Events\Community\PostCreated;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +52,15 @@ class CommunityPostService
                 'author_id' => $author->getKey(),
                 'visibility' => $post->visibility,
             ]);
+
+            $membership = CommunityMember::query()
+                ->where('community_id', $community->getKey())
+                ->where('user_id', $author->getKey())
+                ->first();
+
+            if ($membership) {
+                event(new PostCreated($post->fresh(['author', 'community']), $membership));
+            }
 
             return $post->fresh(['author', 'community']);
         });

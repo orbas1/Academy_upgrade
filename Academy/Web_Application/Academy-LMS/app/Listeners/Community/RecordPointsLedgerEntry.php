@@ -4,19 +4,26 @@ declare(strict_types=1);
 
 namespace App\Listeners\Community;
 
-use App\Events\Community\CommentCreated;
-use App\Events\Community\MemberApproved;
-use App\Events\Community\MemberJoined;
-use App\Events\Community\PaymentSucceeded;
 use App\Events\Community\PointsAwarded;
-use App\Events\Community\PostCreated;
-use App\Events\Community\SubscriptionStarted;
+use App\Jobs\Community\GenerateLeaderboardSnapshot;
+use App\Jobs\Community\ReindexCommunitySearch;
 
-class ${listener}
+class RecordPointsLedgerEntry
 {
-    public function handle(
-        MemberJoined|MemberApproved|PostCreated|CommentCreated|PointsAwarded|SubscriptionStarted|PaymentSucceeded $event
-    ): void {
-        // Event handling will be implemented in Section 2.4.
+    public function handle(PointsAwarded $event): void
+    {
+        $member = $event->member;
+
+        GenerateLeaderboardSnapshot::dispatch([
+            'community_id' => $member->community_id,
+            'period' => 'daily',
+            'as_of' => now()->toIso8601String(),
+            'limit' => 25,
+        ]);
+
+        ReindexCommunitySearch::dispatch([
+            'model' => $member::class,
+            'id' => $member->getKey(),
+        ]);
     }
 }

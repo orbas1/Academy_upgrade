@@ -6,6 +6,7 @@ use App\Domain\Communities\Models\Community;
 use App\Domain\Communities\Models\CommunityMember;
 use App\Domain\Communities\Models\CommunityPointsLedger;
 use App\Domain\Communities\Models\CommunityPointsRule;
+use App\Events\Community\PointsAwarded;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +44,8 @@ class CommunityPointsService
                 'delta' => $points,
                 'balance_after' => $newBalance,
             ]);
+
+            event(new PointsAwarded($member->fresh(), $entry, $points, $action, $actor, $metadataPayload ?? []));
 
             return $entry;
         });

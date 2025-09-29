@@ -1,6 +1,7 @@
 import '../models/community_feed_item.dart';
 import '../models/community_leaderboard_entry.dart';
 import '../models/community_member.dart';
+import '../models/community_notification.dart';
 import '../models/community_summary.dart';
 import 'community_api_service.dart';
 
@@ -49,6 +50,10 @@ class CommunityRepository {
 
   Future<List<CommunityLeaderboardEntry>> loadLeaderboard(int communityId, {String period = 'weekly'}) {
     return _api.fetchLeaderboard(communityId, period: period);
+  }
+
+  Future<List<CommunityNotification>> loadNotifications(int communityId, {String? cursor}) {
+    return _api.fetchNotifications(communityId, cursor: cursor);
   }
 
   Future<void> dispose() async {

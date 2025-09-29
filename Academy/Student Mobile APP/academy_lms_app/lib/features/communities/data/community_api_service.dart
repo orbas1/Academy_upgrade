@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../models/community_feed_item.dart';
 import '../models/community_leaderboard_entry.dart';
 import '../models/community_member.dart';
+import '../models/community_notification.dart';
 import '../models/community_summary.dart';
 
 class CommunityApiService {
@@ -190,6 +191,34 @@ class CommunityApiService {
         .asMap()
         .entries
         .map((entry) => CommunityLeaderboardEntry.fromJson(entry.value as Map<String, dynamic>, entry.key))
+        .toList(growable: false);
+  }
+
+  Future<List<CommunityNotification>> fetchNotifications(
+    int communityId, {
+    String? cursor,
+    int pageSize = 20,
+  }) async {
+    final response = await _client.get(
+      _buildUri(
+        '/api/v1/communities/$communityId/notifications',
+        {
+          'after': cursor,
+          'page_size': pageSize.toString(),
+        },
+      ),
+      headers: {'Accept': 'application/json'},
+    );
+
+    if (response.statusCode != 200) {
+      throw http.ClientException('Unable to load notifications', response.request?.url);
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final data = body['data'] as List<dynamic>? ?? <dynamic>[];
+
+    return data
+        .map((dynamic item) => CommunityNotification.fromJson(item as Map<String, dynamic>))
         .toList(growable: false);
   }
 

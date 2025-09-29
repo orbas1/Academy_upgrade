@@ -3,9 +3,11 @@
 namespace App\Domain\Communities\Services;
 
 use App\Domain\Communities\Models\CommunityCommentLike;
+use App\Domain\Communities\Models\CommunityMember;
 use App\Domain\Communities\Models\CommunityPost;
 use App\Domain\Communities\Models\CommunityPostComment;
 use App\Domain\Communities\Models\CommunityPostLike;
+use App\Events\Community\PostLiked;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +29,8 @@ class CommunityReactionService
                 return $existing;
             }
 
+            $reactionCreated = false;
+
             if ($existing) {
                 $existing->reaction = $reaction;
                 $existing->reacted_at = CarbonImmutable::now();
@@ -39,6 +43,18 @@ class CommunityReactionService
                     'reacted_at' => CarbonImmutable::now(),
                 ]);
                 $post->increment('like_count');
+                $reactionCreated = true;
+            }
+
+            if ($existing && ($existing->wasRecentlyCreated || $reactionCreated)) {
+                $membership = CommunityMember::query()
+                    ->where('community_id', $post->community_id)
+                    ->where('user_id', $user->getKey())
+                    ->first();
+
+                if ($membership) {
+                    event(new PostLiked($membership, $post->fresh('author'), $existing));
+                }
             }
 
             return $existing;

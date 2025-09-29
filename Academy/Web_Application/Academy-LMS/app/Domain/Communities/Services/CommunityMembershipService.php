@@ -5,6 +5,8 @@ namespace App\Domain\Communities\Services;
 use App\Domain\Communities\Models\Community;
 use App\Domain\Communities\Models\CommunityFollow;
 use App\Domain\Communities\Models\CommunityMember;
+use App\Events\Community\MemberApproved;
+use App\Events\Community\MemberJoined;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -50,6 +52,14 @@ class CommunityMembershipService
                 ]
             );
 
+            $membership->refresh()->loadMissing(['user', 'community']);
+
+            event(new MemberJoined($membership));
+
+            if ($membership->status === 'active') {
+                event(new MemberApproved($membership));
+            }
+
             Log::info('community.membership.joined', [
                 'community_id' => $community->getKey(),
                 'user_id' => $user->getKey(),
@@ -81,6 +91,7 @@ class CommunityMembershipService
             return $this->leaveCommunity($member);
         }
 
+        $previousStatus = $member->status;
         $member->status = $status;
 
         if ($status === 'banned') {
@@ -88,6 +99,11 @@ class CommunityMembershipService
         }
 
         $member->save();
+
+        if ($previousStatus !== 'active' && $member->status === 'active') {
+            $member->refresh()->loadMissing(['user', 'community']);
+            event(new MemberApproved($member));
+        }
 
         Log::info('community.membership.status_updated', [
             'community_id' => $member->community_id,
