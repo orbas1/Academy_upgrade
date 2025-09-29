@@ -6,6 +6,7 @@ use App\Http\Controllers\frontend\CourseController;
 use App\Http\Controllers\ApiController;
 use App\Http\Controllers\Api\V1\Admin\AdminSavedSearchController;
 use App\Http\Controllers\Api\V1\Admin\AdminSearchController;
+use App\Http\Controllers\Api\V1\Billing\StripeWebhookController;
 use App\Http\Controllers\Api\V1\Community\SearchAuthorizationController;
 use App\Http\Controllers\Api\V1\Community\CommunityNotificationPreferenceController;
 use App\Http\Controllers\Api\V1\Community\SearchQueryController;
@@ -25,6 +26,9 @@ use App\Http\Controllers\Api\V1\Community\SearchQueryController;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::post('/billing/stripe/webhook', StripeWebhookController::class)
+    ->name('billing.stripe.webhook');
 
 Route::post('/login', [ApiController::class, 'login']);
 Route::post('/two-factor/verify', [ApiController::class, 'verifyTwoFactor']);

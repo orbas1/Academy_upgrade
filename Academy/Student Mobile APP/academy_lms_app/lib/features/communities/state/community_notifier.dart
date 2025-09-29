@@ -26,6 +26,7 @@ class CommunityNotifier extends ChangeNotifier {
   bool _mutatingMembership = false;
   bool _loadingMoreCommunities = false;
   bool _communitiesHasMore = false;
+  bool _leaderboardLoading = false;
   String _currentCommunitiesFilter = 'all';
   String? _error;
   CommunityMember? _membership;
@@ -38,10 +39,13 @@ class CommunityNotifier extends ChangeNotifier {
   bool get isMutatingMembership => _mutatingMembership;
   bool get isLoadingMoreCommunities => _loadingMoreCommunities;
   bool get canLoadMoreCommunities => _communitiesHasMore;
+  bool get isLeaderboardLoading => _leaderboardLoading;
   String get currentCommunitiesFilter => _currentCommunitiesFilter;
   String? get error => _error;
   CommunityMember? get membership => _membership;
   bool get isMember => _membership?.isActive ?? false;
+
+  CommunityRepository get repository => _repository;
 
   void updateAuthToken(String? token) {
     _repository.updateAuthToken(token);
@@ -275,8 +279,19 @@ class CommunityNotifier extends ChangeNotifier {
   }
 
   Future<void> loadLeaderboard(int communityId, {String period = 'weekly'}) async {
-    _leaderboard = await _repository.loadLeaderboard(communityId, period: period);
+    _leaderboardLoading = true;
     notifyListeners();
+
+    try {
+      _leaderboard = await _repository.loadLeaderboard(communityId, period: period);
+      _error = null;
+    } catch (err) {
+      _error = err.toString();
+      _leaderboard = <CommunityLeaderboardEntry>[];
+    } finally {
+      _leaderboardLoading = false;
+      notifyListeners();
+    }
   }
 
   void _setLoading(bool value) {

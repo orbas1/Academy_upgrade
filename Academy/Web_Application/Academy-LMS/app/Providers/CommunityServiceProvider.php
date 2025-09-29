@@ -23,7 +23,7 @@ use App\Services\Community\NullMembershipService;
 use App\Services\Community\NullPaywallService;
 use App\Services\Community\NullPointsService;
 use App\Services\Community\NullPostService;
-use App\Services\Community\NullSubscriptionService;
+use App\Services\Community\StripeSubscriptionService;
 use App\Services\Community\PaywallService;
 use App\Services\Community\PointsService;
 use App\Services\Community\PostService;
@@ -42,7 +42,7 @@ class CommunityServiceProvider extends ServiceProvider
         $this->app->bind(PointsService::class, NullPointsService::class);
         $this->app->bind(LeaderboardService::class, NullLeaderboardService::class);
         $this->app->bind(GeoService::class, NullGeoService::class);
-        $this->app->bind(SubscriptionService::class, NullSubscriptionService::class);
+        $this->app->bind(SubscriptionService::class, StripeSubscriptionService::class);
         $this->app->bind(PaywallService::class, NullPaywallService::class);
         $this->app->bind(CalendarService::class, NullCalendarService::class);
         $this->app->bind(ClassroomLinkService::class, NullClassroomLinkService::class);
