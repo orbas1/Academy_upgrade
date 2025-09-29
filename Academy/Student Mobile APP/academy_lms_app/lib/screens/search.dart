@@ -17,9 +17,15 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  static const Map<String, String> _indexLabels = <String, String>{
+    'posts': 'Posts',
+    'comments': 'Comments',
+    'communities': 'Communities',
+  };
 
   int _selectedPageIndex = 0;
   final _keywordController = TextEditingController();
+  String _selectedIndex = 'posts';
 
   @override
   void initState() {
@@ -28,17 +34,10 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _performSearch(BuildContext context) async {
     final query = _keywordController.text.trim();
+    final resultsProvider = context.read<SearchResultsProvider>();
+
     if (query.isEmpty) {
-      await context.read<SearchResultsProvider>().search(
-            query: '',
-            index: 'posts',
-            visibilityToken: const SearchVisibilityToken(
-              token: '',
-              filters: <String>[],
-              issuedAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
-              expiresAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
-            ),
-          );
+      resultsProvider.clear();
       return;
     }
 
@@ -58,18 +57,32 @@ class _SearchScreenState extends State<SearchScreen> {
       return;
     }
 
-    await context.read<SearchResultsProvider>().search(
-          query: query,
-          index: 'posts',
-          visibilityToken: visibilityToken,
-          authToken: authToken,
-        );
+    await resultsProvider.search(
+      query: query,
+      index: _selectedIndex,
+      visibilityToken: visibilityToken,
+      authToken: authToken,
+    );
   }
 
   void _selectPage(int index) {
     setState(() {
       _selectedPageIndex = index;
     });
+  }
+
+  void _selectIndex(String index) {
+    if (_selectedIndex == index) {
+      return;
+    }
+
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    if (_keywordController.text.trim().isNotEmpty) {
+      unawaited(_performSearch(context));
+    }
   }
 
   InputDecoration getInputDecoration(String hintext, VoidCallback onSubmit) {
@@ -127,7 +140,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: TextFormField(
                     style: const TextStyle(fontSize: 14),
                     decoration: getInputDecoration(
-                      'Search for communities or posts',
+                      'Search communities, posts, or comments',
                       () => _performSearch(context),
                     ),
                     controller: _keywordController,
@@ -135,7 +148,24 @@ class _SearchScreenState extends State<SearchScreen> {
                     onFieldSubmitted: (_) => _performSearch(context),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _indexLabels.entries
+                        .map(
+                          (entry) => ChoiceChip(
+                            label: Text(entry.value),
+                            selected: _selectedIndex == entry.key,
+                            onSelected: (_) => _selectIndex(entry.key),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 Consumer<SearchResultsProvider>(
                   builder: (context, provider, child) {
                     if (provider.isLoading) {
@@ -175,6 +205,9 @@ class _SearchScreenState extends State<SearchScreen> {
                         final hit = hits[index];
                         final title = hit['title'] ?? hit['name'] ?? hit['slug'] ?? 'Result';
                         final subtitle = hit['excerpt'] ?? hit['tagline'] ?? hit['body'];
+                        final indexLabel = provider.response != null
+                            ? _indexLabels[provider.response!.index] ?? provider.response!.index
+                            : _indexLabels[_selectedIndex] ?? _selectedIndex;
 
                         return ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 8),
@@ -190,7 +223,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 )
                               : null,
                           trailing: Text(
-                            provider.response?.index ?? 'posts',
+                            indexLabel,
                             style: const TextStyle(fontSize: 12, color: kGreyLightColor),
                           ),
                         );
@@ -240,4 +273,3 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 }
-// https://freewn.com/freewn/full-marks-hidden-marriage-pick-up-a-son-get-a-free-husband/chapter-1403

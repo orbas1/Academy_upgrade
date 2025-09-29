@@ -9,12 +9,14 @@ use App\Services\Security\UploadSecurityService;
 use App\Support\Authorization\RoleMatrix;
 use App\Support\Database\KeysetPaginator;
 use App\Support\Database\MySqlPerformanceConfigurator;
+use App\Support\Http\ApiResponseBuilder;
 use App\Support\Security\TwoFactorAuthenticator;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -59,6 +61,13 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(QueueThresholdEvaluator::class, function ($app) {
             return new QueueThresholdEvaluator($app->make(ConfigRepository::class));
+        });
+
+        $this->app->scoped(ApiResponseBuilder::class, function ($app) {
+            return new ApiResponseBuilder(
+                (string) Str::orderedUuid(),
+                $app['config']->get('app.timezone', 'UTC')
+            );
         });
     }
 

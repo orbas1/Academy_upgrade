@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Queue;
 
 use App\Http\Controllers\Controller;
+use App\Support\Concerns\InteractsWithApiResponses;
 use App\Models\QueueMetric;
 use App\Services\Queue\QueueThresholdEvaluator;
 use Illuminate\Http\JsonResponse;
@@ -10,6 +11,8 @@ use Illuminate\Http\Request;
 
 class QueueHealthSummaryController extends Controller
 {
+    use InteractsWithApiResponses;
+
     public function __construct(private readonly QueueThresholdEvaluator $evaluator)
     {
     }
@@ -57,9 +60,12 @@ class QueueHealthSummaryController extends Controller
             return $payload;
         });
 
-        return response()->json([
-            'data' => $data,
-            'generated_at' => now()->toIso8601String(),
-        ]);
+        return $this->respondWithData(
+            $data->toArray(),
+            [
+                'generated_at' => now()->toIso8601String(),
+                'queue_count' => $data->count(),
+            ]
+        );
     }
 }

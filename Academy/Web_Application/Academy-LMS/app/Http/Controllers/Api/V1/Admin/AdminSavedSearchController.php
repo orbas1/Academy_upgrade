@@ -39,7 +39,7 @@ class AdminSavedSearchController extends CommunityApiController
                 'updated_at' => optional($query->updated_at)->toIso8601String(),
             ]);
 
-        return $this->ok(['items' => $queries]);
+        return $this->ok(['items' => $queries->all()], 200, ['count' => $queries->count()]);
     }
 
     public function store(StoreSavedSearchRequest $request): JsonResponse
@@ -62,9 +62,9 @@ class AdminSavedSearchController extends CommunityApiController
             'is_shared' => (bool) ($validated['is_shared'] ?? false),
         ]);
 
-        return $this->ok([
+        return $this->created([
             'id' => $query->getKey(),
-        ], 201);
+        ]);
     }
 
     public function destroy(SearchSavedQuery $savedQuery): JsonResponse
@@ -80,7 +80,7 @@ class AdminSavedSearchController extends CommunityApiController
 
         $savedQuery->delete();
 
-        return response()->json([], 204);
+        return $this->respondNoContent();
     }
 }
 

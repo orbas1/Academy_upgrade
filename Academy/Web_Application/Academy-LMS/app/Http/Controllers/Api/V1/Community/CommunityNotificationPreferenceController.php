@@ -56,6 +56,6 @@ class CommunityNotificationPreferenceController extends CommunityApiController
         $user = $request->user();
         $this->service->delete($user, $community->getKey());
 
-        return response()->json([], 204);
+        return $this->respondNoContent();
     }
 }
