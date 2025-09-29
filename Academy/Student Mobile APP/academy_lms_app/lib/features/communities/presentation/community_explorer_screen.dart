@@ -1,5 +1,6 @@
 import 'package:academy_lms_app/constants.dart' as constants;
 import 'package:academy_lms_app/features/communities/models/community_summary.dart';
+import 'package:academy_lms_app/features/communities/presentation/community_detail_screen.dart';
 import 'package:academy_lms_app/features/communities/state/community_notifier.dart';
 import 'package:academy_lms_app/providers/auth.dart';
 import 'package:flutter/material.dart';
@@ -73,12 +74,21 @@ class _CommunityExplorerScreenState extends State<CommunityExplorerScreen> {
                   isBusy: notifier.isMutatingMembership,
                   onJoin: () => notifier.joinCommunity(summary.id),
                   onLeave: () => notifier.leaveCommunity(summary.id),
+                  onOpen: () => _openCommunityDetail(context, summary),
                 ),
               );
             },
           ),
         );
       },
+    );
+  }
+
+  void _openCommunityDetail(BuildContext context, CommunitySummary summary) {
+    Navigator.of(context).push(
+      MaterialPageRoute<Widget>(
+        builder: (context) => CommunityDetailScreen(summary: summary),
+      ),
     );
   }
 }
@@ -89,12 +99,14 @@ class _CommunityCard extends StatelessWidget {
     required this.isBusy,
     required this.onJoin,
     required this.onLeave,
+    required this.onOpen,
   });
 
   final CommunitySummary summary;
   final bool isBusy;
   final VoidCallback onJoin;
   final VoidCallback onLeave;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -106,9 +118,7 @@ class _CommunityCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
-        onTap: () {
-          // TODO: Navigate to community detail when implemented.
-        },
+        onTap: onOpen,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

@@ -1,3 +1,4 @@
+import '../models/community_comment.dart';
 import '../models/community_feed_item.dart';
 import '../models/community_leaderboard_entry.dart';
 import '../models/community_member.dart';
@@ -14,6 +15,7 @@ class CommunityRepository {
   final Map<String, String?> _communityCursors = <String, String?>{};
   final Map<String, String?> _feedCursors = <String, String?>{};
   final Map<int, String?> _notificationCursors = <int, String?>{};
+  final Map<String, String?> _commentCursors = <String, String?>{};
 
   void updateAuthToken(String? token) {
     _api.updateAuthToken(token);
@@ -111,6 +113,68 @@ class CommunityRepository {
     String filter = 'new',
   }) {
     _feedCursors.remove(_feedKey(communityId, filter));
+  }
+
+  Future<PaginatedResponse<CommunityComment>> loadComments(
+    int communityId,
+    int postId, {
+    bool resetCursor = false,
+    int pageSize = 20,
+  }) async {
+    final key = _commentKey(communityId, postId);
+
+    if (resetCursor) {
+      _commentCursors.remove(key);
+    }
+
+    final response = await _api.fetchComments(
+      communityId,
+      postId,
+      cursor: resetCursor ? null : _commentCursors[key],
+      pageSize: pageSize,
+    );
+
+    _commentCursors[key] = response.nextCursor;
+    return response;
+  }
+
+  Future<PaginatedResponse<CommunityComment>> loadMoreComments(
+    int communityId,
+    int postId, {
+    int pageSize = 20,
+  }) {
+    if (!hasMoreComments(communityId, postId)) {
+      return Future.value(PaginatedResponse<CommunityComment>.empty());
+    }
+
+    return loadComments(
+      communityId,
+      postId,
+      pageSize: pageSize,
+    );
+  }
+
+  bool hasMoreComments(int communityId, int postId) {
+    final cursor = _commentCursors[_commentKey(communityId, postId)];
+    return cursor != null && cursor.isNotEmpty;
+  }
+
+  void resetCommentsPaging(int communityId, int postId) {
+    _commentCursors.remove(_commentKey(communityId, postId));
+  }
+
+  Future<CommunityComment> createComment(
+    int communityId,
+    int postId, {
+    required String bodyMarkdown,
+    int? parentId,
+  }) async {
+    return _api.createComment(
+      communityId,
+      postId,
+      bodyMarkdown: bodyMarkdown,
+      parentId: parentId,
+    );
   }
 
   Future<CommunityMember?> loadMembership(int communityId) {
@@ -214,4 +278,6 @@ class CommunityRepository {
   }
 
   String _feedKey(int communityId, String filter) => '$communityId::$filter';
+
+  String _commentKey(int communityId, int postId) => '$communityId::comment::$postId';
 }

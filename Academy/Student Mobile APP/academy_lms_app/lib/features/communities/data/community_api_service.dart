@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:academy_lms_app/constants.dart' as constants;
 import 'package:http/http.dart' as http;
 
+import '../models/community_comment.dart';
 import '../models/community_feed_item.dart';
 import '../models/community_leaderboard_entry.dart';
 import '../models/community_member.dart';
@@ -111,6 +112,39 @@ class CommunityApiService {
     );
   }
 
+  Future<PaginatedResponse<CommunityComment>> fetchComments(
+    int communityId,
+    int postId, {
+    String? cursor,
+    int pageSize = 20,
+  }) async {
+    final response = await _client.get(
+      _buildUri(
+        '/api/v1/communities/$communityId/posts/$postId/comments',
+        {
+          'after': cursor,
+          'page_size': pageSize.toString(),
+        },
+      ),
+      headers: _headers(),
+    );
+
+    if (response.statusCode != 200) {
+      throw http.ClientException('Unable to load comments', response.request?.url);
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final data = body['data'] as List<dynamic>? ?? <dynamic>[];
+    final meta = body['meta'] as Map<String, dynamic>?;
+
+    return PaginatedResponse<CommunityComment>(
+      items: data
+          .map((dynamic item) => CommunityComment.fromJson(item as Map<String, dynamic>))
+          .toList(growable: false),
+      nextCursor: meta?['next_cursor'] as String?,
+    );
+  }
+
   Future<CommunityMember?> fetchMembership(int communityId) async {
     final response = await _client.get(
       _buildUri('/api/v1/communities/$communityId/membership'),
@@ -181,6 +215,29 @@ class CommunityApiService {
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     return CommunityFeedItem.fromJson(body['data'] as Map<String, dynamic>);
+  }
+
+  Future<CommunityComment> createComment(
+    int communityId,
+    int postId, {
+    required String bodyMarkdown,
+    int? parentId,
+  }) async {
+    final response = await _client.post(
+      _buildUri('/api/v1/communities/$communityId/posts/$postId/comments'),
+      headers: _headers(extra: const {'Content-Type': 'application/json'}),
+      body: jsonEncode(<String, dynamic>{
+        'body_md': bodyMarkdown,
+        if (parentId != null) 'parent_id': parentId,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw http.ClientException('Unable to create comment', response.request?.url);
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return CommunityComment.fromJson(body['data'] as Map<String, dynamic>);
   }
 
   Future<void> togglePostReaction(int communityId, int postId, {String reaction = 'like'}) async {
