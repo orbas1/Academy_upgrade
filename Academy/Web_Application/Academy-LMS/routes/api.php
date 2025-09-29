@@ -7,6 +7,7 @@ use App\Http\Controllers\ApiController;
 use App\Http\Controllers\Api\V1\Admin\AdminSavedSearchController;
 use App\Http\Controllers\Api\V1\Admin\AdminSearchController;
 use App\Http\Controllers\Api\V1\Community\SearchAuthorizationController;
+use App\Http\Controllers\Api\V1\Community\CommunityNotificationPreferenceController;
 use App\Http\Controllers\Api\V1\Community\SearchQueryController;
 
 
@@ -74,6 +75,15 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:240,1');
 
     Route::middleware('auth:sanctum')->group(function () {
+        Route::prefix('communities/{community}')->group(function () {
+            Route::get('/notification-preferences', [CommunityNotificationPreferenceController::class, 'show'])
+                ->middleware('throttle:240,1');
+            Route::put('/notification-preferences', [CommunityNotificationPreferenceController::class, 'update'])
+                ->middleware('throttle:180,1');
+            Route::delete('/notification-preferences', [CommunityNotificationPreferenceController::class, 'destroy'])
+                ->middleware('throttle:120,1');
+        });
+
         Route::post('/admin/search/audit', [AdminSearchController::class, 'audit'])
             ->middleware('throttle:180,1');
 

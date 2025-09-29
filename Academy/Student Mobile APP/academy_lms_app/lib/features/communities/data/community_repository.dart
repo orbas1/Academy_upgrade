@@ -2,6 +2,7 @@ import '../models/community_feed_item.dart';
 import '../models/community_leaderboard_entry.dart';
 import '../models/community_member.dart';
 import '../models/community_notification.dart';
+import '../models/community_notification_preferences.dart';
 import '../models/community_summary.dart';
 import 'community_api_service.dart';
 
@@ -54,6 +55,21 @@ class CommunityRepository {
 
   Future<List<CommunityNotification>> loadNotifications(int communityId, {String? cursor}) {
     return _api.fetchNotifications(communityId, cursor: cursor);
+  }
+
+  Future<CommunityNotificationPreferences> loadNotificationPreferences(int communityId) {
+    return _api.fetchNotificationPreferences(communityId);
+  }
+
+  Future<CommunityNotificationPreferences> updateNotificationPreferences(
+    int communityId, {
+    required CommunityNotificationPreferences preferences,
+  }) {
+    return _api.updateNotificationPreferences(communityId, preferences: preferences);
+  }
+
+  Future<void> resetNotificationPreferences(int communityId) {
+    return _api.resetNotificationPreferences(communityId);
   }
 
   Future<void> dispose() async {

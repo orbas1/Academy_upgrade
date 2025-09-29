@@ -6,6 +6,7 @@ namespace App\Jobs\Community;
 
 use App\Models\User;
 use App\Notifications\Community\CommunityEventNotification;
+use App\Services\Messaging\NotificationRouter;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -76,19 +77,27 @@ class DistributeNotification implements ShouldQueue
             return;
         }
 
-        $notification = new CommunityEventNotification(
-            communityId: (int) $communityId,
-            eventKey: (string) Arr::get($this->payload, 'event', 'community.generic'),
-            data: Arr::get($this->payload, 'data', []),
-            channels: Arr::get($this->payload, 'channels', ['database'])
-        );
+        $router = app(NotificationRouter::class);
+        $preparedPayload = $router->preparePayload($this->payload);
+        $eventKey = (string) Arr::get($preparedPayload, 'event', 'community.generic');
 
-        Notification::send($users, $notification);
+        $sent = 0;
+
+        foreach ($users as $user) {
+            $notification = $router->makeNotification($user, (int) $communityId, $eventKey, $preparedPayload);
+
+            if (! $notification instanceof CommunityEventNotification) {
+                continue;
+            }
+
+            Notification::send($user, $notification);
+            $sent++;
+        }
 
         Log::info('community.notifications.distribute.sent', [
             'community_id' => $communityId,
-            'recipient_count' => $users->count(),
-            'event' => $notification->eventKey,
+            'recipient_count' => $sent,
+            'event' => $eventKey,
         ]);
     }
 }

@@ -35,6 +35,18 @@ class Kernel extends ConsoleKernel
             ->onOneServer()
             ->withoutOverlapping()
             ->runInBackground();
+
+        $schedule->command('communities:send-digest daily')
+            ->dailyAt('07:00')
+            ->onOneServer()
+            ->withoutOverlapping()
+            ->runInBackground();
+
+        $schedule->command('communities:send-digest weekly')
+            ->weeklyOn(1, '07:30')
+            ->onOneServer()
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**
