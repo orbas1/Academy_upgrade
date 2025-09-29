@@ -15,7 +15,19 @@ class MemberJoined
     use InteractsWithSockets;
     use SerializesModels;
 
-    public function __construct(public CommunityMember $member)
+    public CommunityMember $member;
+
+    /**
+     * @var array<string, mixed>
+     */
+    public array $context;
+
+    public function __construct(CommunityMember $member, array $context = [])
     {
+        $this->member = $member;
+        $this->context = $context + [
+            'community_id' => $member->community_id,
+            'member_id' => $member->getKey(),
+        ];
     }
 }

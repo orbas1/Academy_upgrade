@@ -2,8 +2,10 @@
 
 namespace App\Domain\Communities\Services;
 
+use App\Domain\Communities\Models\CommunityMember;
 use App\Domain\Communities\Models\CommunityPost;
 use App\Domain\Communities\Models\CommunityPostComment;
+use App\Events\Community\CommentCreated;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +34,19 @@ class CommunityCommentService
                 CommunityPostComment::query()
                     ->where('id', $comment->parent_id)
                     ->increment('reply_count');
+            }
+
+            $membership = CommunityMember::query()
+                ->where('community_id', $post->community_id)
+                ->where('user_id', $author->getKey())
+                ->first();
+
+            if ($membership) {
+                event(new CommentCreated(
+                    $membership,
+                    $post->fresh('author'),
+                    $comment->fresh('author')
+                ));
             }
 
             return $comment;

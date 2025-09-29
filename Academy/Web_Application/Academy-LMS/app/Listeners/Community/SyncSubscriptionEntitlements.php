@@ -4,19 +4,27 @@ declare(strict_types=1);
 
 namespace App\Listeners\Community;
 
-use App\Events\Community\CommentCreated;
-use App\Events\Community\MemberApproved;
-use App\Events\Community\MemberJoined;
-use App\Events\Community\PaymentSucceeded;
-use App\Events\Community\PointsAwarded;
-use App\Events\Community\PostCreated;
 use App\Events\Community\SubscriptionStarted;
+use App\Jobs\Community\RebuildCommunityCounters;
+use App\Jobs\Community\ReindexCommunitySearch;
 
-class ${listener}
+class SyncSubscriptionEntitlements
 {
-    public function handle(
-        MemberJoined|MemberApproved|PostCreated|CommentCreated|PointsAwarded|SubscriptionStarted|PaymentSucceeded $event
-    ): void {
-        // Event handling will be implemented in Section 2.4.
+    public function handle(SubscriptionStarted $event): void
+    {
+        $member = $event->member;
+
+        if ($member->status !== 'active') {
+            $member->forceFill(['status' => 'active'])->save();
+        }
+
+        ReindexCommunitySearch::dispatch([
+            'model' => $event->subscription::class,
+            'id' => $event->subscription->getKey(),
+        ]);
+
+        RebuildCommunityCounters::dispatch([
+            'community_id' => $member->community_id,
+        ]);
     }
 }
