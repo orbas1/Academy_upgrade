@@ -140,6 +140,8 @@
     <!-- Main Js -->
     <script src="{{ asset('assets/frontend/default/js/script.js') }}"></script>
 
+    @vite('resources/js/performance-hints.js')
+
     @if(get_frontend_settings('cookie_status'))
         @include('frontend.default.cookie')
     @endif

@@ -102,6 +102,8 @@
 
     <script src="{{ asset('assets/backend/js/script.js') }}"></script>
 
+    @vite('resources/js/performance-hints.js')
+
     @include('admin.toaster')
     @include('admin.common_scripts')
     @include('admin.init')
