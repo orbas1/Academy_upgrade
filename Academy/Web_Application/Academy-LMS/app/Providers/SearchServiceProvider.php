@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Console\Commands\SearchIngestCommand;
 use App\Console\Commands\SyncSearchConfiguration;
 use App\Services\Search\MeilisearchClient;
 use App\Services\Search\SearchClusterConfigurator;
@@ -37,6 +38,7 @@ class SearchServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->commands([
+                SearchIngestCommand::class,
                 SyncSearchConfiguration::class,
             ]);
         }
