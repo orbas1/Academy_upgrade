@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\frontend\CourseController;
 use App\Http\Controllers\ApiController;
+use App\Http\Controllers\Api\V1\Community\SearchAuthorizationController;
 
 
 /*
@@ -60,5 +61,10 @@ Route::group(['middleware', ['auth:sanctum']], function () {
     Route::get('free_course_enroll/{course_id}', [ApiController::class, 'free_course_enroll']);
 
     Route::get('cart_tools', [ApiController::class, 'cart_tools']);
+});
+
+Route::prefix('v1')->group(function () {
+    Route::get('/search/visibility-token', [SearchAuthorizationController::class, 'token'])
+        ->middleware('throttle:120,1');
 });
 

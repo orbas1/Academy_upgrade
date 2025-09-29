@@ -101,6 +101,7 @@ return [
                     'body',
                     'author',
                     'topics',
+                    'paywall_tier_id',
                     'created_at',
                     'engagement',
                 ],
@@ -109,6 +110,7 @@ return [
                     'topics',
                     'visibility',
                     'is_paid',
+                    'paywall_tier_id',
                 ],
                 'sortableAttributes' => [
                     'created_at',
@@ -184,6 +186,11 @@ return [
                 ],
             ],
         ],
+    ],
+
+    'visibility' => [
+        'token_secret' => env('SEARCH_VISIBILITY_TOKEN_SECRET', env('APP_KEY')),
+        'ttl' => (int) env('SEARCH_VISIBILITY_TOKEN_TTL', 900),
     ],
 
     'sync' => [
