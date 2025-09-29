@@ -33,6 +33,10 @@ class CommunityNotifier extends ChangeNotifier {
   CommunityMember? get membership => _membership;
   bool get isMember => _membership?.isActive ?? false;
 
+  void updateAuthToken(String? token) {
+    _repository.updateAuthToken(token);
+  }
+
   Future<void> refreshCommunities() async {
     _setLoading(true);
     try {

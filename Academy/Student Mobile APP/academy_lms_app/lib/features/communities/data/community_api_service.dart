@@ -11,9 +11,20 @@ import '../models/community_notification_preferences.dart';
 import '../models/community_summary.dart';
 
 class CommunityApiService {
-  CommunityApiService({http.Client? client}) : _client = client ?? http.Client();
+  CommunityApiService({http.Client? client, String? authToken})
+      : _client = client ?? http.Client(),
+        _authToken = authToken;
 
   final http.Client _client;
+  String? _authToken;
+
+  void updateAuthToken(String? token) {
+    if (token == null || token.isEmpty) {
+      _authToken = null;
+    } else {
+      _authToken = token;
+    }
+  }
 
   Uri _buildUri(String path, [Map<String, String?>? query]) {
     final cleanQuery = <String, String>{};
@@ -46,7 +57,7 @@ class CommunityApiService {
           'after': cursor,
         },
       ),
-      headers: {'Accept': 'application/json'},
+      headers: _headers(),
     );
 
     if (response.statusCode != 200) {
@@ -76,7 +87,7 @@ class CommunityApiService {
           'page_size': pageSize.toString(),
         },
       ),
-      headers: {'Accept': 'application/json'},
+      headers: _headers(),
     );
 
     if (response.statusCode != 200) {
@@ -94,7 +105,7 @@ class CommunityApiService {
   Future<CommunityMember?> fetchMembership(int communityId) async {
     final response = await _client.get(
       _buildUri('/api/v1/communities/$communityId/membership'),
-      headers: {'Accept': 'application/json'},
+      headers: _headers(),
     );
 
     if (response.statusCode == 404) {
@@ -116,7 +127,7 @@ class CommunityApiService {
   Future<CommunityMember> joinCommunity(int communityId) async {
     final response = await _client.post(
       _buildUri('/api/v1/communities/$communityId/members'),
-      headers: {'Accept': 'application/json'},
+      headers: _headers(),
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
@@ -131,7 +142,7 @@ class CommunityApiService {
   Future<void> leaveCommunity(int communityId) async {
     final response = await _client.delete(
       _buildUri('/api/v1/communities/$communityId/membership'),
-      headers: {'Accept': 'application/json'},
+      headers: _headers(),
     );
 
     if (response.statusCode != 204) {
@@ -147,7 +158,7 @@ class CommunityApiService {
   }) async {
     final response = await _client.post(
       _buildUri('/api/v1/communities/$communityId/posts'),
-      headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+      headers: _headers(extra: const {'Content-Type': 'application/json'}),
       body: jsonEncode(<String, dynamic>{
         'body_md': bodyMarkdown,
         'visibility': visibility,
@@ -166,7 +177,7 @@ class CommunityApiService {
   Future<void> togglePostReaction(int communityId, int postId, {String reaction = 'like'}) async {
     final response = await _client.post(
       _buildUri('/api/v1/communities/$communityId/posts/$postId/reactions'),
-      headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+      headers: _headers(extra: const {'Content-Type': 'application/json'}),
       body: jsonEncode({'reaction': reaction}),
     );
 
@@ -178,7 +189,7 @@ class CommunityApiService {
   Future<List<CommunityLeaderboardEntry>> fetchLeaderboard(int communityId, {String period = 'weekly'}) async {
     final response = await _client.get(
       _buildUri('/api/v1/communities/$communityId/leaderboard', {'period': period}),
-      headers: {'Accept': 'application/json'},
+      headers: _headers(),
     );
 
     if (response.statusCode != 200) {
@@ -208,7 +219,7 @@ class CommunityApiService {
           'page_size': pageSize.toString(),
         },
       ),
-      headers: {'Accept': 'application/json'},
+      headers: _headers(),
     );
 
     if (response.statusCode != 200) {
@@ -226,7 +237,7 @@ class CommunityApiService {
   Future<CommunityNotificationPreferences> fetchNotificationPreferences(int communityId) async {
     final response = await _client.get(
       _buildUri('/api/v1/communities/$communityId/notification-preferences'),
-      headers: {'Accept': 'application/json'},
+      headers: _headers(),
     );
 
     if (response.statusCode != 200) {
@@ -243,7 +254,7 @@ class CommunityApiService {
   }) async {
     final response = await _client.put(
       _buildUri('/api/v1/communities/$communityId/notification-preferences'),
-      headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+      headers: _headers(extra: const {'Content-Type': 'application/json'}),
       body: jsonEncode(preferences.toJson()),
     );
 
@@ -258,7 +269,7 @@ class CommunityApiService {
   Future<void> resetNotificationPreferences(int communityId) async {
     final response = await _client.delete(
       _buildUri('/api/v1/communities/$communityId/notification-preferences'),
-      headers: {'Accept': 'application/json'},
+      headers: _headers(),
     );
 
     if (response.statusCode != 204) {
@@ -268,5 +279,19 @@ class CommunityApiService {
 
   Future<void> dispose() async {
     _client.close();
+  }
+
+  Map<String, String> _headers({Map<String, String>? extra}) {
+    final headers = <String, String>{'Accept': 'application/json'};
+
+    if (_authToken != null) {
+      headers['Authorization'] = 'Bearer $_authToken';
+    }
+
+    if (extra != null) {
+      headers.addAll(extra);
+    }
+
+    return headers;
   }
 }

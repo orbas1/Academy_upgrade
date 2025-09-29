@@ -11,6 +11,10 @@ class CommunityRepository {
 
   final CommunityApiService _api;
 
+  void updateAuthToken(String? token) {
+    _api.updateAuthToken(token);
+  }
+
   Future<List<CommunitySummary>> loadCommunities({String filter = 'all'}) {
     return _api.fetchCommunities(filter: filter);
   }
