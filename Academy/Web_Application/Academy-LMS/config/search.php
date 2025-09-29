@@ -193,6 +193,95 @@ return [
         'ttl' => (int) env('SEARCH_VISIBILITY_TOKEN_TTL', 900),
     ],
 
+    'scopes' => [
+        'communities' => [
+            'index' => 'communities',
+            'allowed_filters' => [
+                'visibility',
+                'tags',
+                'tier_names',
+                'location.country',
+                'location.city',
+                'is_featured',
+            ],
+            'admin_allowed_filters' => [
+                'moderation.flag_status',
+                'owner_id',
+            ],
+            'allowed_sorts' => [
+                'member_count',
+                'online_count',
+                'recent_activity_at',
+                'created_at',
+            ],
+            'default_sort' => 'recent_activity_at:desc',
+            'facets' => [
+                'visibility',
+                'location.country',
+                'tags',
+                'tier_names',
+            ],
+        ],
+        'posts' => [
+            'index' => 'posts',
+            'allowed_filters' => [
+                'community_id',
+                'topics',
+                'visibility',
+                'is_paid',
+                'author.role',
+                'type',
+            ],
+            'admin_allowed_filters' => [
+                'moderation.flag_status',
+                'moderation.reason_code',
+                'author_id',
+            ],
+            'allowed_sorts' => [
+                'created_at',
+                'engagement.score',
+                'engagement.comment_count',
+                'engagement.reaction_count',
+            ],
+            'default_sort' => 'created_at:desc',
+            'facets' => [
+                'community_id',
+                'topics',
+                'visibility',
+                'is_paid',
+                'author.role',
+                'type',
+            ],
+        ],
+        'members' => [
+            'index' => 'members',
+            'allowed_filters' => [
+                'roles',
+                'location.country',
+                'location.city',
+                'has_mentor_status',
+                'badges',
+            ],
+            'admin_allowed_filters' => [
+                'status',
+                'is_suspended',
+            ],
+            'allowed_sorts' => [
+                'joined_at',
+                'last_active_at',
+                'engagement.score',
+                'engagement.contribution_count',
+            ],
+            'default_sort' => 'last_active_at:desc',
+            'facets' => [
+                'roles',
+                'location.country',
+                'location.city',
+                'has_mentor_status',
+            ],
+        ],
+    ],
+
     'sync' => [
         'resources' => [
             'communities' => [

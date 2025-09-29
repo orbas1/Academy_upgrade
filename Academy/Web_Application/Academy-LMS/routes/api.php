@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\frontend\CourseController;
 use App\Http\Controllers\ApiController;
 use App\Http\Controllers\Api\V1\Community\SearchAuthorizationController;
+use App\Http\Controllers\Api\V1\Community\SearchController;
 
 
 /*
@@ -66,5 +67,8 @@ Route::group(['middleware', ['auth:sanctum']], function () {
 Route::prefix('v1')->group(function () {
     Route::get('/search/visibility-token', [SearchAuthorizationController::class, 'token'])
         ->middleware('throttle:120,1');
+
+    Route::post('/search', SearchController::class)
+        ->middleware('throttle:search-heavy');
 });
 

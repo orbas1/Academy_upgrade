@@ -14,6 +14,8 @@ import 'providers/courses.dart';
 import 'providers/misc_provider.dart';
 import 'providers/my_courses.dart';
 import 'providers/search_visibility.dart';
+import 'features/search/providers/search_provider.dart';
+import 'features/notifications/providers/community_notification_registry.dart';
 import 'screens/account_remove_screen.dart';
 import 'screens/category_details.dart';
 import 'screens/course_detail.dart';
@@ -48,6 +50,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (ctx) => Languages(),
         ),
+        ChangeNotifierProvider(
+          create: (ctx) => CommunityNotificationTemplateRegistry(),
+        ),
         ChangeNotifierProxyProvider<Auth, Courses>(
           create: (ctx) => Courses([], [],),
           update: (ctx, auth, prevoiusCourses) => Courses(
@@ -68,6 +73,17 @@ class MyApp extends StatelessWidget {
             final visibilityProvider = provider ?? SearchVisibilityProvider();
             visibilityProvider.updateAuthToken(auth.token);
             return visibilityProvider;
+          },
+        ),
+        ChangeNotifierProxyProvider2<Auth, SearchVisibilityProvider, SearchProvider>(
+          create: (ctx) => SearchProvider(),
+          update: (ctx, auth, visibility, provider) {
+            final searchProvider = provider ?? SearchProvider();
+            searchProvider.updateContext(
+              authToken: auth.token,
+              visibilityToken: visibility.token,
+            );
+            return searchProvider;
           },
         ),
       ],

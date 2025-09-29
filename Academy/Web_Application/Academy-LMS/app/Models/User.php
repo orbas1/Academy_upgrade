@@ -13,6 +13,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Crypt;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Domain\Search\Models\AdminSavedSearch;
+use App\Domain\Search\Models\SearchAuditLog;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -110,5 +113,15 @@ class User extends Authenticatable implements MustVerifyEmail
     public function toSearchRecord(): array
     {
         return app(MemberSearchTransformer::class)->fromModel($this);
+    }
+
+    public function adminSavedSearches(): HasMany
+    {
+        return $this->hasMany(AdminSavedSearch::class);
+    }
+
+    public function searchAuditLogs(): HasMany
+    {
+        return $this->hasMany(SearchAuditLog::class);
     }
 }

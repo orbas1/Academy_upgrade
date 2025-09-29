@@ -35,6 +35,7 @@ use App\Http\Controllers\UsersController;
 use App\Http\Controllers\Admin\TutorBookingController;
 use App\Http\Controllers\Admin\KnowledgeBaseController;
 use App\Http\Controllers\Admin\ArticleController;
+use App\Http\Controllers\Admin\SearchAdminController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -187,6 +188,13 @@ Route::name('admin.')->prefix('admin')->middleware(['admin', 'admin.ip', 'audit.
         Route::get('get_user', 'get_user')->name('get.user');
 
         Route::post('send/newsletters', 'send_newsletters')->name('send.newsletters');
+    });
+
+    Route::prefix('search')->name('search.')->group(function () {
+        Route::get('/', [SearchAdminController::class, 'index'])->name('index');
+        Route::post('/saved', [SearchAdminController::class, 'store'])->name('saved.store');
+        Route::delete('/saved/{savedSearch}', [SearchAdminController::class, 'destroy'])->name('saved.destroy');
+        Route::post('/run', [SearchAdminController::class, 'run'])->name('run');
     });
 
     // blogs route

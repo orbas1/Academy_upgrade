@@ -70,6 +70,11 @@ class MeilisearchClient
         return $this->request('post', "/indexes/{$index}/documents", $documents);
     }
 
+    public function search(string $index, array $options = []): array
+    {
+        return $this->request('post', "/indexes/{$index}/search", $options);
+    }
+
     /**
      * @param array<int, int|string> $identifiers
      */
