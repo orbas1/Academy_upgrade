@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import 'providers/auth.dart';
 import 'providers/categories.dart';
+import 'providers/community_defaults.dart';
 import 'providers/courses.dart';
 import 'providers/misc_provider.dart';
 import 'providers/my_courses.dart';
@@ -39,6 +40,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (ctx) => Categories(),
+        ),
+        ChangeNotifierProvider(
+          create: (ctx) => CommunityDefaultsProvider()..hydrateFromSeed(),
         ),
         ChangeNotifierProvider(
           create: (ctx) => Languages(),

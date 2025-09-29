@@ -38,7 +38,7 @@ return new class extends Migration
             $table->integer('points_delta');
             $table->unsignedInteger('balance_after');
             $table->morphs('source');
-            $table->foreignId('acted_by')->nullable()->constrained('users');
+            $table->foreignId('acted_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('occurred_at');
             $table->json('metadata')->nullable();
             $table->timestamps();
@@ -48,7 +48,7 @@ return new class extends Migration
         Schema::create('community_posts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('community_id')->constrained('communities')->cascadeOnDelete();
-            $table->foreignId('author_id')->constrained('users');
+            $table->foreignId('author_id')->constrained('users')->cascadeOnDelete();
             $table->enum('type', ['text', 'image', 'video', 'link', 'poll']);
             $table->mediumText('body_md')->nullable();
             $table->mediumText('body_html')->nullable();
@@ -77,7 +77,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('community_id')->constrained('communities')->cascadeOnDelete();
             $table->foreignId('post_id')->constrained('community_posts')->cascadeOnDelete();
-            $table->foreignId('author_id')->constrained('users');
+            $table->foreignId('author_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('parent_id')->nullable()->constrained('community_post_comments')->cascadeOnDelete();
             $table->mediumText('body_md');
             $table->mediumText('body_html')->nullable();

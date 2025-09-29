@@ -52,8 +52,8 @@ return new class extends Migration
             $table->string('timezone')->nullable();
             $table->string('locale', 12)->default('en');
             $table->unsignedInteger('max_members')->nullable();
-            $table->foreignId('created_by')->constrained('users');
-            $table->foreignId('updated_by')->nullable()->constrained('users');
+            $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('launched_at')->nullable();
             $table->boolean('is_featured')->default(false);
             $table->json('settings')->nullable();
@@ -99,6 +99,7 @@ return new class extends Migration
             $table->json('escalation_contacts')->nullable();
             $table->json('automation_settings')->nullable();
             $table->timestamps();
+            $table->softDeletes();
             $table->unique('community_id');
         });
 
@@ -124,7 +125,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('community_id')->constrained('communities')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('granted_by')->nullable()->constrained('users');
+            $table->foreignId('granted_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('subscription_tier_id')->nullable()->constrained('community_subscription_tiers')->nullOnDelete();
             $table->timestamp('access_starts_at');
             $table->timestamp('access_ends_at')->nullable();

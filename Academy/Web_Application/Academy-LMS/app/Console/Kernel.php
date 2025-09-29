@@ -29,6 +29,12 @@ class Kernel extends ConsoleKernel
             ->environments(['staging', 'production'])
             ->onOneServer()
             ->withoutOverlapping();
+
+        $schedule->command('communities:maintain --prune')
+            ->dailyAt('01:30')
+            ->onOneServer()
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**
