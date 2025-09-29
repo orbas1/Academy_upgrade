@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:academy_lms_app/constants.dart' as constants;
+import 'package:academy_lms_app/services/api_envelope.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/community_comment.dart';
@@ -66,15 +67,25 @@ class CommunityApiService {
       throw http.ClientException('Unable to load communities', response.request?.url);
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final data = body['data'] as List<dynamic>? ?? <dynamic>[];
-    final meta = body['meta'] as Map<String, dynamic>?;
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to load communities',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.data is List
+        ? List<dynamic>.from(envelope.data as List)
+        : const <dynamic>[];
 
     return PaginatedResponse<CommunitySummary>(
       items: data
           .map((dynamic item) => CommunitySummary.fromJson(item as Map<String, dynamic>))
           .toList(growable: false),
-      nextCursor: meta?['next_cursor'] as String?,
+      nextCursor: envelope.nextCursor,
+      hasMore: envelope.hasMore,
     );
   }
 
@@ -100,15 +111,25 @@ class CommunityApiService {
       throw http.ClientException('Unable to load community feed', response.request?.url);
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final data = body['data'] as List<dynamic>? ?? <dynamic>[];
-    final meta = body['meta'] as Map<String, dynamic>?;
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to load community feed',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.data is List
+        ? List<dynamic>.from(envelope.data as List)
+        : const <dynamic>[];
 
     return PaginatedResponse<CommunityFeedItem>(
       items: data
           .map((dynamic item) => CommunityFeedItem.fromJson(item as Map<String, dynamic>))
           .toList(growable: false),
-      nextCursor: meta?['next_cursor'] as String?,
+      nextCursor: envelope.nextCursor,
+      hasMore: envelope.hasMore,
     );
   }
 
@@ -133,15 +154,25 @@ class CommunityApiService {
       throw http.ClientException('Unable to load comments', response.request?.url);
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final data = body['data'] as List<dynamic>? ?? <dynamic>[];
-    final meta = body['meta'] as Map<String, dynamic>?;
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to load comments',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.data is List
+        ? List<dynamic>.from(envelope.data as List)
+        : const <dynamic>[];
 
     return PaginatedResponse<CommunityComment>(
       items: data
           .map((dynamic item) => CommunityComment.fromJson(item as Map<String, dynamic>))
           .toList(growable: false),
-      nextCursor: meta?['next_cursor'] as String?,
+      nextCursor: envelope.nextCursor,
+      hasMore: envelope.hasMore,
     );
   }
 
@@ -159,12 +190,28 @@ class CommunityApiService {
       throw http.ClientException('Unable to load membership', response.request?.url);
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    if (body['data'] == null) {
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to load membership',
+        response.request?.url,
+      );
+    }
+
+    if (envelope.data == null) {
       return null;
     }
 
-    return CommunityMember.fromJson(body['data'] as Map<String, dynamic>);
+    final map = envelope.data is Map<String, dynamic>
+        ? Map<String, dynamic>.from(envelope.data as Map<String, dynamic>)
+        : null;
+
+    if (map == null) {
+      return null;
+    }
+
+    return CommunityMember.fromJson(map);
   }
 
   Future<CommunityMember> joinCommunity(int communityId) async {
@@ -177,9 +224,18 @@ class CommunityApiService {
       throw http.ClientException('Unable to join community', response.request?.url);
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final envelope = ApiEnvelope.fromJson(response.body);
 
-    return CommunityMember.fromJson(body['data'] as Map<String, dynamic>);
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to join community',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.requireMapData();
+
+    return CommunityMember.fromJson(data);
   }
 
   Future<void> leaveCommunity(int communityId) async {
@@ -213,8 +269,18 @@ class CommunityApiService {
       throw http.ClientException('Unable to create post', response.request?.url);
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    return CommunityFeedItem.fromJson(body['data'] as Map<String, dynamic>);
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to create post',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.requireMapData();
+
+    return CommunityFeedItem.fromJson(data);
   }
 
   Future<CommunityComment> createComment(
@@ -236,8 +302,18 @@ class CommunityApiService {
       throw http.ClientException('Unable to create comment', response.request?.url);
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    return CommunityComment.fromJson(body['data'] as Map<String, dynamic>);
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to create comment',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.requireMapData();
+
+    return CommunityComment.fromJson(data);
   }
 
   Future<void> togglePostReaction(int communityId, int postId, {String reaction = 'like'}) async {
@@ -262,8 +338,15 @@ class CommunityApiService {
       throw http.ClientException('Unable to load leaderboard', response.request?.url);
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final data = body['data'] as List<dynamic>? ?? <dynamic>[];
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException('Unable to load leaderboard', response.request?.url);
+    }
+
+    final data = envelope.data is List
+        ? List<dynamic>.from(envelope.data as List)
+        : const <dynamic>[];
 
     return data
         .asMap()
@@ -292,15 +375,25 @@ class CommunityApiService {
       throw http.ClientException('Unable to load notifications', response.request?.url);
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final data = body['data'] as List<dynamic>? ?? <dynamic>[];
-    final meta = body['meta'] as Map<String, dynamic>?;
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to load notifications',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.data is List
+        ? List<dynamic>.from(envelope.data as List)
+        : const <dynamic>[];
 
     return PaginatedResponse<CommunityNotification>(
       items: data
           .map((dynamic item) => CommunityNotification.fromJson(item as Map<String, dynamic>))
           .toList(growable: false),
-      nextCursor: meta?['next_cursor'] as String?,
+      nextCursor: envelope.nextCursor,
+      hasMore: envelope.hasMore,
     );
   }
 
@@ -314,8 +407,18 @@ class CommunityApiService {
       throw http.ClientException('Unable to load notification preferences', response.request?.url);
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    return CommunityNotificationPreferences.fromJson(body['data'] as Map<String, dynamic>);
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to load notification preferences',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.requireMapData();
+
+    return CommunityNotificationPreferences.fromJson(data);
   }
 
   Future<CommunityNotificationPreferences> updateNotificationPreferences(

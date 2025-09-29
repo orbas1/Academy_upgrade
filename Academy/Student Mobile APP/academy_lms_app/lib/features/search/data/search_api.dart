@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:academy_lms_app/constants.dart' as constants;
 import 'package:academy_lms_app/features/search/models/search_response.dart';
+import 'package:academy_lms_app/services/api_envelope.dart';
 import 'package:http/http.dart' as http;
 
 class SearchApi {
@@ -60,10 +61,17 @@ class SearchApi {
       );
     }
 
-    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-    final data = decoded['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final envelope = ApiEnvelope.fromJson(response.body);
 
-    return SearchResponse.fromJson(data);
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ??
+            'Search request failed with status ${response.statusCode}',
+        response.request?.url,
+      );
+    }
+
+    return SearchResponse.fromEnvelope(envelope);
   }
 
   Future<void> dispose() async {

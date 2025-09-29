@@ -57,7 +57,7 @@ class CommunitySubscriptionController extends CommunityApiController
         $immediate = $request->boolean('immediate');
         $this->subscriptions->cancelSubscription($subscription, $immediate);
 
-        return response()->json(null, 204);
+        return $this->respondNoContent();
     }
 
     private function presentSubscription(CommunitySubscription $subscription): array

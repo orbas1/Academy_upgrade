@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:academy_lms_app/constants.dart' as constants;
 import 'package:academy_lms_app/features/search/models/search_visibility_token.dart';
+import 'package:academy_lms_app/services/api_envelope.dart';
 import 'package:http/http.dart' as http;
 
 class SearchVisibilityApi {
@@ -37,8 +38,16 @@ class SearchVisibilityApi {
       );
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final data = body['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Failed to fetch search visibility token',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.requireMapData();
 
     return SearchVisibilityToken.fromJson(data);
   }

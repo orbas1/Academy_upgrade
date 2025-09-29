@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
-class PostSearchTransformer implements SearchRecordTransformer
+class CommentSearchTransformer implements SearchRecordTransformer
 {
     public function fromArray(array $row): array
     {
@@ -17,52 +17,48 @@ class PostSearchTransformer implements SearchRecordTransformer
             return [];
         }
 
-        $topics = $this->normaliseArray(Arr::get($row, 'topics'));
         $mentions = $this->normaliseArray(Arr::get($row, 'mentions'));
-        $media = $this->normaliseMediaTypes(Arr::get($row, 'media'));
-
         $bodyMarkdown = Arr::get($row, 'body_md');
         $bodyHtml = Arr::get($row, 'body_html');
         $body = $bodyMarkdown ?: ($bodyHtml ? strip_tags($bodyHtml) : null);
         $excerpt = Arr::get($row, 'excerpt')
-            ?? Str::limit(strip_tags($bodyHtml ?: $bodyMarkdown ?: ''), 240);
+            ?? Str::limit(strip_tags($bodyHtml ?: $bodyMarkdown ?: ''), 160);
 
-        $metadata = $this->decodeJson(Arr::get($row, 'metadata'));
-        $title = Arr::get($metadata, 'title');
-        if (! filled($title)) {
-            $title = Str::limit(Str::of($excerpt ?: $body ?: 'Post')->trim(), 80);
+        $postMetadata = $this->decodeJson(Arr::get($row, 'post_metadata'));
+        $postTitle = Arr::get($postMetadata, 'title');
+        if (! filled($postTitle)) {
+            $postTitle = Str::limit(strip_tags(Arr::get($row, 'post_body_html') ?? Arr::get($row, 'post_body_md') ?? ''), 80);
         }
 
-        $isPaid = $this->boolValue(Arr::get($row, 'is_paid'))
-            || $this->intValue(Arr::get($row, 'paywall_tier_id')) !== null
-            || Arr::get($row, 'visibility') === 'paid';
-
-        $publishedAt = Arr::get($row, 'published_at') ?? Arr::get($row, 'created_at');
+        $visibility = Arr::get($row, 'visibility')
+            ?? Arr::get($row, 'post_visibility')
+            ?? 'community';
 
         return [
             'id' => $identifier,
-            'community_id' => $this->intValue(Arr::get($row, 'community_id')),
+            'post_id' => $this->intValue(Arr::get($row, 'post_id')),
+            'community_id' => $this->intValue(Arr::get($row, 'community_id') ?? Arr::get($row, 'post_community_id')),
             'community_slug' => Arr::get($row, 'community_slug'),
-            'title' => $title,
             'body' => $body,
+            'body_html' => $bodyHtml ?: null,
             'excerpt' => $excerpt,
+            'mentions' => $mentions,
             'author' => [
-                'id' => $this->intValue(Arr::get($row, 'author_id') ?? Arr::get($row, 'user_id')),
+                'id' => $this->intValue(Arr::get($row, 'author_id')),
                 'name' => Arr::get($row, 'author_name'),
             ],
-            'topics' => $topics,
-            'mentions' => $mentions,
-            'visibility' => Arr::get($row, 'visibility') ?? Arr::get($row, 'is_private'),
-            'is_paid' => $isPaid,
+            'visibility' => $visibility,
             'paywall_tier_id' => $this->intValue(Arr::get($row, 'paywall_tier_id')),
             'created_at' => $this->dateValue(Arr::get($row, 'created_at')),
-            'published_at' => $this->dateValue($publishedAt),
+            'updated_at' => $this->dateValue(Arr::get($row, 'updated_at')),
             'engagement' => [
-                'score' => $this->floatValue(Arr::get($row, 'engagement_score')),
-                'comment_count' => (int) (Arr::get($row, 'comment_count') ?? 0),
-                'reaction_count' => (int) (Arr::get($row, 'reaction_count') ?? Arr::get($row, 'like_count') ?? 0),
+                'like_count' => (int) (Arr::get($row, 'like_count') ?? 0),
+                'reply_count' => (int) (Arr::get($row, 'reply_count') ?? 0),
             ],
-            'media' => $media,
+            'post' => [
+                'id' => $this->intValue(Arr::get($row, 'post_id')),
+                'title' => $postTitle,
+            ],
         ];
     }
 
@@ -83,8 +79,8 @@ class PostSearchTransformer implements SearchRecordTransformer
                     return trim($item);
                 }
 
-                if (is_array($item) && array_key_exists('name', $item)) {
-                    return (string) $item['name'];
+                if (is_array($item) && array_key_exists('username', $item)) {
+                    return (string) $item['username'];
                 }
 
                 return $item;
@@ -102,36 +98,6 @@ class PostSearchTransformer implements SearchRecordTransformer
         }
 
         return [];
-    }
-
-    protected function normaliseMediaTypes(mixed $value): array
-    {
-        $decoded = $value;
-
-        if (is_string($value) && $value !== '') {
-            $decoded = json_decode($value, true);
-        }
-
-        if (! is_array($decoded)) {
-            return [];
-        }
-
-        return collect($decoded)
-            ->map(function ($item) {
-                if (is_array($item) && isset($item['type'])) {
-                    return (string) $item['type'];
-                }
-
-                if (is_string($item)) {
-                    return trim($item);
-                }
-
-                return null;
-            })
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
     }
 
     protected function decodeJson(mixed $value): array
@@ -158,32 +124,6 @@ class PostSearchTransformer implements SearchRecordTransformer
         }
 
         return null;
-    }
-
-    protected function floatValue(mixed $value): float
-    {
-        if (is_numeric($value)) {
-            return (float) $value;
-        }
-
-        return 0.0;
-    }
-
-    protected function boolValue(mixed $value): bool
-    {
-        if (is_bool($value)) {
-            return $value;
-        }
-
-        if (is_numeric($value)) {
-            return (int) $value === 1;
-        }
-
-        if (is_string($value)) {
-            return in_array(Str::lower($value), ['1', 'true', 'yes'], true);
-        }
-
-        return false;
     }
 
     protected function dateValue(mixed $value): ?string

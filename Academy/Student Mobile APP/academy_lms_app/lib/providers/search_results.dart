@@ -18,6 +18,12 @@ class SearchResultsProvider extends ChangeNotifier {
   SearchResponse? get response => _lastResponse;
   List<Map<String, dynamic>> get hits => _lastResponse?.hits ?? <Map<String, dynamic>>[];
 
+  void clear() {
+    _lastResponse = null;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   Future<void> search({
     required String query,
     required String index,
