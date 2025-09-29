@@ -33,7 +33,8 @@ class PostSearchTransformer implements SearchRecordTransformer
             ],
             'topics' => $topics,
             'visibility' => Arr::get($row, 'visibility') ?? Arr::get($row, 'is_private'),
-            'is_paid' => $this->boolValue(Arr::get($row, 'is_paid')), 
+            'is_paid' => $this->boolValue(Arr::get($row, 'is_paid')),
+            'paywall_tier_id' => $this->intValue(Arr::get($row, 'paywall_tier_id')),
             'created_at' => $this->dateValue(Arr::get($row, 'created_at')),
             'engagement' => [
                 'score' => (float) (Arr::get($row, 'engagement_score') ?? 0),

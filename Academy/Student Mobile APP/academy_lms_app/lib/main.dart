@@ -13,6 +13,7 @@ import 'providers/community_defaults.dart';
 import 'providers/courses.dart';
 import 'providers/misc_provider.dart';
 import 'providers/my_courses.dart';
+import 'providers/search_visibility.dart';
 import 'screens/account_remove_screen.dart';
 import 'screens/category_details.dart';
 import 'screens/course_detail.dart';
@@ -60,6 +61,14 @@ class MyApp extends StatelessWidget {
             previousMyCourses == null ? [] : previousMyCourses.items,
             previousMyCourses == null ? [] : previousMyCourses.sectionItems,
           ),
+        ),
+        ChangeNotifierProxyProvider<Auth, SearchVisibilityProvider>(
+          create: (ctx) => SearchVisibilityProvider(),
+          update: (ctx, auth, provider) {
+            final visibilityProvider = provider ?? SearchVisibilityProvider();
+            visibilityProvider.updateAuthToken(auth.token);
+            return visibilityProvider;
+          },
         ),
       ],
       child: Consumer<Auth>(
