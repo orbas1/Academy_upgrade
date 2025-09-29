@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\Queue\QueueMetricsFetcher;
+use App\Services\Queue\QueueThresholdEvaluator;
+use App\Services\Queue\RedisQueueMetricsFetcher;
 use App\Services\Security\UploadSecurityService;
 use App\Support\Authorization\RoleMatrix;
 use App\Support\Database\KeysetPaginator;
@@ -48,6 +51,14 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(Filesystem::class),
                 $app->make(BusDispatcher::class)
             );
+        });
+
+        $this->app->singleton(QueueMetricsFetcher::class, function ($app) {
+            return new RedisQueueMetricsFetcher($app->make(\Illuminate\Contracts\Redis\Factory::class));
+        });
+
+        $this->app->singleton(QueueThresholdEvaluator::class, function ($app) {
+            return new QueueThresholdEvaluator($app->make(ConfigRepository::class));
         });
     }
 

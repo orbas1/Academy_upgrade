@@ -23,6 +23,7 @@ import 'screens/courses_screen.dart';
 import 'screens/sub_category.dart';
 import 'services/messaging/deep_link_handler.dart';
 import 'services/messaging/push_notification_router.dart';
+import 'features/communities/data/queue_health_repository.dart';
 import 'features/communities/state/community_notifier.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
@@ -60,11 +61,22 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (ctx) => CommunityDefaultsProvider()..hydrateFromSeed(),
         ),
-        ChangeNotifierProxyProvider<Auth, CommunityNotifier>(
-          create: (ctx) => CommunityNotifier(),
-          update: (ctx, auth, notifier) {
-            final communityNotifier = notifier ?? CommunityNotifier();
+        ProxyProvider<Auth, QueueHealthRepository>(
+          update: (ctx, auth, repository) {
+            final repo = repository ?? QueueHealthRepository();
+            repo.updateAuthToken(auth.token);
+            return repo;
+          },
+        ),
+        ChangeNotifierProxyProvider2<Auth, QueueHealthRepository, CommunityNotifier>(
+          create: (ctx) => CommunityNotifier(
+            queueHealthRepository: QueueHealthRepository(),
+          ),
+          update: (ctx, auth, queueRepo, notifier) {
+            final communityNotifier = notifier ??
+                CommunityNotifier(queueHealthRepository: queueRepo);
             communityNotifier.updateAuthToken(auth.token);
+            communityNotifier.updateQueueHealthRepository(queueRepo);
             return communityNotifier;
           },
         ),

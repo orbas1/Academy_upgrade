@@ -3,16 +3,22 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../data/community_repository.dart';
+import '../data/queue_health_repository.dart';
 import '../models/community_feed_item.dart';
 import '../models/community_leaderboard_entry.dart';
 import '../models/community_member.dart';
 import '../models/community_summary.dart';
 
 class CommunityNotifier extends ChangeNotifier {
-  CommunityNotifier({CommunityRepository? repository})
-      : _repository = repository ?? CommunityRepository();
+  CommunityNotifier({
+    CommunityRepository? repository,
+    QueueHealthRepository? queueHealthRepository,
+  })  : _repository = repository ?? CommunityRepository(),
+        _queueHealthRepository =
+            queueHealthRepository ?? QueueHealthRepository();
 
   final CommunityRepository _repository;
+  QueueHealthRepository _queueHealthRepository;
 
   final Map<int, String> _activeFeedFilters = <int, String>{};
   final Map<String, bool> _feedHasMore = <String, bool>{};
@@ -30,6 +36,7 @@ class CommunityNotifier extends ChangeNotifier {
   String _currentCommunitiesFilter = 'all';
   String? _error;
   CommunityMember? _membership;
+  String? _queueWarning;
 
   List<CommunitySummary> get communities => _communities;
   List<CommunityFeedItem> get feed => _feed;
@@ -44,11 +51,23 @@ class CommunityNotifier extends ChangeNotifier {
   String? get error => _error;
   CommunityMember? get membership => _membership;
   bool get isMember => _membership?.isActive ?? false;
+  String? get queueWarning => _queueWarning;
 
   CommunityRepository get repository => _repository;
 
   void updateAuthToken(String? token) {
     _repository.updateAuthToken(token);
+    _queueHealthRepository.updateAuthToken(token);
+  }
+
+  void updateQueueHealthRepository(QueueHealthRepository repository) {
+    _queueHealthRepository = repository;
+  }
+
+  String? consumeQueueWarning() {
+    final warning = _queueWarning;
+    _queueWarning = null;
+    return warning;
   }
 
   Future<void> refreshCommunities({String filter = 'all', int pageSize = 20}) async {
@@ -252,6 +271,8 @@ class CommunityNotifier extends ChangeNotifier {
 
     _feed = <CommunityFeedItem>[item, ..._feed];
     notifyListeners();
+
+    unawaited(_evaluateQueueHealth());
   }
 
   Future<void> togglePostReaction(int communityId, int postId, {String reaction = 'like'}) async {
@@ -317,8 +338,29 @@ class CommunityNotifier extends ChangeNotifier {
 
   String _feedKey(int communityId, String filter) => '$communityId::$filter';
 
+  Future<void> _evaluateQueueHealth() async {
+    try {
+      final warning = await _queueHealthRepository.loadWarningForQueue('media');
+      if (warning != null && warning.trim().isNotEmpty) {
+        if (warning != _queueWarning) {
+          _queueWarning = warning;
+          notifyListeners();
+        } else {
+          _queueWarning = warning;
+        }
+      } else if (_queueWarning != null) {
+        _queueWarning = null;
+        notifyListeners();
+      }
+    } catch (err, stack) {
+      debugPrint('Queue health check failed: $err');
+      debugPrint('$stack');
+    }
+  }
+
   @override
   void dispose() {
+    _queueHealthRepository.dispose();
     unawaited(_repository.dispose());
     super.dispose();
   }

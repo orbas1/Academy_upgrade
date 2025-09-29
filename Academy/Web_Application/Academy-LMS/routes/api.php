@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\Billing\StripeWebhookController;
 use App\Http\Controllers\Api\V1\Community\SearchAuthorizationController;
 use App\Http\Controllers\Api\V1\Community\CommunityNotificationPreferenceController;
 use App\Http\Controllers\Api\V1\Community\SearchQueryController;
+use App\Http\Controllers\Api\V1\Queue\QueueHealthSummaryController;
 
 
 /*
@@ -96,6 +97,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/admin/search/saved-queries', [AdminSavedSearchController::class, 'store'])
             ->middleware('throttle:120,1');
         Route::delete('/admin/search/saved-queries/{savedQuery}', [AdminSavedSearchController::class, 'destroy'])
+            ->middleware('throttle:120,1');
+
+        Route::get('/ops/queue-health', QueueHealthSummaryController::class)
             ->middleware('throttle:120,1');
     });
 });
