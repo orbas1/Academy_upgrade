@@ -58,6 +58,10 @@ class AppConfiguration {
             'ACADEMY_OBSERVABILITY_API_KEY',
             defaultValue: '',
           ),
+        ),
+        appVersion = const String.fromEnvironment(
+          'ACADEMY_APP_VERSION',
+          defaultValue: '0.0.0-dev',
         );
 
   static final AppConfiguration instance = AppConfiguration._internal();
@@ -76,6 +80,7 @@ class AppConfiguration {
   final String environment;
   final Uri observabilityIngestUrl;
   final String? observabilityApiKey;
+  final String appVersion;
 
   Uri resolveApiPath(String path) {
     if (path.startsWith('http://') || path.startsWith('https://')) {
