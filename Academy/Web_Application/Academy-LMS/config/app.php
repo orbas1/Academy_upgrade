@@ -210,6 +210,7 @@ return [
         App\Providers\CommunityServiceProvider::class,
         App\Providers\SearchServiceProvider::class,
         App\Providers\SecretsServiceProvider::class,
+        App\Providers\ObservabilityServiceProvider::class,
 
         /*
          * Our own service provider
