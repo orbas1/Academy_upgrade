@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/security/auth_session_manager.dart';
 import '../services/security/secure_credential_store.dart';
+import '../services/security/device_identity_provider.dart';
 import '../constants.dart';
 import '../models/user.dart';
 
@@ -55,6 +56,24 @@ class Auth with ChangeNotifier {
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
+    final identity = await DeviceIdentityProvider.instance.getIdentity();
+    final accessToken = await _sessionManager.getValidAccessToken();
+
+    if (accessToken != null && accessToken.isNotEmpty) {
+      try {
+        await http.post(
+          Uri.parse('$baseUrl/api/logout'),
+          headers: {
+            'Authorization': 'Bearer $accessToken',
+            'Accept': 'application/json',
+            ...identity.toHeaders(),
+          },
+        );
+      } catch (error) {
+        debugPrint('Failed to revoke server session: $error');
+      }
+    }
+
     await _sessionManager.clearSession();
     await SecureCredentialStore.instance.clearAll();
 

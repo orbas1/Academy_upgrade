@@ -10,8 +10,8 @@ import 'package:academy_lms_app/screens/signup.dart';
 import 'package:academy_lms_app/screens/tab_screen.dart';
 import 'package:academy_lms_app/services/security/auth_session.dart';
 import 'package:academy_lms_app/services/security/auth_session_manager.dart';
+import 'package:academy_lms_app/services/security/device_identity_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool hidePassword = true;
   bool _isLoading = false;
+  bool _rememberDevice = true;
   String? token;
 
   SharedPreferences? sharedPreferences;
@@ -81,102 +82,281 @@ class _LoginScreenState extends State<LoginScreen> {
   //   }
   // }
 
-  getLogin() async {
-  final localizations = AppLocalizations.of(context);
-  setState(() {
-    _isLoading = true;
-  });
-
-  String link = "$baseUrl/api/login";
-  var navigator = Navigator.of(context);
-  sharedPreferences = await SharedPreferences.getInstance();
-
-  var map = <String, dynamic>{};
-  map["email"] = _emailController.text.toString();
-  map["password"] = _passwordController.text.toString();
-
-  try {
-    var response = await http.post(
-      Uri.parse(link),
-      body: map,
-    );
-
+  Future<void> getLogin() async {
+    final localizations = AppLocalizations.of(context);
     setState(() {
-      _isLoading = false;
+      _isLoading = true;
     });
 
-    final data = jsonDecode(response.body);
+    sharedPreferences = await SharedPreferences.getInstance();
 
-    if (response.statusCode == 201) {
-      final user = data["user"];
-      final emailVerifiedAt = user["email_verified_at"];
+    try {
+      final identity = await DeviceIdentityProvider.instance.getIdentity();
 
-      if (emailVerifiedAt != null) {
-        // If email is verified, proceed with login
-        final accessToken = (data['access_token'] ?? data['token']) as String?;
-        if (accessToken == null || accessToken.isEmpty) {
-          throw const HttpException('Authentication response missing token');
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/login'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...identity.toHeaders(),
+        },
+        body: jsonEncode({
+          'email': _emailController.text.trim(),
+          'password': _passwordController.text,
+          'device_token': identity.deviceId,
+          'remember_device': _rememberDevice,
+        }),
+      );
+
+      final Map<String, dynamic> data =
+          jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 202 && data['two_factor_required'] == true) {
+        final success = await _handleTwoFactorChallenge(data, identity);
+        if (!success) {
+          setState(() {
+            _isLoading = false;
+          });
         }
+        return;
+      }
 
-        final refreshToken = data['refresh_token'] as String?;
-        final expiresIn = data['expires_in'] ?? data['token_expires_in'];
-        DateTime? accessExpiry;
-        if (expiresIn is int) {
-          accessExpiry = DateTime.now().toUtc().add(Duration(seconds: expiresIn));
-        } else if (expiresIn is String) {
-          accessExpiry = DateTime.tryParse(expiresIn)?.toUtc();
-        }
+      setState(() {
+        _isLoading = false;
+      });
 
-        await AuthSessionManager.instance.persistSession(
-          AuthSession(
-            accessToken: accessToken,
-            refreshToken: refreshToken,
-            accessTokenExpiresAt: accessExpiry,
-          ),
-        );
-
-        setState(() {
-          sharedPreferences!.setString("user", jsonEncode(user));
-          sharedPreferences!
-              .setString("email", _emailController.text.toString());
-          sharedPreferences!
-              .setString("password", _passwordController.text.toString());
-        });
-        token = await AuthSessionManager.instance.getValidAccessToken();
-        await Provider.of<Auth>(context, listen: false).synchronizeToken();
-        navigator.pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const TabsScreen(
-              pageIndex: 0,
-            ),
-          ),
-        );
-        Fluttertoast.showToast(msg: localizations.loginSuccess);
+      if (response.statusCode == 201) {
+        await _finalizeLogin(data);
       } else {
-        // If email is not verified, navigate to the email verification page
         Fluttertoast.showToast(
-          msg: localizations.emailVerificationRequired,
-        );
-        navigator.pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => EmailVerificationNotice(),
-          ),
+          msg: data['message']?.toString() ?? localizations.genericError,
         );
       }
-    } else {
-      Fluttertoast.showToast(msg: data['message']);
+    } catch (error) {
+      setState(() {
+        _isLoading = false;
+      });
+      Fluttertoast.showToast(
+        msg: '${localizations.genericError} $error',
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
     }
-  } catch (e) {
+  }
+
+  Future<bool> _handleTwoFactorChallenge(
+    Map<String, dynamic> payload,
+    DeviceIdentity identity,
+  ) async {
+    final localizations = AppLocalizations.of(context);
+    final challengeToken = payload['challenge_token'] as String?;
+
+    if (challengeToken == null || challengeToken.isEmpty) {
+      Fluttertoast.showToast(msg: localizations.genericError);
+      return false;
+    }
+
+    final result = await _promptTwoFactorCode(challengeToken, identity);
+
+    if (result == null) {
+      return false;
+    }
+
+    if (!mounted) {
+      return false;
+    }
+
     setState(() {
       _isLoading = false;
     });
-    Fluttertoast.showToast(
-      msg: '${localizations.genericError} $e',
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
+
+    await _finalizeLogin(result);
+    return true;
+  }
+
+  Future<Map<String, dynamic>?> _promptTwoFactorCode(
+    String challengeToken,
+    DeviceIdentity identity,
+  ) {
+    final localizations = AppLocalizations.of(context);
+    final codeController = TextEditingController();
+
+    return showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        bool remember = _rememberDevice;
+        bool submitting = false;
+        String? errorMessage;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        localizations.twoFactorTitle,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        localizations.twoFactorDescription,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: codeController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: localizations.twoFactorCodeHint,
+                          errorText: errorMessage,
+                        ),
+                        autofocus: true,
+                      ),
+                      SwitchListTile.adaptive(
+                        value: remember,
+                        onChanged: (value) {
+                          setModalState(() {
+                            remember = value;
+                          });
+                        },
+                        title: Text(localizations.twoFactorRememberDevice),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: submitting
+                                  ? null
+                                  : () async {
+                                      setModalState(() {
+                                        submitting = true;
+                                        errorMessage = null;
+                                      });
+
+                                      final response = await http.post(
+                                        Uri.parse('$baseUrl/api/two-factor/verify'),
+                                        headers: {
+                                          'Content-Type': 'application/json',
+                                          'Accept': 'application/json',
+                                          ...identity.toHeaders(),
+                                        },
+                                        body: jsonEncode({
+                                          'challenge_token': challengeToken,
+                                          'code': codeController.text.trim(),
+                                          'remember_device': remember,
+                                        }),
+                                      );
+
+                                      if (response.statusCode == 201) {
+                                        _rememberDevice = remember;
+                                        Navigator.of(context).pop(
+                                          jsonDecode(response.body)
+                                              as Map<String, dynamic>,
+                                        );
+                                      } else {
+                                        final Map<String, dynamic> body =
+                                            jsonDecode(response.body)
+                                                as Map<String, dynamic>;
+                                        setModalState(() {
+                                          submitting = false;
+                                          errorMessage = body['message']
+                                                  ?.toString() ??
+                                              localizations.genericError;
+                                        });
+                                      }
+                                    },
+                              child: submitting
+                                  ? const SizedBox(
+                                      height: 18,
+                                      width: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(localizations.twoFactorSubmit),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          TextButton(
+                            onPressed: submitting
+                                ? null
+                                : () => Navigator.of(context).pop(),
+                            child: Text(localizations.twoFactorCancel),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
-}
+
+  Future<void> _finalizeLogin(Map<String, dynamic> data) async {
+    final localizations = AppLocalizations.of(context);
+    final navigator = Navigator.of(context);
+    final user = data['user'] as Map<String, dynamic>?;
+
+    if (user == null) {
+      throw const FormatException('User payload missing from authentication response.');
+    }
+
+    final emailVerifiedAt = user['email_verified_at'];
+
+    if (emailVerifiedAt == null) {
+      Fluttertoast.showToast(msg: localizations.emailVerificationRequired);
+      if (!mounted) {
+        return;
+      }
+      navigator.pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => EmailVerificationNotice(),
+        ),
+      );
+      return;
+    }
+
+    final session = AuthSession.fromOAuthJson(data);
+    await AuthSessionManager.instance.persistSession(session);
+
+    sharedPreferences ??= await SharedPreferences.getInstance();
+
+    sharedPreferences!.setString('user', jsonEncode(user));
+    sharedPreferences!.setString('email', _emailController.text.trim());
+    sharedPreferences!.setString('password', _passwordController.text);
+
+    token = await AuthSessionManager.instance.getValidAccessToken();
+    await Provider.of<Auth>(context, listen: false).synchronizeToken();
+
+    if (!mounted) {
+      return;
+    }
+
+    navigator.pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const TabsScreen(
+          pageIndex: 0,
+        ),
+      ),
+    );
+
+    Fluttertoast.showToast(msg: localizations.loginSuccess);
+  }
 
 
   isLogin() async {
@@ -353,6 +533,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(top: 20.0),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                    child: SwitchListTile.adaptive(
+                      value: _rememberDevice,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(localizations.rememberDeviceLabel),
+                      onChanged: (value) {
+                        setState(() {
+                          _rememberDevice = value;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 10.0),
                   child: _isLoading
                       ? const Center(
                           child:

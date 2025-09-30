@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Models\DeviceIp;
 use App\Providers\RouteServiceProvider;
 use App\Services\Security\DeviceTrustService;
+use App\Support\Security\DeviceMetadata;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -153,12 +154,17 @@ class AuthenticatedSessionController extends Controller
 
         $deviceToken = $request->input('user_agent') ?: $request->header('X-Device-Id');
         $ipAddress = $request->getClientIp();
+        $metadata = DeviceMetadata::fromRequest($request, [
+            'device_token' => $deviceToken,
+            'ipAddress' => $ipAddress,
+            'sessionId' => $request->session()->getId(),
+            'rememberDevice' => $request->boolean('remember'),
+        ]);
 
-        if ($user && $user->hasTwoFactorEnabled() && ! $this->deviceTrust->deviceIsTrusted($user, $deviceToken)) {
+        if ($user && $user->hasTwoFactorEnabled() && ! $this->deviceTrust->deviceIsTrusted($user, $metadata->deviceToken)) {
             $request->session()->put('login.two_factor.id', $user->id);
             $request->session()->put('login.two_factor.remember', $request->boolean('remember'));
-            $request->session()->put('login.two_factor.device_token', $deviceToken);
-            $request->session()->put('login.two_factor.ip', $ipAddress);
+            $request->session()->put('login.two_factor.metadata', $metadata->toArray());
 
             Auth::logout();
 
@@ -169,7 +175,7 @@ class AuthenticatedSessionController extends Controller
 
         if ($user) {
             try {
-                $this->deviceTrust->recordLogin($user, $deviceToken, $ipAddress, $request->session()->getId());
+                $this->deviceTrust->recordLogin($user, $metadata);
             } catch (TooManyDevicesException $exception) {
                 Auth::guard('web')->logout();
                 $request->session()->invalidate();

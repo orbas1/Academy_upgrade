@@ -12,6 +12,7 @@ use App\Support\Database\MySqlPerformanceConfigurator;
 use App\Support\Http\ApiResponseBuilder;
 use App\Support\Localization\LocaleManager;
 use App\Support\Migrations\MigrationPlanner;
+use App\Support\Migrations\MigrationRunbookRegistry;
 use App\Support\Security\TwoFactorAuthenticator;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
@@ -70,6 +71,12 @@ class AppServiceProvider extends ServiceProvider
             $config = $app->make(ConfigRepository::class)->get('migrations', []);
 
             return new MigrationPlanner(is_array($config) ? $config : []);
+        });
+
+        $this->app->singleton(MigrationRunbookRegistry::class, function ($app) {
+            $config = $app->make(ConfigRepository::class)->get('migration_runbooks', []);
+
+            return new MigrationRunbookRegistry(is_array($config) ? $config : []);
         });
 
         $this->app->scoped(ApiResponseBuilder::class, function ($app) {

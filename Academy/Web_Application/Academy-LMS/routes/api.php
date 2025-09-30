@@ -15,8 +15,10 @@ use App\Http\Controllers\Api\V1\Community\CommunityFeedController;
 use App\Http\Controllers\Api\V1\Community\CommunityNotificationPreferenceController;
 use App\Http\Controllers\Api\V1\Community\SearchQueryController;
 use App\Http\Controllers\Api\V1\Ops\MigrationPlanController;
+use App\Http\Controllers\Api\V1\Ops\MigrationRunbookController;
 use App\Http\Controllers\Api\V1\Profile\AnalyticsConsentController;
 use App\Http\Controllers\Api\V1\Queue\QueueHealthSummaryController;
+use App\Http\Controllers\Api\V1\Security\DeviceSessionController;
 use App\Http\Controllers\Monitoring\MetricsController;
 use App\Http\Controllers\Api\Observability\MobileMetricController;
 
@@ -55,7 +57,7 @@ Route::middleware(['auth:sanctum'])
     ->post('/observability/mobile-metrics', [MobileMetricController::class, 'store'])
     ->name('observability.mobile-metrics');
 
-Route::group(['middleware', ['auth:sanctum']], function () {
+Route::group(['middleware' => ['auth:sanctum', 'device.activity', 'role:member,moderator,owner,admin']], function () {
     Route::get('/top_courses', [ApiController::class, 'top_courses']);
     Route::get('/all_categories', [ApiController::class, 'all_categories']);
     Route::get('/categories', [ApiController::class, 'categories']);
@@ -99,7 +101,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/search/query', SearchQueryController::class)
         ->middleware('throttle:240,1');
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'device.activity'])->group(function () {
         Route::get('/communities', [\App\Http\Controllers\Api\V1\Community\CommunityController::class, 'index'])
             ->middleware('throttle:240,1');
         Route::post('/communities', [\App\Http\Controllers\Api\V1\Community\CommunityController::class, 'store'])
@@ -148,7 +150,7 @@ Route::prefix('v1')->group(function () {
             ->middleware('throttle:120,1');
 
         Route::prefix('/admin/communities')
-            ->middleware('can:communities.manage')
+            ->middleware(['can:communities.manage', 'role:admin'])
             ->group(function () {
                 Route::get('/', [\App\Http\Controllers\Api\V1\Admin\CommunityController::class, 'index'])
                     ->middleware('throttle:240,1');
@@ -181,13 +183,26 @@ Route::prefix('v1')->group(function () {
         Route::get('/ops/migration-plan/{planKey}', [MigrationPlanController::class, 'show'])
             ->middleware('throttle:60,1');
 
+        Route::get('/ops/migration-runbooks', [MigrationRunbookController::class, 'index'])
+            ->middleware('throttle:60,1');
+        Route::get('/ops/migration-runbooks/{runbookKey}', [MigrationRunbookController::class, 'show'])
+            ->middleware('throttle:60,1');
+
         Route::post('/me/analytics-consent', AnalyticsConsentController::class)
             ->middleware('throttle:60,1');
 
         Route::get('/admin/secrets/{key}', [AdminSecretController::class, 'show'])
-            ->middleware(['throttle:60,1', 'can:secrets.manage']);
+            ->middleware(['throttle:60,1', 'can:secrets.manage', 'role:admin']);
         Route::post('/admin/secrets/{key}/rotate', [AdminSecretController::class, 'rotate'])
-            ->middleware(['throttle:30,1', 'can:secrets.manage']);
-    });
-});
+            ->middleware(['throttle:30,1', 'can:secrets.manage', 'role:admin']);
 
+        Route::get('/security/device-sessions', [DeviceSessionController::class, 'index'])
+            ->middleware('role:member,moderator,owner,admin')
+            ->name('api.security.device-sessions.index');
+        Route::delete('/security/device-sessions/{device}', [DeviceSessionController::class, 'destroy'])
+            ->middleware('role:member,moderator,owner,admin')
+            ->name('api.security.device-sessions.destroy');
+        Route::patch('/security/device-sessions/{device}', [DeviceSessionController::class, 'update'])
+            ->middleware('role:member,moderator,owner,admin')
+            ->name('api.security.device-sessions.update');
+    });

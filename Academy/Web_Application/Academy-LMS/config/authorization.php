@@ -44,6 +44,7 @@ return [
             'search.saved',
             'secrets.manage',
             'migration.plan.view',
+            'migration.runbook.view',
         ],
         'admin' => ['*'],
     ],
