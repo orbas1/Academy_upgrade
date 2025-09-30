@@ -45,14 +45,20 @@ return [
         'metric_window_seconds' => (int) env('OBS_ALERT_METRIC_WINDOW_SECONDS', 300),
         'queue_backlog_threshold' => (int) env('OBS_ALERT_QUEUE_BACKLOG_THRESHOLD', 250),
         'queue_lag_threshold_seconds' => (int) env('OBS_ALERT_QUEUE_LAG_THRESHOLD', 60),
-        'queues' => array_values(array_filter(array_map(static function (string $queue): array {
-            $parts = array_map('trim', explode(':', $queue, 2));
+        'queues' => array_values(array_filter(
+            array_map(
+                static function (string $queue): array {
+                    $parts = array_map('trim', explode(':', $queue, 2));
 
-            return [
-                'connection' => $parts[0] !== '' ? $parts[0] : 'redis',
-                'name' => $parts[1] ?? 'default',
-            ];
-        }, preg_split('/[,\s]+/', (string) env('OBS_ALERT_QUEUE_MAP', 'redis:default'), -1, PREG_SPLIT_NO_EMPTY))), static fn ($queue) => ! empty($queue['name']))),
+                    return [
+                        'connection' => $parts[0] !== '' ? $parts[0] : 'redis',
+                        'name' => $parts[1] ?? 'default',
+                    ];
+                },
+                preg_split('/[,\s]+/', (string) env('OBS_ALERT_QUEUE_MAP', 'redis:default'), -1, PREG_SPLIT_NO_EMPTY) ?: []
+            ),
+            static fn (array $queue) => ! empty($queue['name'])
+        )),
         'disk_path' => env('OBS_ALERT_DISK_PATH', base_path()),
         'disk_free_ratio_threshold' => (float) env('OBS_ALERT_DISK_FREE_RATIO_THRESHOLD', 0.1),
         'redis_connection' => env('OBS_ALERT_REDIS_CONNECTION'),

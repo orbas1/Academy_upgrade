@@ -22,7 +22,7 @@ class CommunityDigestNotification extends Notification implements ShouldQueue
         public int $communityId,
         public string $frequency,
         public array $items,
-        public array $channels = ['mail', 'database']
+        public array $channels = [\App\Notifications\Channels\ResilientMailChannel::class, 'database']
     ) {
         $this->onQueue('notifications');
     }

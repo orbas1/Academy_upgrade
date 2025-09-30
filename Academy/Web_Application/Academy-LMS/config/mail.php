@@ -63,6 +63,16 @@ return [
             // ],
         ],
 
+        'resend' => [
+            'transport' => env('RESEND_MAIL_TRANSPORT', 'smtp'),
+            'host' => env('RESEND_SMTP_HOST', 'smtp.resend.com'),
+            'port' => env('RESEND_SMTP_PORT', 587),
+            'encryption' => env('RESEND_SMTP_ENCRYPTION', 'tls'),
+            'username' => env('RESEND_SMTP_USERNAME'),
+            'password' => env('RESEND_SMTP_PASSWORD'),
+            'timeout' => 10,
+        ],
+
         'sendmail' => [
             'transport' => 'sendmail',
             'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),

@@ -10,6 +10,7 @@ import 'package:academy_lms_app/features/communities/state/community_notifier.da
 import 'package:academy_lms_app/features/communities/state/community_presence_notifier.dart';
 import 'package:academy_lms_app/features/communities/ui/community_composer_sheet.dart';
 import 'package:academy_lms_app/features/communities/ui/community_feed_item_card.dart';
+import 'package:academy_lms_app/features/communities/ui/community_notification_preferences_sheet.dart';
 import 'package:academy_lms_app/features/communities/ui/community_presence_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -795,6 +796,26 @@ class _AboutTab extends StatelessWidget {
               ? 'Anyone can view posts. Join to participate in discussions and unlock premium modules.'
               : 'Posts are visible to members only. Join to see the latest updates and contribute.',
           style: theme.textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 24),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.notifications_active_outlined),
+            title: const Text('Notification preferences'),
+            subtitle: const Text('Choose how often you receive email, push, and digest updates.'),
+            onTap: () async {
+              await showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                builder: (ctx) {
+                  return CommunityNotificationPreferencesSheet(
+                    communityId: summary.id,
+                    communityName: summary.name,
+                  );
+                },
+              );
+            },
+          ),
         ),
       ],
     );

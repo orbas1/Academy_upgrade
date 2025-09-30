@@ -19,6 +19,10 @@ use App\Listeners\Community\QueueWelcomeMessage;
 use App\Listeners\Community\RecordPointsLedgerEntry;
 use App\Listeners\Community\SendWelcomeNotification;
 use App\Listeners\Community\SyncSubscriptionEntitlements;
+use App\Listeners\Notifications\RecordNotificationFailure;
+use App\Listeners\Notifications\RecordNotificationSent;
+use Illuminate\Notifications\Events\NotificationFailed;
+use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -58,6 +62,12 @@ class EventServiceProvider extends ServiceProvider
         ],
         PaymentSucceeded::class => [
             HandlePaymentSucceeded::class,
+        ],
+        NotificationSent::class => [
+            RecordNotificationSent::class,
+        ],
+        NotificationFailed::class => [
+            RecordNotificationFailure::class,
         ],
     ];
 

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\Admin\AdminSearchController;
 use App\Http\Controllers\Api\V1\Admin\CommunityModuleManifestController;
 use App\Http\Controllers\Api\V1\Admin\SecretController as AdminSecretController;
 use App\Http\Controllers\Api\V1\Billing\StripeWebhookController;
+use App\Http\Controllers\Webhooks\MessagingWebhookController;
 use App\Http\Controllers\Api\V1\Community\SearchAuthorizationController;
 use App\Http\Controllers\Api\V1\Community\CommunityFeedController;
 use App\Http\Controllers\Api\V1\Community\CommunityNotificationPreferenceController;
@@ -37,6 +38,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::post('/billing/stripe/webhook', StripeWebhookController::class)
     ->name('billing.stripe.webhook');
+
+Route::post('/messaging/webhooks/{provider}', [MessagingWebhookController::class, 'handle'])
+    ->name('messaging.webhook');
 
 Route::post('/login', [ApiController::class, 'login']);
 Route::post('/two-factor/verify', [ApiController::class, 'verifyTwoFactor']);
