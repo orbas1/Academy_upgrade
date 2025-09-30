@@ -402,6 +402,7 @@ class _FeedTab extends StatelessWidget {
                   communityId,
                   item.id,
                   reaction: reaction ?? 'like',
+                  clientReference: item.clientReference,
                 ),
                 onShowComments: () => _showComments(context, notifier, item),
                 onShowReactions: () => _showReactions(context, item),
