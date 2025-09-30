@@ -4,11 +4,13 @@ import 'package:academy_lms_app/screens/login.dart';
 import 'package:academy_lms_app/screens/splash.dart';
 import 'package:academy_lms_app/screens/tab_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/auth.dart';
 import 'providers/categories.dart';
+import 'providers/app_locale_notifier.dart';
 import 'providers/community_defaults.dart';
 import 'providers/courses.dart';
 import 'providers/misc_provider.dart';
@@ -26,6 +28,7 @@ import 'services/messaging/push_notification_router.dart';
 import 'features/communities/data/queue_health_repository.dart';
 import 'features/communities/state/community_notifier.dart';
 import 'features/communities/state/community_onboarding_notifier.dart';
+import 'l10n/app_localizations.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 final DeepLinkHandler deepLinkHandler = DeepLinkHandler(navigatorKey: appNavigatorKey);
@@ -33,6 +36,7 @@ final PushNotificationRouter pushNotificationRouter =
     PushNotificationRouter(deepLinkHandler: deepLinkHandler);
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   Logger.root.onRecord.listen((LogRecord rec) {
     debugPrint(
         '${rec.loggerName}>${rec.level.name}: ${rec.time}: ${rec.message}');
@@ -112,10 +116,23 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (ctx) => SearchResultsProvider(),
         ),
+        ChangeNotifierProvider(
+          create: (ctx) => AppLocaleNotifier(),
+        ),
       ],
-      child: Consumer<Auth>(
-        builder: (ctx, auth, _) => MaterialApp(
-          title: 'Academy LMS App',
+      child: Consumer2<Auth, AppLocaleNotifier>(
+        builder: (ctx, auth, localeNotifier, _) => MaterialApp(
+          onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+          locale: localeNotifier.locale,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: const [
+            AppLocalizationsDelegate(),
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          localeResolutionCallback: (locale, supportedLocales) =>
+              AppLocalizations.resolutionCallback(locale, supportedLocales),
           theme: ThemeData(
             fontFamily: 'Poppins',
             colorScheme: const ColorScheme.light(primary: kWhiteColor),

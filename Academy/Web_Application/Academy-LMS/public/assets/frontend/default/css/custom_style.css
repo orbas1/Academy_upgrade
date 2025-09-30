@@ -7350,3 +7350,82 @@ span[class*="fi-rr-"]:before {
 .editor-content *{
     max-width: 100%;
 }
+.skip-link {
+    position: absolute;
+    top: -1000px;
+    left: 0;
+    background-color: #1f2937;
+    color: #ffffff;
+    padding: 0.75rem 1.5rem;
+    z-index: 1050;
+    border-radius: 0 0 0.5rem 0.5rem;
+    transition: top 0.2s ease-in;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+    top: 0;
+    outline: 3px solid #6366f1;
+}
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    border: 0 !important;
+    white-space: nowrap !important;
+}
+
+.language-switcher {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.language-switcher__select {
+    min-width: 6.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(25, 35, 53, 0.2);
+    padding: 0.35rem 1.75rem 0.35rem 0.75rem;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%23192335' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.55rem center/0.85rem;
+    appearance: none;
+    background-color: #ffffff;
+    color: #192335;
+    font-size: 0.875rem;
+}
+
+.language-switcher__select:focus,
+.language-switcher__select:focus-visible {
+    outline: 3px solid rgba(88, 81, 239, 0.45);
+    outline-offset: 2px;
+}
+
+.language-switcher__container {
+    display: flex;
+    align-items: center;
+}
+
+body[data-direction='rtl'] {
+    direction: rtl;
+    text-align: right;
+}
+
+body[data-direction='rtl'] .header-area .primary-menu,
+body[data-direction='rtl'] .header-area .primary-menu ul {
+    direction: rtl;
+}
+
+body[data-direction='rtl'] .language-switcher__select {
+    padding: 0.35rem 0.75rem 0.35rem 1.75rem;
+    background-position: left 0.55rem center;
+}
+
+.focus-ring:focus,
+.focus-ring:focus-visible {
+    outline: 3px solid rgba(88, 81, 239, 0.6);
+    outline-offset: 2px;
+}

@@ -10,11 +10,13 @@ use App\Support\Authorization\RoleMatrix;
 use App\Support\Database\KeysetPaginator;
 use App\Support\Database\MySqlPerformanceConfigurator;
 use App\Support\Http\ApiResponseBuilder;
+use App\Support\Localization\LocaleManager;
 use App\Support\Security\TwoFactorAuthenticator;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 
@@ -69,6 +71,10 @@ class AppServiceProvider extends ServiceProvider
                 $app['config']->get('app.timezone', 'UTC')
             );
         });
+
+        $this->app->singleton(LocaleManager::class, function ($app) {
+            return new LocaleManager($app->make(ConfigRepository::class));
+        });
     }
 
     /**
@@ -80,5 +86,15 @@ class AppServiceProvider extends ServiceProvider
 
         KeysetPaginator::register();
         MySqlPerformanceConfigurator::applyFromConfig();
+
+        $localeManager = $this->app->make(LocaleManager::class);
+
+        View::composer('*', function ($view) use ($localeManager) {
+            $current = $localeManager->current();
+
+            $view->with('currentLocale', $current);
+            $view->with('supportedLocales', $localeManager->supported());
+            $view->with('localeDirection', $localeManager->direction($current['code']));
+        });
     }
 }
