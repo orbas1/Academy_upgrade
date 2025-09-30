@@ -9,6 +9,7 @@
                 v-for="item in items"
                 :key="item.route"
                 :to="{ name: item.route }"
+                :data-route-prefetch="item.route"
                 class="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-indigo-50 hover:text-indigo-600"
                 active-class="bg-indigo-100 text-indigo-700"
             >

@@ -31,4 +31,16 @@ class PaginatedResponse<T> {
   static PaginatedResponse<T> empty<T>() {
     return PaginatedResponse<T>(items: <T>[], hasMore: false);
   }
+
+  static PaginatedResponse<T> fromCache<T>({
+    required List<T> items,
+    String? nextCursor,
+    bool hasMore = false,
+  }) {
+    return PaginatedResponse<T>(
+      items: items,
+      nextCursor: nextCursor,
+      hasMore: hasMore,
+    );
+  }
 }

@@ -43,4 +43,20 @@ class CommunityFeedItem {
   final String visibility;
   final bool isLiked;
   final int? paywallTierId;
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'type': type,
+      'author_name': authorName,
+      'body': body,
+      'body_md': bodyMarkdown,
+      'created_at': createdAt.toIso8601String(),
+      'like_count': likeCount,
+      'comment_count': commentCount,
+      'visibility': visibility,
+      'liked': isLiked,
+      'paywall_tier_id': paywallTierId,
+    };
+  }
 }
