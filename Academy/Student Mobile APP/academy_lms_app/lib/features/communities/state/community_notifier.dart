@@ -57,9 +57,18 @@ class CommunityNotifier extends ChangeNotifier {
   String? get error => _error;
   CommunityMember? get membership => _membership;
   bool get isMember => _membership?.isActive ?? false;
+  bool get canModerate {
+    final role = _membership?.role;
+    if (role == null) {
+      return false;
+    }
+    return role == 'owner' || role == 'admin' || role == 'moderator';
+  }
   String? get queueWarning => _queueWarning;
 
   CommunityRepository get repository => _repository;
+
+  String feedFilterFor(int communityId) => _activeFeedFilters[communityId] ?? 'new';
 
   void updateAuthToken(String? token) {
     _repository.updateAuthToken(token);
@@ -188,6 +197,21 @@ class CommunityNotifier extends ChangeNotifier {
     }
   }
 
+  Future<void> changeFeedFilter(
+    int communityId, {
+    required String filter,
+    int pageSize = 20,
+  }) async {
+    if (_activeFeedFilters[communityId] == filter && _feed.isNotEmpty) {
+      return;
+    }
+    await refreshFeed(
+      communityId,
+      filter: filter,
+      pageSize: pageSize,
+    );
+  }
+
   bool canLoadMoreFeed(
     int communityId, {
     String? filter,
@@ -312,6 +336,47 @@ class CommunityNotifier extends ChangeNotifier {
         )
         .toList(growable: false);
     notifyListeners();
+  }
+
+  Future<void> reportPost(
+    int communityId,
+    int postId, {
+    required String reason,
+    List<String> evidenceUrls = const <String>[],
+  }) async {
+    await _ensureManifest();
+    await _repository.reportPost(
+      communityId,
+      postId,
+      reason: reason,
+      evidenceUrls: evidenceUrls,
+    );
+  }
+
+  Future<void> moderatePost(
+    int communityId,
+    int postId, {
+    required String action,
+    String? note,
+  }) async {
+    await _ensureManifest();
+    await _repository.moderatePost(
+      communityId,
+      postId,
+      action: action,
+      note: note,
+    );
+    if (action == 'hide' || action == 'remove') {
+      removePostFromFeed(postId);
+    }
+  }
+
+  void removePostFromFeed(int postId) {
+    final beforeLength = _feed.length;
+    _feed = _feed.where((item) => item.id != postId).toList(growable: false);
+    if (beforeLength != _feed.length) {
+      notifyListeners();
+    }
   }
 
   Future<void> loadLeaderboard(int communityId, {String period = 'weekly'}) async {

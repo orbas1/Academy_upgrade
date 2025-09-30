@@ -346,6 +346,68 @@ class CommunityApiService {
     }
   }
 
+  Future<void> flagPost(
+    int communityId,
+    int postId, {
+    required String reason,
+    List<String> evidenceUrls = const <String>[],
+  }) async {
+    final response = await _client.post(
+      _buildUri('/api/v1/communities/$communityId/posts/$postId/flags'),
+      headers: _headers(extra: const {'Content-Type': 'application/json'}),
+      body: jsonEncode(<String, dynamic>{
+        'reason': reason,
+        'source': 'mobile_app',
+        if (evidenceUrls.isNotEmpty) 'evidence_urls': evidenceUrls,
+      }),
+    );
+
+    if (response.statusCode >= 400) {
+      throw http.ClientException('Unable to submit moderation flag', response.request?.url);
+    }
+
+    if (response.body.isNotEmpty) {
+      final envelope = ApiEnvelope.fromJson(response.body);
+      if (!envelope.isSuccess) {
+        throw http.ClientException(
+          envelope.firstErrorMessage ?? 'Unable to submit moderation flag',
+          response.request?.url,
+        );
+      }
+    }
+  }
+
+  Future<void> moderatePost(
+    int communityId,
+    int postId, {
+    required String action,
+    String? note,
+  }) async {
+    final response = await _client.post(
+      _buildUri('/api/v1/communities/$communityId/moderation/actions'),
+      headers: _headers(extra: const {'Content-Type': 'application/json'}),
+      body: jsonEncode(<String, dynamic>{
+        'post_id': postId,
+        'action': action,
+        if (note != null && note.isNotEmpty) 'note': note,
+      }),
+    );
+
+    if (response.statusCode >= 400) {
+      throw http.ClientException('Unable to perform moderation action', response.request?.url);
+    }
+
+    if (response.body.isNotEmpty) {
+      final envelope = ApiEnvelope.fromJson(response.body);
+      if (!envelope.isSuccess) {
+        throw http.ClientException(
+          envelope.firstErrorMessage ?? 'Unable to perform moderation action',
+          response.request?.url,
+        );
+      }
+    }
+  }
+
   Future<List<CommunityLeaderboardEntry>> fetchLeaderboard(int communityId, {String period = 'weekly'}) async {
     final response = await _client.get(
       _buildUri('/api/v1/communities/$communityId/leaderboard', {'period': period}),

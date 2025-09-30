@@ -1,7 +1,9 @@
 import 'package:academy_lms_app/constants.dart' as constants;
 import 'package:academy_lms_app/features/communities/models/community_summary.dart';
 import 'package:academy_lms_app/features/communities/presentation/community_detail_screen.dart';
+import 'package:academy_lms_app/features/communities/presentation/community_onboarding_flow.dart';
 import 'package:academy_lms_app/features/communities/state/community_notifier.dart';
+import 'package:academy_lms_app/features/communities/state/community_onboarding_notifier.dart';
 import 'package:academy_lms_app/features/communities/ui/community_card.dart';
 import 'package:academy_lms_app/providers/auth.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +19,8 @@ class CommunityExplorerScreen extends StatefulWidget {
 class _CommunityExplorerScreenState extends State<CommunityExplorerScreen> {
   String? _lastError;
   bool _bootstrapped = false;
+  bool _onboardingCheckPending = false;
+  bool _onboardingShowing = false;
 
   @override
   void didChangeDependencies() {
@@ -25,12 +29,20 @@ class _CommunityExplorerScreenState extends State<CommunityExplorerScreen> {
       _bootstrapped = true;
       final notifier = context.read<CommunityNotifier>();
       notifier.refreshCommunities();
+      _scheduleOnboardingCheck();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isAuthenticated = context.watch<Auth>().token.isNotEmpty;
+
+    if (isAuthenticated) {
+      _scheduleOnboardingCheck();
+    } else {
+      _onboardingCheckPending = false;
+      _onboardingShowing = false;
+    }
 
     if (!isAuthenticated) {
       return const _CommunityAuthPrompt();
@@ -89,6 +101,73 @@ class _CommunityExplorerScreenState extends State<CommunityExplorerScreen> {
     Navigator.of(context).push(
       MaterialPageRoute<Widget>(
         builder: (context) => CommunityDetailScreen(summary: summary),
+      ),
+    );
+  }
+
+  void _scheduleOnboardingCheck() {
+    if (_onboardingCheckPending || _onboardingShowing) {
+      return;
+    }
+    _onboardingCheckPending = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _onboardingCheckPending = false;
+      if (!mounted) {
+        return;
+      }
+      _maybePresentOnboarding();
+    });
+  }
+
+  Future<void> _maybePresentOnboarding() async {
+    if (_onboardingShowing) {
+      return;
+    }
+
+    final auth = context.read<Auth>();
+    if (auth.token.isEmpty) {
+      return;
+    }
+
+    final onboardingNotifier = context.read<CommunityOnboardingNotifier>();
+    final communityNotifier = context.read<CommunityNotifier>();
+
+    await onboardingNotifier.initialize();
+    if (!mounted || !onboardingNotifier.shouldPrompt) {
+      return;
+    }
+
+    _onboardingShowing = true;
+    await onboardingNotifier.bootstrap(communityNotifier);
+    if (!mounted || !onboardingNotifier.shouldPrompt) {
+      _onboardingShowing = false;
+      return;
+    }
+
+    final completed = await showCommunityOnboardingFlow(
+      context,
+      communityNotifier: communityNotifier,
+      onboardingNotifier: onboardingNotifier,
+    );
+
+    _onboardingShowing = false;
+
+    if (!mounted || completed != true) {
+      return;
+    }
+
+    await communityNotifier.refreshCommunities(
+      filter: communityNotifier.currentCommunitiesFilter,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Welcome aboard! Your community feed was personalized.'),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }

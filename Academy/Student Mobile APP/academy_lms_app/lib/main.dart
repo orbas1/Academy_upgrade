@@ -25,6 +25,7 @@ import 'services/messaging/deep_link_handler.dart';
 import 'services/messaging/push_notification_router.dart';
 import 'features/communities/data/queue_health_repository.dart';
 import 'features/communities/state/community_notifier.dart';
+import 'features/communities/state/community_onboarding_notifier.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 final DeepLinkHandler deepLinkHandler = DeepLinkHandler(navigatorKey: appNavigatorKey);
@@ -67,6 +68,9 @@ class MyApp extends StatelessWidget {
             repo.updateAuthToken(auth.token);
             return repo;
           },
+        ),
+        ChangeNotifierProvider(
+          create: (ctx) => CommunityOnboardingNotifier(),
         ),
         ChangeNotifierProxyProvider2<Auth, QueueHealthRepository, CommunityNotifier>(
           create: (ctx) => CommunityNotifier(
