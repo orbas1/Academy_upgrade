@@ -316,6 +316,11 @@ class CommunityNotifier extends ChangeNotifier {
                     memberCount: summary.memberCount + 1,
                     isMember: true,
                     visibility: summary.visibility,
+                    onlineCount: summary.onlineCount,
+                    postsPerDay: summary.postsPerDay,
+                    commentsPerDay: summary.commentsPerDay,
+                    paywallEnabled: summary.paywallEnabled,
+                    lastActivityAt: summary.lastActivityAt,
                   )
                 : summary,
           )
@@ -344,6 +349,11 @@ class CommunityNotifier extends ChangeNotifier {
                     memberCount: summary.memberCount > 0 ? summary.memberCount - 1 : 0,
                     isMember: false,
                     visibility: summary.visibility,
+                    onlineCount: summary.onlineCount,
+                    postsPerDay: summary.postsPerDay,
+                    commentsPerDay: summary.commentsPerDay,
+                    paywallEnabled: summary.paywallEnabled,
+                    lastActivityAt: summary.lastActivityAt,
                   )
                 : summary,
           )

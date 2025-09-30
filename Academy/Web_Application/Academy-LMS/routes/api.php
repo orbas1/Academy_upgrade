@@ -105,6 +105,32 @@ Route::prefix('v1')->group(function () {
         Route::get('/admin/communities/modules', CommunityModuleManifestController::class)
             ->middleware('throttle:120,1');
 
+        Route::prefix('/admin/communities')
+            ->middleware('can:communities.manage')
+            ->group(function () {
+                Route::get('/', [\App\Http\Controllers\Api\V1\Admin\CommunityController::class, 'index'])
+                    ->middleware('throttle:240,1');
+                Route::post('/', [\App\Http\Controllers\Api\V1\Admin\CommunityController::class, 'store'])
+                    ->middleware('throttle:60,1');
+                Route::get('/{community}', [\App\Http\Controllers\Api\V1\Admin\CommunityController::class, 'show'])
+                    ->middleware('throttle:240,1');
+                Route::put('/{community}', [\App\Http\Controllers\Api\V1\Admin\CommunityController::class, 'update'])
+                    ->middleware('throttle:120,1');
+                Route::delete('/{community}', [\App\Http\Controllers\Api\V1\Admin\CommunityController::class, 'destroy'])
+                    ->middleware('throttle:60,1');
+
+                Route::get('/{community}/metrics', [\App\Http\Controllers\Api\V1\Admin\CommunityMetricsController::class, 'show'])
+                    ->middleware('throttle:240,1');
+                Route::get('/{community}/members', [\App\Http\Controllers\Api\V1\Admin\CommunityMemberController::class, 'index'])
+                    ->middleware('throttle:240,1');
+                Route::get('/{community}/feed', [\App\Http\Controllers\Api\V1\Admin\CommunityFeedController::class, 'index'])
+                    ->middleware('throttle:240,1');
+                Route::post('/{community}/posts', [\App\Http\Controllers\Api\V1\Admin\CommunityPostController::class, 'store'])
+                    ->middleware('throttle:60,1');
+                Route::post('/{community}/posts/{post}/reactions', [\App\Http\Controllers\Api\V1\Admin\CommunityReactionController::class, 'store'])
+                    ->middleware('throttle:120,1');
+            });
+
         Route::get('/ops/queue-health', QueueHealthSummaryController::class)
             ->middleware('throttle:120,1');
 

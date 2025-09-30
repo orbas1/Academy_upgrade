@@ -92,9 +92,25 @@ class CommunityCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   _InfoPill(
-                    icon: Icons.leaderboard_outlined,
-                    label: summary.isMember ? 'Member' : 'Discover',
+                    icon: Icons.podcasts_outlined,
+                    label: '${summary.onlineCount} online',
                   ),
+                  const SizedBox(width: 12),
+                  _InfoPill(
+                    icon: Icons.leaderboard_outlined,
+                    label: summary.postsPerDay > 0
+                        ? '${summary.postsPerDay} posts/day'
+                        : summary.isMember
+                            ? 'Member'
+                            : 'Discover',
+                  ),
+                  if (summary.paywallEnabled) ...[
+                    const SizedBox(width: 12),
+                    _InfoPill(
+                      icon: Icons.lock_outline,
+                      label: 'Premium access',
+                    ),
+                  ],
                   const Spacer(),
                   _CommunityActionButton(
                     isMember: isMember,
