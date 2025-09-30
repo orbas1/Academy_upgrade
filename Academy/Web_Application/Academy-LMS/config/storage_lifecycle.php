@@ -13,7 +13,7 @@ return [
     */
     'profiles' => [
         'media' => [
-            'bucket' => env('CLOUDFLARE_R2_BUCKET', env('AWS_BUCKET')),
+            'bucket' => env('CLOUDFLARE_R2_BUCKET', env('AWS_BUCKET', null)),
             'prefix' => env('STORAGE_MEDIA_PREFIX', 'media/'),
             'transitions' => [
                 [
@@ -61,7 +61,7 @@ return [
             ],
             'expiration_days' => env('STORAGE_AVATAR_EXPIRATION_DAYS', 365),
             'abort_multipart_days' => env('STORAGE_AVATAR_ABORT_DAYS', 3),
-            'kms_key' => env('CLOUDFLARE_R2_COMMUNITY_AVATARS_KMS_KEY', env('AWS_COMMUNITY_AVATARS_KMS_KEY')),
+            'kms_key' => env('CLOUDFLARE_R2_COMMUNITY_AVATARS_KMS_KEY', env('AWS_COMMUNITY_AVATARS_KMS_KEY', null)),
         ],
 
         'banners' => [
@@ -79,7 +79,7 @@ return [
             ],
             'expiration_days' => env('STORAGE_BANNER_EXPIRATION_DAYS', 1095),
             'abort_multipart_days' => env('STORAGE_BANNER_ABORT_DAYS', 7),
-            'kms_key' => env('CLOUDFLARE_R2_COMMUNITY_BANNERS_KMS_KEY', env('AWS_COMMUNITY_BANNERS_KMS_KEY')),
+            'kms_key' => env('CLOUDFLARE_R2_COMMUNITY_BANNERS_KMS_KEY', env('AWS_COMMUNITY_BANNERS_KMS_KEY', null)),
         ],
 
         'audit_logs' => [
@@ -93,7 +93,7 @@ return [
             ],
             'expiration_days' => env('STORAGE_AUDIT_EXPIRATION_DAYS', 3650),
             'abort_multipart_days' => env('STORAGE_AUDIT_ABORT_DAYS', 1),
-            'kms_key' => env('CLOUDFLARE_R2_AUDIT_LOGS_KMS_KEY', env('AWS_AUDIT_LOGS_KMS_KEY')),
+            'kms_key' => env('CLOUDFLARE_R2_AUDIT_LOGS_KMS_KEY', env('AWS_AUDIT_LOGS_KMS_KEY', null)),
             'object_lock' => [
                 'enabled' => env('STORAGE_AUDIT_OBJECT_LOCK_ENABLED', true),
                 'mode' => env('STORAGE_AUDIT_OBJECT_LOCK_MODE', 'COMPLIANCE'),

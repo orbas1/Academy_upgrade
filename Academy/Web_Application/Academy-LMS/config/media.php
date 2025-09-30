@@ -3,7 +3,7 @@
 return [
     'default_disk' => env('MEDIA_DISK', env('FILESYSTEM_DISK', 'public')),
 
-    'cdn_url' => env('MEDIA_CDN_URL'),
+    'cdn_url' => env('MEDIA_CDN_URL', null),
 
     'image_breakpoints' => array_values(array_filter(array_map(
         static function (string $value): int {

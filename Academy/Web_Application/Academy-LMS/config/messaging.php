@@ -70,12 +70,12 @@ return [
         'providers' => [
             'fcm' => [
                 'endpoint' => env('FCM_REST_ENDPOINT', 'https://fcm.googleapis.com/v1/projects/example/messages:send'),
-                'token' => env('FCM_REST_TOKEN'),
+                'token' => env('FCM_REST_TOKEN', null),
                 'timeout' => 5,
             ],
             'resend' => [
-                'endpoint' => env('RESEND_PUSH_ENDPOINT'),
-                'token' => env('RESEND_PUSH_TOKEN'),
+                'endpoint' => env('RESEND_PUSH_ENDPOINT', null),
+                'token' => env('RESEND_PUSH_TOKEN', null),
                 'timeout' => 5,
             ],
         ],

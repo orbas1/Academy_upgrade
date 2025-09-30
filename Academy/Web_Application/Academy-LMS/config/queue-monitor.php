@@ -3,7 +3,7 @@
 return [
     'connection' => env('QUEUE_MONITOR_REDIS_CONNECTION', env('QUEUE_REDIS_CONNECTION', 'horizon')),
 
-    'redis_prefix' => env('QUEUE_MONITOR_REDIS_PREFIX'),
+    'redis_prefix' => env('QUEUE_MONITOR_REDIS_PREFIX', null),
 
     'default_thresholds' => [
         'pending_jobs' => (int) env('QUEUE_MONITOR_DEFAULT_PENDING_THRESHOLD', 150),

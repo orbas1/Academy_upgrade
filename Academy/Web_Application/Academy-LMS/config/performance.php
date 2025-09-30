@@ -2,8 +2,8 @@
 
 return [
     'query_cache' => [
-        'enabled' => env('PERFORMANCE_QUERY_CACHE_ENABLED', env('APP_ENV') !== 'local'),
-        'store' => env('PERFORMANCE_QUERY_CACHE_STORE'),
+        'enabled' => env('PERFORMANCE_QUERY_CACHE_ENABLED', env('APP_ENV', 'production') !== 'local'),
+        'store' => env('PERFORMANCE_QUERY_CACHE_STORE', null),
         'default_ttl' => (int) env('PERFORMANCE_QUERY_CACHE_TTL', 300),
         'allow_on_debug' => (bool) env('PERFORMANCE_QUERY_CACHE_ALLOW_DEBUG', false),
     ],
@@ -25,7 +25,7 @@ return [
     ],
 
     'warmup' => [
-        'enabled' => env('PERFORMANCE_CACHE_WARM_ENABLED', env('APP_ENV') !== 'local'),
+        'enabled' => env('PERFORMANCE_CACHE_WARM_ENABLED', env('APP_ENV', 'production') !== 'local'),
         'schedule' => env('PERFORMANCE_CACHE_WARM_SCHEDULE', '02:00'),
         'warmers' => [
             App\Support\Caching\Warmers\NavigationCacheWarmer::class,

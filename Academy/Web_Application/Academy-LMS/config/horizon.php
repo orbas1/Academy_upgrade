@@ -10,7 +10,7 @@ $webhookQueue = env('QUEUE_WEBHOOKS', 'webhooks');
 $searchQueue = env('QUEUE_SEARCH', 'search-index');
 
 return [
-    'domain' => env('HORIZON_DOMAIN'),
+    'domain' => env('HORIZON_DOMAIN', null),
 
     'path' => env('HORIZON_PATH', 'horizon'),
 

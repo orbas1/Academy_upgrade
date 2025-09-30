@@ -39,10 +39,10 @@ return [
             'host' => env('MAIL_HOST', 'smtp.mailgun.org'),
             'port' => env('MAIL_PORT', 587),
             'encryption' => env('MAIL_ENCRYPTION', 'tls'),
-            'username' => env('MAIL_USERNAME'),
-            'password' => env('MAIL_PASSWORD'),
+            'username' => env('MAIL_USERNAME', null),
+            'password' => env('MAIL_PASSWORD', null),
             'timeout' => null,
-            'local_domain' => env('MAIL_EHLO_DOMAIN'),
+            'local_domain' => env('MAIL_EHLO_DOMAIN', null),
         ],
 
         'ses' => [
@@ -68,8 +68,8 @@ return [
             'host' => env('RESEND_SMTP_HOST', 'smtp.resend.com'),
             'port' => env('RESEND_SMTP_PORT', 587),
             'encryption' => env('RESEND_SMTP_ENCRYPTION', 'tls'),
-            'username' => env('RESEND_SMTP_USERNAME'),
-            'password' => env('RESEND_SMTP_PASSWORD'),
+            'username' => env('RESEND_SMTP_USERNAME', null),
+            'password' => env('RESEND_SMTP_PASSWORD', null),
             'timeout' => 10,
         ],
 
@@ -80,7 +80,7 @@ return [
 
         'log' => [
             'transport' => 'log',
-            'channel' => env('MAIL_LOG_CHANNEL'),
+            'channel' => env('MAIL_LOG_CHANNEL', null),
         ],
 
         'array' => [
@@ -112,7 +112,7 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
-    'horizon_notifications_to' => env('MAIL_HORIZON_NOTIFICATIONS_TO'),
+    'horizon_notifications_to' => env('MAIL_HORIZON_NOTIFICATIONS_TO', null),
 
     /*
     |--------------------------------------------------------------------------

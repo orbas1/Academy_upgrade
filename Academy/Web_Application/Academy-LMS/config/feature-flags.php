@@ -15,7 +15,7 @@ if (file_exists($filePath)) {
 }
 
 $envOverrides = [];
-$envJson = env('APP_FEATURE_FLAGS');
+$envJson = env('APP_FEATURE_FLAGS', '');
 if ($envJson) {
     $decoded = json_decode($envJson, true);
     if (is_array($decoded)) {
