@@ -1,0 +1,40 @@
+[Unit]
+Description=Academy Horizon Supervisor (%i)
+PartOf=horizon.target
+After=network.target redis.service mysql.service
+Requires=redis.service
+ConditionPathExists=/var/www/academy/current/artisan
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/academy/current
+Environment=APP_ENV=production
+Environment=APP_NAME=Academy
+Environment=QUEUE_CONNECTION=horizon
+Environment=HORIZON_SUPERVISOR=%i
+Environment=HORIZON_QUEUE=%i
+Environment=HORIZON_BALANCE=auto
+Environment=HORIZON_AUTO_SCALING_STRATEGY=time
+Environment=HORIZON_MAX_TIME=0
+Environment=HORIZON_MAX_JOBS=0
+Environment=HORIZON_MAX_PROCESSES=4
+Environment=HORIZON_MIN_PROCESSES=1
+Environment=HORIZON_WORKER_TIMEOUT=120
+Environment=HORIZON_WORKER_MEMORY=512
+Environment=HORIZON_BALANCE_COOLDOWN=3
+Environment=HORIZON_BALANCE_MAX_SHIFT=1
+EnvironmentFile=-/etc/academy/horizon/%i.env
+ExecStart=/usr/bin/php artisan horizon:supervisor %i horizon --queue=$HORIZON_QUEUE --balance=$HORIZON_BALANCE --max-time=$HORIZON_MAX_TIME --max-jobs=$HORIZON_MAX_JOBS --max-processes=$HORIZON_MAX_PROCESSES --min-processes=$HORIZON_MIN_PROCESSES --timeout=$HORIZON_WORKER_TIMEOUT --memory=$HORIZON_WORKER_MEMORY --auto-scaling-strategy=$HORIZON_AUTO_SCALING_STRATEGY --balance-cooldown=$HORIZON_BALANCE_COOLDOWN --balance-max-shift=$HORIZON_BALANCE_MAX_SHIFT
+ExecReload=/bin/kill -s TERM $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=90
+LimitNOFILE=65536
+Slice=queue.slice
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=horizon.target

@@ -89,10 +89,58 @@ jobs:
       - name: Larastan Domain Analysis
         run: vendor/bin/larastan analyse --level=6 app database routes
 
+  backend_dusk:
+    name: Backend Browser E2E (Dusk)
+    runs-on: ubuntu-latest
+    needs: backend_tests
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY_BACKEND }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, sqlite3
+          ini-values: "memory_limit=1G"
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ env.PHP_VERSION }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-${{ env.PHP_VERSION }}-
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Prepare Dusk environment
+        run: |
+          cp .env.dusk.ci .env
+          touch /tmp/academy_dusk.sqlite
+          php artisan key:generate --env=dusk.ci --force
+          php artisan migrate --env=dusk.ci --force
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Ensure ChromeDriver matches Chrome
+        run: php artisan dusk:chrome-driver --detect
+      - name: Run Laravel Dusk suite
+        env:
+          APP_ENV: dusk.ci
+        run: php artisan dusk --env=dusk.ci --without-tty
+      - name: Upload Dusk artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dusk-artifacts
+          path: |
+            ${{ env.WORKING_DIRECTORY_BACKEND }}/tests/Browser/screenshots
+            ${{ env.WORKING_DIRECTORY_BACKEND }}/tests/Browser/console
+
   frontend_build:
     name: Frontend Build Verification
     runs-on: ubuntu-latest
-    needs: backend_tests
+    needs: backend_dusk
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIRECTORY_BACKEND }}
@@ -253,3 +301,42 @@ jobs:
       - name: Await operator approval
         run: |
           echo "All quality gates passed. Approve deployment from the GitHub environment UI to continue rollout."
+
+  deploy_prod:
+    name: Production Deploy Packaging
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    needs: deploy_gate
+    environment:
+      name: production
+      url: https://academy.example
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            ${{ env.WORKING_DIRECTORY_BACKEND }}/package-lock.json
+      - name: Set up Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - name: Prepare deploy script
+        run: chmod +x tools/deploy/deploy.sh
+      - name: Build release bundle
+        env:
+          APP_ENV: production
+        run: ./tools/deploy/deploy.sh --env=production --output build/releases
+      - name: Upload release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-release
+          path: build/releases

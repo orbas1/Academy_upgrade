@@ -37,6 +37,12 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->runInBackground();
 
+        $schedule->command('queues:autoscale')
+            ->everyMinute()
+            ->environments(['staging', 'production'])
+            ->onOneServer()
+            ->withoutOverlapping();
+
         $schedule->command('observability:monitor-health')
             ->everyFiveMinutes()
             ->environments(['staging', 'production'])

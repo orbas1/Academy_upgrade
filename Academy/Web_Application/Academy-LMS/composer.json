@@ -32,6 +32,7 @@
     "require-dev": {
         "larastan/larastan": "^2.9",
         "laravel/breeze": "^2.0",
+        "laravel/dusk": "^8.3",
         "laravel/pint": "^1.0",
         "laravel/sail": "^1.18",
         "mockery/mockery": "^1.4.4",
