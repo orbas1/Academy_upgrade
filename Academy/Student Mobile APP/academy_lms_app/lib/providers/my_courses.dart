@@ -1,9 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/security/secure_credential_store.dart';
+import '../services/security/auth_session_manager.dart';
 import '../constants.dart';
 import '../models/lesson.dart';
 import '../models/my_course.dart';
@@ -32,7 +31,7 @@ class MyCourses with ChangeNotifier {
   }
 
   Future<void> fetchMyCourses() async {
-    final authToken = await SecureCredentialStore.instance.requireAccessToken();
+    final authToken = await AuthSessionManager.instance.requireAccessToken();
     var url = '$baseUrl/api/my_courses';
     try {
       final response = await http.get(Uri.parse(url), headers: {
@@ -82,7 +81,7 @@ class MyCourses with ChangeNotifier {
   }
 
   Future<void> fetchCourseSections(int courseId) async {
-    final authToken = await SecureCredentialStore.instance.requireAccessToken();
+    final authToken = await AuthSessionManager.instance.requireAccessToken();
     var url = '$baseUrl/api/sections?course_id=$courseId';
 
     try {
@@ -141,7 +140,7 @@ class MyCourses with ChangeNotifier {
   }
 
   Future<void> toggleLessonCompleted(int lessonId, int progress) async {
-    final token = await SecureCredentialStore.instance.requireAccessToken();
+    final token = await AuthSessionManager.instance.requireAccessToken();
     var url = '$baseUrl/api/save_course_progress?lesson_id=$lessonId';
     // print(url);
     try {
@@ -174,7 +173,7 @@ class MyCourses with ChangeNotifier {
   }
 
   Future<void> getEnrolled(int courseId) async {
-    final authToken = await SecureCredentialStore.instance.requireAccessToken();
+    final authToken = await AuthSessionManager.instance.requireAccessToken();
     var url =
         '$baseUrl/api/enroll_free_course?course_id=$courseId&auth_token=$authToken';
     try {

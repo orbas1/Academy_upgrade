@@ -5,7 +5,8 @@ import 'package:academy_lms_app/screens/forget_password_notice.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
-import '../services/security/secure_credential_store.dart';
+
+import '../services/security/auth_session_manager.dart';
 
 class ForgetPasswordScreen extends StatefulWidget {
   const ForgetPasswordScreen({super.key});
@@ -72,7 +73,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
     setState(() {
       _isLoading = true;
     });
-    final tokens = await SecureCredentialStore.instance.readAccessToken();
+    final tokens = await AuthSessionManager.instance.getValidAccessToken();
 
     var urls = "$baseUrl/api/forgot_password";
     try {

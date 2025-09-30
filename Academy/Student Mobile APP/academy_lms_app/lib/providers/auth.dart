@@ -7,11 +7,19 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/security/auth_session_manager.dart';
 import '../services/security/secure_credential_store.dart';
 import '../constants.dart';
 import '../models/user.dart';
 
 class Auth with ChangeNotifier {
+  Auth({AuthSessionManager? sessionManager})
+      : _sessionManager = sessionManager ?? AuthSessionManager.instance {
+    _token = _sessionManager.currentSession?.accessToken;
+    _sessionManager.addListener(_handleSessionChanged);
+  }
+
+  final AuthSessionManager _sessionManager;
   String? _token;
   String? _userId;
   // ignore: prefer_final_fields
@@ -33,7 +41,7 @@ class Auth with ChangeNotifier {
   }
 
   Future<String?> synchronizeToken() async {
-    _token = await SecureCredentialStore.instance.readAccessToken();
+    _token = await _sessionManager.getValidAccessToken();
     return _token;
   }
 
@@ -47,6 +55,7 @@ class Auth with ChangeNotifier {
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
+    await _sessionManager.clearSession();
     await SecureCredentialStore.instance.clearAll();
 
     prefs.remove('user_name');
@@ -56,7 +65,7 @@ class Auth with ChangeNotifier {
 
   Future<void> updateUserPassword(String currentPassword, String newPassword,
       String confirmPassword) async {
-    final authToken = await SecureCredentialStore.instance.requireAccessToken();
+    final authToken = await _sessionManager.requireAccessToken();
     const url = '$baseUrl/api/update_password';
     try {
       final response = await http.post(
@@ -82,9 +91,9 @@ class Auth with ChangeNotifier {
     }
   }
 
-Future<void> updateUserData(User user) async {
-  final prefs = await SharedPreferences.getInstance();
-  final token = await SecureCredentialStore.instance.requireAccessToken();
+  Future<void> updateUserData(User user) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = await _sessionManager.requireAccessToken();
   const url = '$baseUrl/api/update_userdata';
 
   try {
@@ -134,7 +143,7 @@ Future<void> updateUserData(User user) async {
     print('Error updating user data: $error');
     rethrow;
   }
-}
+  }
 
   // Future<void> updateUserData(User user) async {
   //   final prefs = await SharedPreferences.getInstance();
@@ -197,4 +206,19 @@ Future<void> updateUserData(User user) async {
   //     rethrow;
   //   }
   // }
+
+  void _handleSessionChanged() {
+    _sessionManager.getValidAccessToken().then((value) {
+      if (_token != value) {
+        _token = value;
+        notifyListeners();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _sessionManager.removeListener(_handleSessionChanged);
+    super.dispose();
+  }
 }

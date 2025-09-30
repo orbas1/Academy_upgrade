@@ -8,6 +8,8 @@ import 'package:academy_lms_app/screens/email_verification_notice.dart';
 import 'package:academy_lms_app/screens/forget_password.dart';
 import 'package:academy_lms_app/screens/signup.dart';
 import 'package:academy_lms_app/screens/tab_screen.dart';
+import 'package:academy_lms_app/services/security/auth_session.dart';
+import 'package:academy_lms_app/services/security/auth_session_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -15,7 +17,6 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 
-import '../services/security/secure_credential_store.dart';
 import '../providers/auth.dart';
 class LoginScreen extends StatefulWidget {
   static const routeName = '/login';
@@ -112,8 +113,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (emailVerifiedAt != null) {
         // If email is verified, proceed with login
-        await SecureCredentialStore.instance
-            .persistAccessToken(data["token"] as String);
+        final accessToken = (data['access_token'] ?? data['token']) as String?;
+        if (accessToken == null || accessToken.isEmpty) {
+          throw const HttpException('Authentication response missing token');
+        }
+
+        final refreshToken = data['refresh_token'] as String?;
+        final expiresIn = data['expires_in'] ?? data['token_expires_in'];
+        DateTime? accessExpiry;
+        if (expiresIn is int) {
+          accessExpiry = DateTime.now().toUtc().add(Duration(seconds: expiresIn));
+        } else if (expiresIn is String) {
+          accessExpiry = DateTime.tryParse(expiresIn)?.toUtc();
+        }
+
+        await AuthSessionManager.instance.persistSession(
+          AuthSession(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            accessTokenExpiresAt: accessExpiry,
+          ),
+        );
+
         setState(() {
           sharedPreferences!.setString("user", jsonEncode(user));
           sharedPreferences!
@@ -121,8 +142,8 @@ class _LoginScreenState extends State<LoginScreen> {
           sharedPreferences!
               .setString("password", _passwordController.text.toString());
         });
-        token = await SecureCredentialStore.instance.readAccessToken();
-        Provider.of<Auth>(context, listen: false).setToken(token);
+        token = await AuthSessionManager.instance.getValidAccessToken();
+        await Provider.of<Auth>(context, listen: false).synchronizeToken();
         navigator.pushReplacement(
           MaterialPageRoute(
             builder: (context) => const TabsScreen(
@@ -161,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
   isLogin() async {
     var navigator = Navigator.of(context);
     sharedPreferences = await SharedPreferences.getInstance();
-    token = await SecureCredentialStore.instance.readAccessToken();
+    token = await AuthSessionManager.instance.getValidAccessToken();
     try {
       if (token == null) {
         // print("Token is Null");

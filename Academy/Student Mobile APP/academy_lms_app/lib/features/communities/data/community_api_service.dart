@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:academy_lms_app/constants.dart' as constants;
 import 'package:academy_lms_app/services/api_envelope.dart';
+import 'package:academy_lms_app/services/security/auth_session_manager.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/community_comment.dart';
@@ -21,13 +22,15 @@ import '../models/subscription_status.dart';
 import 'paginated_response.dart';
 
 class CommunityApiService {
-  CommunityApiService({http.Client? client, String? authToken})
+  CommunityApiService({http.Client? client, String? authToken, AuthSessionManager? sessionManager})
       : _client = client ?? http.Client(),
-        _authToken = authToken;
+        _authToken = authToken,
+        _sessionManager = sessionManager ?? AuthSessionManager.instance;
 
   final http.Client _client;
   String? _authToken;
   String? _baseUrlOverride;
+  final AuthSessionManager _sessionManager;
 
   void updateAuthToken(String? token) {
     if (token == null || token.isEmpty) {
@@ -69,16 +72,18 @@ class CommunityApiService {
     int pageSize = 20,
     String? cursor,
   }) async {
-    final response = await _client.get(
-      _buildUri(
-        '/api/v1/communities',
-        {
-          'filter': filter,
-          'page_size': pageSize.toString(),
-          'after': cursor,
-        },
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri(
+          '/api/v1/communities',
+          {
+            'filter': filter,
+            'page_size': pageSize.toString(),
+            'after': cursor,
+          },
+        ),
+        headers: headers,
       ),
-      headers: _headers(),
     );
 
     if (response.statusCode != 200) {
@@ -113,16 +118,18 @@ class CommunityApiService {
     String? cursor,
     int pageSize = 20,
   }) async {
-    final response = await _client.get(
-      _buildUri(
-        '/api/v1/communities/$communityId/feed',
-        {
-          'filter': filter,
-          'after': cursor,
-          'page_size': pageSize.toString(),
-        },
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri(
+          '/api/v1/communities/$communityId/feed',
+          {
+            'filter': filter,
+            'after': cursor,
+            'page_size': pageSize.toString(),
+          },
+        ),
+        headers: headers,
       ),
-      headers: _headers(),
     );
 
     if (response.statusCode != 200) {
@@ -157,15 +164,17 @@ class CommunityApiService {
     String? cursor,
     int pageSize = 20,
   }) async {
-    final response = await _client.get(
-      _buildUri(
-        '/api/v1/communities/$communityId/posts/$postId/comments',
-        {
-          'after': cursor,
-          'page_size': pageSize.toString(),
-        },
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri(
+          '/api/v1/communities/$communityId/posts/$postId/comments',
+          {
+            'after': cursor,
+            'page_size': pageSize.toString(),
+          },
+        ),
+        headers: headers,
       ),
-      headers: _headers(),
     );
 
     if (response.statusCode != 200) {
@@ -195,9 +204,11 @@ class CommunityApiService {
   }
 
   Future<CommunityMember?> fetchMembership(int communityId) async {
-    final response = await _client.get(
-      _buildUri('/api/v1/communities/$communityId/membership'),
-      headers: _headers(),
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri('/api/v1/communities/$communityId/membership'),
+        headers: headers,
+      ),
     );
 
     if (response.statusCode == 404) {
@@ -233,9 +244,11 @@ class CommunityApiService {
   }
 
   Future<CommunityMember> joinCommunity(int communityId) async {
-    final response = await _client.post(
-      _buildUri('/api/v1/communities/$communityId/members'),
-      headers: _headers(),
+    final response = await _sendWithAuth(
+      (headers) => _client.post(
+        _buildUri('/api/v1/communities/$communityId/members'),
+        headers: headers,
+      ),
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
@@ -257,9 +270,11 @@ class CommunityApiService {
   }
 
   Future<void> leaveCommunity(int communityId) async {
-    final response = await _client.delete(
-      _buildUri('/api/v1/communities/$communityId/membership'),
-      headers: _headers(),
+    final response = await _sendWithAuth(
+      (headers) => _client.delete(
+        _buildUri('/api/v1/communities/$communityId/membership'),
+        headers: headers,
+      ),
     );
 
     if (response.statusCode != 204) {
@@ -273,14 +288,16 @@ class CommunityApiService {
     String visibility = 'community',
     int? paywallTierId,
   }) async {
-    final response = await _client.post(
-      _buildUri('/api/v1/communities/$communityId/posts'),
-      headers: _headers(extra: const {'Content-Type': 'application/json'}),
-      body: jsonEncode(<String, dynamic>{
-        'body_md': bodyMarkdown,
-        'visibility': visibility,
-        if (paywallTierId != null) 'paywall_tier_id': paywallTierId,
-      }),
+    final response = await _sendWithAuth(
+      (headers) => _client.post(
+        _buildUri('/api/v1/communities/$communityId/posts'),
+        headers: _mergeHeaders(headers, const {'Content-Type': 'application/json'}),
+        body: jsonEncode(<String, dynamic>{
+          'body_md': bodyMarkdown,
+          'visibility': visibility,
+          if (paywallTierId != null) 'paywall_tier_id': paywallTierId,
+        }),
+      ),
     );
 
     if (response.statusCode != 201) {
@@ -307,13 +324,15 @@ class CommunityApiService {
     required String bodyMarkdown,
     int? parentId,
   }) async {
-    final response = await _client.post(
-      _buildUri('/api/v1/communities/$communityId/posts/$postId/comments'),
-      headers: _headers(extra: const {'Content-Type': 'application/json'}),
-      body: jsonEncode(<String, dynamic>{
-        'body_md': bodyMarkdown,
-        if (parentId != null) 'parent_id': parentId,
-      }),
+    final response = await _sendWithAuth(
+      (headers) => _client.post(
+        _buildUri('/api/v1/communities/$communityId/posts/$postId/comments'),
+        headers: _mergeHeaders(headers, const {'Content-Type': 'application/json'}),
+        body: jsonEncode(<String, dynamic>{
+          'body_md': bodyMarkdown,
+          if (parentId != null) 'parent_id': parentId,
+        }),
+      ),
     );
 
     if (response.statusCode != 201) {
@@ -335,10 +354,12 @@ class CommunityApiService {
   }
 
   Future<void> togglePostReaction(int communityId, int postId, {String reaction = 'like'}) async {
-    final response = await _client.post(
-      _buildUri('/api/v1/communities/$communityId/posts/$postId/reactions'),
-      headers: _headers(extra: const {'Content-Type': 'application/json'}),
-      body: jsonEncode({'reaction': reaction}),
+    final response = await _sendWithAuth(
+      (headers) => _client.post(
+        _buildUri('/api/v1/communities/$communityId/posts/$postId/reactions'),
+        headers: _mergeHeaders(headers, const {'Content-Type': 'application/json'}),
+        body: jsonEncode({'reaction': reaction}),
+      ),
     );
 
     if (response.statusCode != 200 && response.statusCode != 204) {
@@ -352,14 +373,16 @@ class CommunityApiService {
     required String reason,
     List<String> evidenceUrls = const <String>[],
   }) async {
-    final response = await _client.post(
-      _buildUri('/api/v1/communities/$communityId/posts/$postId/flags'),
-      headers: _headers(extra: const {'Content-Type': 'application/json'}),
-      body: jsonEncode(<String, dynamic>{
-        'reason': reason,
-        'source': 'mobile_app',
-        if (evidenceUrls.isNotEmpty) 'evidence_urls': evidenceUrls,
-      }),
+    final response = await _sendWithAuth(
+      (headers) => _client.post(
+        _buildUri('/api/v1/communities/$communityId/posts/$postId/flags'),
+        headers: _mergeHeaders(headers, const {'Content-Type': 'application/json'}),
+        body: jsonEncode(<String, dynamic>{
+          'reason': reason,
+          'source': 'mobile_app',
+          if (evidenceUrls.isNotEmpty) 'evidence_urls': evidenceUrls,
+        }),
+      ),
     );
 
     if (response.statusCode >= 400) {
@@ -383,14 +406,16 @@ class CommunityApiService {
     required String action,
     String? note,
   }) async {
-    final response = await _client.post(
-      _buildUri('/api/v1/communities/$communityId/moderation/actions'),
-      headers: _headers(extra: const {'Content-Type': 'application/json'}),
-      body: jsonEncode(<String, dynamic>{
-        'post_id': postId,
-        'action': action,
-        if (note != null && note.isNotEmpty) 'note': note,
-      }),
+    final response = await _sendWithAuth(
+      (headers) => _client.post(
+        _buildUri('/api/v1/communities/$communityId/moderation/actions'),
+        headers: _mergeHeaders(headers, const {'Content-Type': 'application/json'}),
+        body: jsonEncode(<String, dynamic>{
+          'post_id': postId,
+          'action': action,
+          if (note != null && note.isNotEmpty) 'note': note,
+        }),
+      ),
     );
 
     if (response.statusCode >= 400) {
@@ -409,9 +434,11 @@ class CommunityApiService {
   }
 
   Future<List<CommunityLeaderboardEntry>> fetchLeaderboard(int communityId, {String period = 'weekly'}) async {
-    final response = await _client.get(
-      _buildUri('/api/v1/communities/$communityId/leaderboard', {'period': period}),
-      headers: _headers(),
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri('/api/v1/communities/$communityId/leaderboard', {'period': period}),
+        headers: headers,
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -440,15 +467,17 @@ class CommunityApiService {
     String? cursor,
     int pageSize = 20,
   }) async {
-    final response = await _client.get(
-      _buildUri(
-        '/api/v1/communities/$communityId/notifications',
-        {
-          'after': cursor,
-          'page_size': pageSize.toString(),
-        },
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri(
+          '/api/v1/communities/$communityId/notifications',
+          {
+            'after': cursor,
+            'page_size': pageSize.toString(),
+          },
+        ),
+        headers: headers,
       ),
-      headers: _headers(),
     );
 
     if (response.statusCode != 200) {
@@ -478,9 +507,11 @@ class CommunityApiService {
   }
 
   Future<CommunityNotificationPreferences> fetchNotificationPreferences(int communityId) async {
-    final response = await _client.get(
-      _buildUri('/api/v1/communities/$communityId/notification-preferences'),
-      headers: _headers(),
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri('/api/v1/communities/$communityId/notification-preferences'),
+        headers: headers,
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -505,10 +536,12 @@ class CommunityApiService {
     int communityId, {
     required CommunityNotificationPreferences preferences,
   }) async {
-    final response = await _client.put(
-      _buildUri('/api/v1/communities/$communityId/notification-preferences'),
-      headers: _headers(extra: const {'Content-Type': 'application/json'}),
-      body: jsonEncode(preferences.toJson()),
+    final response = await _sendWithAuth(
+      (headers) => _client.put(
+        _buildUri('/api/v1/communities/$communityId/notification-preferences'),
+        headers: _mergeHeaders(headers, const {'Content-Type': 'application/json'}),
+        body: jsonEncode(preferences.toJson()),
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -529,9 +562,11 @@ class CommunityApiService {
   }
 
   Future<void> resetNotificationPreferences(int communityId) async {
-    final response = await _client.delete(
-      _buildUri('/api/v1/communities/$communityId/notification-preferences'),
-      headers: _headers(),
+    final response = await _sendWithAuth(
+      (headers) => _client.delete(
+        _buildUri('/api/v1/communities/$communityId/notification-preferences'),
+        headers: headers,
+      ),
     );
 
     if (response.statusCode != 204) {
@@ -540,9 +575,11 @@ class CommunityApiService {
   }
 
   Future<PointsSummary> fetchPointsSummary(int communityId) async {
-    final response = await _client.get(
-      _buildUri('/api/v1/communities/$communityId/points/summary'),
-      headers: _headers(),
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri('/api/v1/communities/$communityId/points/summary'),
+        headers: headers,
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -567,15 +604,17 @@ class CommunityApiService {
     String? cursor,
     int pageSize = 20,
   }) async {
-    final response = await _client.get(
-      _buildUri(
-        '/api/v1/communities/$communityId/points/history',
-        {
-          'after': cursor,
-          'page_size': pageSize.toString(),
-        },
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri(
+          '/api/v1/communities/$communityId/points/history',
+          {
+            'after': cursor,
+            'page_size': pageSize.toString(),
+          },
+        ),
+        headers: headers,
       ),
-      headers: _headers(),
     );
 
     if (response.statusCode != 200) {
@@ -605,9 +644,11 @@ class CommunityApiService {
   }
 
   Future<List<CommunityLevel>> fetchLevels(int communityId) async {
-    final response = await _client.get(
-      _buildUri('/api/v1/communities/$communityId/levels'),
-      headers: _headers(),
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri('/api/v1/communities/$communityId/levels'),
+        headers: headers,
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -633,9 +674,11 @@ class CommunityApiService {
   }
 
   Future<List<PaywallTier>> fetchPaywallTiers(int communityId) async {
-    final response = await _client.get(
-      _buildUri('/api/v1/communities/$communityId/paywall/tiers'),
-      headers: _headers(),
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri('/api/v1/communities/$communityId/paywall/tiers'),
+        headers: headers,
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -668,16 +711,18 @@ class CommunityApiService {
     required Uri returnUrl,
     Uri? cancelUrl,
   }) async {
-    final response = await _client.post(
-      _buildUri('/api/v1/communities/$communityId/subscriptions/checkout'),
-      headers: _headers(extra: const {'Content-Type': 'application/json'}),
-      body: jsonEncode(<String, dynamic>{
-        'tier_id': tierId,
-        'quantity': quantity,
-        if (couponCode != null && couponCode.isNotEmpty) 'coupon_code': couponCode,
-        'return_url': returnUrl.toString(),
-        if (cancelUrl != null) 'cancel_url': cancelUrl.toString(),
-      }),
+    final response = await _sendWithAuth(
+      (headers) => _client.post(
+        _buildUri('/api/v1/communities/$communityId/subscriptions/checkout'),
+        headers: _mergeHeaders(headers, const {'Content-Type': 'application/json'}),
+        body: jsonEncode(<String, dynamic>{
+          'tier_id': tierId,
+          'quantity': quantity,
+          if (couponCode != null && couponCode.isNotEmpty) 'coupon_code': couponCode,
+          'return_url': returnUrl.toString(),
+          if (cancelUrl != null) 'cancel_url': cancelUrl.toString(),
+        }),
+      ),
     );
 
     if (response.statusCode != 201) {
@@ -698,9 +743,11 @@ class CommunityApiService {
   }
 
   Future<SubscriptionStatus> fetchSubscriptionStatus(int communityId) async {
-    final response = await _client.get(
-      _buildUri('/api/v1/communities/$communityId/subscriptions'),
-      headers: _headers(),
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri('/api/v1/communities/$communityId/subscriptions'),
+        headers: headers,
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -721,9 +768,11 @@ class CommunityApiService {
   }
 
   Future<List<GeoPlace>> fetchGeoPlaces(int communityId) async {
-    final response = await _client.get(
-      _buildUri('/api/v1/communities/$communityId/geo/places'),
-      headers: _headers(),
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri('/api/v1/communities/$communityId/geo/places'),
+        headers: headers,
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -752,17 +801,47 @@ class CommunityApiService {
     _client.close();
   }
 
-  Map<String, String> _headers({Map<String, String>? extra}) {
+  Future<Map<String, String>> _headers({Map<String, String>? extra, bool forceRefresh = false}) async {
     final headers = <String, String>{'Accept': 'application/json'};
 
-    if (_authToken != null) {
-      headers['Authorization'] = 'Bearer $_authToken';
+    String? bearer;
+    try {
+      bearer = await _sessionManager.getValidAccessToken(forceRefresh: forceRefresh);
+    } catch (_) {
+      bearer = null;
     }
 
-    if (extra != null) {
+    final resolved = (bearer != null && bearer.isNotEmpty) ? bearer : _authToken;
+    if (resolved != null && resolved.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $resolved';
+    }
+
+    if (extra != null && extra.isNotEmpty) {
       headers.addAll(extra);
     }
 
     return headers;
+  }
+
+  Map<String, String> _mergeHeaders(Map<String, String> headers, Map<String, String>? extra) {
+    if (extra == null || extra.isEmpty) {
+      return headers;
+    }
+
+    return <String, String>{...headers, ...extra};
+  }
+
+  Future<http.Response> _sendWithAuth(
+    Future<http.Response> Function(Map<String, String> headers) request,
+  ) async {
+    final initialHeaders = await _headers();
+    http.Response response = await request(initialHeaders);
+
+    if (response.statusCode == 401) {
+      final retryHeaders = await _headers(forceRefresh: true);
+      response = await request(retryHeaders);
+    }
+
+    return response;
   }
 }

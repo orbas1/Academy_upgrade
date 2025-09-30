@@ -15,7 +15,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/security/secure_credential_store.dart';
+import '../services/security/auth_session_manager.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../constants.dart';
@@ -57,12 +57,15 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
     });
     String url = "$baseUrl/api/free_course_enroll/$course_id";
     var navigator = Navigator.of(context);
-    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-    token = await SecureCredentialStore.instance.readAccessToken();
+    final sessionManager = AuthSessionManager.instance;
+    final accessToken = await sessionManager.requireAccessToken();
+    setState(() {
+      token = accessToken;
+    });
     var response = await http.get(Uri.parse(url), headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'Authorization': 'Bearer $token',
+      'Authorization': 'Bearer $accessToken',
     });
     print(url);
     print(token);
@@ -95,38 +98,42 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
   }
 
   @override
-  void didChangeDependencies() async {
+  void didChangeDependencies() {
     if (_isInit) {
-      final prefs = await SharedPreferences.getInstance();
+      _bootstrapCourseDetail();
+      _isInit = false;
+    }
+    super.didChangeDependencies();
+  }
+
+  Future<void> _bootstrapCourseDetail() async {
+    final sessionManager = AuthSessionManager.instance;
+    final resolvedToken = await sessionManager.getValidAccessToken();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      token = resolvedToken;
+      _isLoading = true;
+      _isAuth = resolvedToken != null && resolvedToken.isNotEmpty;
+    });
+
+    courseId = ModalRoute.of(context)!.settings.arguments as int;
+
+    try {
+      await Provider.of<Courses>(context, listen: false)
+          .fetchCourseDetailById(courseId);
+      Provider.of<Courses>(context, listen: false).getCourseDetail;
+    } finally {
+      if (!mounted) {
+        return;
+      }
       setState(() {
-        token = await SecureCredentialStore.instance.readAccessToken();
-      });
-      setState(() {
-        _isLoading = true;
-        // _authToken = Provider.of<Auth>(context, listen: false).token;
-        if (token != null && token.isNotEmpty) {
-          _isAuth = true;
-        } else {
-          _isAuth = false;
-        }
-      });
-
-      courseId = ModalRoute.of(context)!.settings.arguments as int;
-
-      Provider.of<Courses>(context, listen: false)
-          .fetchCourseDetailById(courseId)
-          .then((_) {
-        Provider.of<Courses>(context, listen: false).getCourseDetail;
-
-        // Provider.of<Courses>(context, listen: false).findById(courseId);
-
-        setState(() {
-          _isLoading = false;
-        });
+        _isLoading = false;
       });
     }
-    _isInit = false;
-    super.didChangeDependencies();
   }
 
   @override
@@ -213,9 +220,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 10),
                                     onPressed: () async {
-                                      final authToken = await SecureCredentialStore
+                                      final authToken = await AuthSessionManager
                                           .instance
-                                          .readAccessToken();
+                                          .getValidAccessToken();
                                       if (authToken != null &&
                                           authToken.isNotEmpty) {
                                         final prefs =
@@ -315,9 +322,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                                     const EdgeInsets.symmetric(horizontal: 10),
                                 onPressed: () async {
                                   // await getEnroll(loadedCourse.id.toString());
-                                  final authToken = await SecureCredentialStore
+                                  final authToken = await AuthSessionManager
                                       .instance
-                                      .readAccessToken();
+                                      .getValidAccessToken();
                                   if (authToken != null &&
                                       authToken.isNotEmpty) {
                                     Navigator.of(context).pushReplacement(
@@ -356,8 +363,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                                       horizontal: 10),
                                   onPressed: () async {
                                     final authToken =
-                                        await SecureCredentialStore.instance
-                                            .readAccessToken();
+                                        await AuthSessionManager.instance
+                                            .getValidAccessToken();
 
                                     if (authToken != null &&
                                         authToken.isNotEmpty) {
@@ -419,9 +426,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                                         horizontal: 10),
                                     onPressed: () async {
                                       // await getEnroll(loadedCourse.id.toString());
-                                      final authToken = await SecureCredentialStore
+                                      final authToken = await AuthSessionManager
                                           .instance
-                                          .readAccessToken();
+                                          .getValidAccessToken();
                                       if (authToken != null &&
                                           authToken.isNotEmpty) {
                                         if (loadedCourseDetails.isPaid == 0) {

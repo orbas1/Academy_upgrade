@@ -2,16 +2,19 @@ import 'dart:convert';
 
 import 'package:academy_lms_app/constants.dart' as constants;
 import 'package:http/http.dart' as http;
+import 'package:academy_lms_app/services/security/auth_session_manager.dart';
 
 import '../models/queue_health_metric.dart';
 
 class QueueHealthApiService {
-  QueueHealthApiService({http.Client? client, String? authToken})
+  QueueHealthApiService({http.Client? client, String? authToken, AuthSessionManager? sessionManager})
       : _client = client ?? http.Client(),
-        _authToken = authToken;
+        _authToken = authToken,
+        _sessionManager = sessionManager ?? AuthSessionManager.instance;
 
   final http.Client _client;
   String? _authToken;
+  final AuthSessionManager _sessionManager;
 
   void updateAuthToken(String? token) {
     if (token == null || token.isEmpty) {
@@ -22,9 +25,11 @@ class QueueHealthApiService {
   }
 
   Future<QueueHealthSummary> fetchSummary() async {
-    final response = await _client.get(
-      _buildUri('/api/v1/ops/queue-health'),
-      headers: _headers(),
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri('/api/v1/ops/queue-health'),
+        headers: headers,
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -58,15 +63,37 @@ class QueueHealthApiService {
     );
   }
 
-  Map<String, String> _headers() {
+  Future<Map<String, String>> _headers({bool forceRefresh = false}) async {
     final headers = <String, String>{
       'Accept': 'application/json',
     };
 
-    if (_authToken != null && _authToken!.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $_authToken';
+    String? bearer;
+    try {
+      bearer = await _sessionManager.getValidAccessToken(forceRefresh: forceRefresh);
+    } catch (_) {
+      bearer = null;
+    }
+
+    final resolved = (bearer != null && bearer.isNotEmpty) ? bearer : _authToken;
+    if (resolved != null && resolved.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $resolved';
     }
 
     return headers;
+  }
+
+  Future<http.Response> _sendWithAuth(
+    Future<http.Response> Function(Map<String, String> headers) request,
+  ) async {
+    final initialHeaders = await _headers();
+    http.Response response = await request(initialHeaders);
+
+    if (response.statusCode == 401) {
+      final retryHeaders = await _headers(forceRefresh: true);
+      response = await request(retryHeaders);
+    }
+
+    return response;
   }
 }

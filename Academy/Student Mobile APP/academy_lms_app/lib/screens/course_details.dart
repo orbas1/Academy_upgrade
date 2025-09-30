@@ -10,9 +10,8 @@ import 'package:html_unescape/html_unescape.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/security/secure_credential_store.dart';
+import '../services/security/auth_session_manager.dart';
 // import 'package:url_launcher/url_launcher.dart';
 
 import '../constants.dart';
@@ -54,12 +53,15 @@ class _CourseDetailScreen1State extends State<CourseDetailScreen1>
     });
     String url = "$baseUrl/api/free_course_enroll/$course_id";
     var navigator = Navigator.of(context);
-    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-    token = await SecureCredentialStore.instance.readAccessToken();
+    final sessionManager = AuthSessionManager.instance;
+    final accessToken = await sessionManager.requireAccessToken();
+    setState(() {
+      token = accessToken;
+    });
     var response = await http.get(Uri.parse(url), headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'Authorization': 'Bearer $token',
+      'Authorization': 'Bearer $accessToken',
     });
     print(url);
     print(token);
@@ -92,35 +94,39 @@ class _CourseDetailScreen1State extends State<CourseDetailScreen1>
   }
 
   @override
-  void didChangeDependencies() async {
+  void didChangeDependencies() {
     if (_isInit) {
-      final prefs = await SharedPreferences.getInstance();
-      setState(() {
-        token = await SecureCredentialStore.instance.readAccessToken();
-      });
-      setState(() {
-        _isLoading = true;
-        // _authToken = Provider.of<Auth>(context, listen: false).token;
-        if (token != null && token.isNotEmpty) {
-          _isAuth = true;
-        } else {
-          _isAuth = false;
-        }
-      });
+      _bootstrapCourseDetails();
+      _isInit = false;
+    }
+    super.didChangeDependencies();
+  }
 
-      // courseId = ModalRoute.of(context)!.settings.arguments;
+  Future<void> _bootstrapCourseDetails() async {
+    final sessionManager = AuthSessionManager.instance;
+    final resolvedToken = await sessionManager.getValidAccessToken();
 
-      Provider.of<Courses>(context, listen: false)
-          .fetchCourseDetails(widget.courseId)
-          .then((_) {
-        // Provider.of<Courses>(context, listen: false).findById(courseId);
-        setState(() {
-          _isLoading = false;
-        });
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      token = resolvedToken;
+      _isLoading = true;
+      _isAuth = resolvedToken != null && resolvedToken.isNotEmpty;
+    });
+
+    try {
+      await Provider.of<Courses>(context, listen: false)
+          .fetchCourseDetails(widget.courseId);
+    } finally {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoading = false;
       });
     }
-    _isInit = false;
-    super.didChangeDependencies();
   }
 
   @override

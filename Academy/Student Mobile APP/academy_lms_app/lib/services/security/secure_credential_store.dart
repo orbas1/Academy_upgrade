@@ -24,6 +24,8 @@ class SecureCredentialStore {
 
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
+  static const String _accessTokenExpiryKey = 'access_token_expires_at';
+  static const String _refreshTokenExpiryKey = 'refresh_token_expires_at';
 
   final FlutterSecureStorage _storage;
   String? _cachedAccessToken;
@@ -39,6 +41,18 @@ class SecureCredentialStore {
     await _storage.write(key: _accessTokenKey, value: token);
   }
 
+  Future<void> persistAccessTokenExpiry(DateTime? expiresAt) async {
+    if (expiresAt == null) {
+      await _storage.delete(key: _accessTokenExpiryKey);
+      return;
+    }
+
+    await _storage.write(
+      key: _accessTokenExpiryKey,
+      value: expiresAt.toUtc().toIso8601String(),
+    );
+  }
+
   Future<void> persistRefreshToken(String? token) async {
     if (token == null || token.isEmpty) {
       await deleteRefreshToken();
@@ -47,6 +61,18 @@ class SecureCredentialStore {
 
     _cachedRefreshToken = token;
     await _storage.write(key: _refreshTokenKey, value: token);
+  }
+
+  Future<void> persistRefreshTokenExpiry(DateTime? expiresAt) async {
+    if (expiresAt == null) {
+      await _storage.delete(key: _refreshTokenExpiryKey);
+      return;
+    }
+
+    await _storage.write(
+      key: _refreshTokenExpiryKey,
+      value: expiresAt.toUtc().toIso8601String(),
+    );
   }
 
   Future<String?> readAccessToken() async {
@@ -64,6 +90,15 @@ class SecureCredentialStore {
     return _cachedAccessToken;
   }
 
+  Future<DateTime?> readAccessTokenExpiry() async {
+    final value = await _storage.read(key: _accessTokenExpiryKey);
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+
+    return DateTime.tryParse(value)?.toUtc();
+  }
+
   Future<String?> readRefreshToken() async {
     if (_cachedRefreshToken != null) {
       return _cachedRefreshToken;
@@ -79,6 +114,15 @@ class SecureCredentialStore {
     return _cachedRefreshToken;
   }
 
+  Future<DateTime?> readRefreshTokenExpiry() async {
+    final value = await _storage.read(key: _refreshTokenExpiryKey);
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+
+    return DateTime.tryParse(value)?.toUtc();
+  }
+
   Future<String> requireAccessToken() async {
     final token = await readAccessToken();
     if (token == null || token.isEmpty) {
@@ -90,11 +134,13 @@ class SecureCredentialStore {
   Future<void> deleteAccessToken() async {
     _cachedAccessToken = null;
     await _storage.delete(key: _accessTokenKey);
+    await _storage.delete(key: _accessTokenExpiryKey);
   }
 
   Future<void> deleteRefreshToken() async {
     _cachedRefreshToken = null;
     await _storage.delete(key: _refreshTokenKey);
+    await _storage.delete(key: _refreshTokenExpiryKey);
   }
 
   Future<void> clearAll() async {
@@ -102,6 +148,8 @@ class SecureCredentialStore {
     _cachedRefreshToken = null;
     await _storage.delete(key: _accessTokenKey);
     await _storage.delete(key: _refreshTokenKey);
+    await _storage.delete(key: _accessTokenExpiryKey);
+    await _storage.delete(key: _refreshTokenExpiryKey);
   }
 
   Future<String?> _migrateLegacyToken(String key) async {
