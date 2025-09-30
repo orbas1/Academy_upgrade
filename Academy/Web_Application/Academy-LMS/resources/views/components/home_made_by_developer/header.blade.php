@@ -106,6 +106,9 @@
             <div class="ms-lg-auto col-auto">
                 <div class="primary-end d-flex align-items-center">
                     <div class="d-flex align-items-center gap-2">
+                        <div class="language-switcher__container">
+                            @include('components.layout.language-switcher')
+                        </div>
 
                         @isset(auth()->user()->id)
                             <a href="{{ route('cart') }}" class="me-2 me-md-4 position-relative" data-bs-toggle="tooltip" data-bs-title="{{ get_phrase('Cart') }}" data-bs-placement="bottom">

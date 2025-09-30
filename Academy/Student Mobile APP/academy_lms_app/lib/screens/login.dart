@@ -3,11 +3,13 @@
 import 'dart:convert';
 
 import 'package:academy_lms_app/constants.dart';
+import 'package:academy_lms_app/l10n/app_localizations.dart';
 import 'package:academy_lms_app/screens/email_verification_notice.dart';
 import 'package:academy_lms_app/screens/forget_password.dart';
 import 'package:academy_lms_app/screens/signup.dart';
 import 'package:academy_lms_app/screens/tab_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -76,6 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // }
 
   getLogin() async {
+  final localizations = AppLocalizations.of(context);
   setState(() {
     _isLoading = true;
   });
@@ -120,11 +123,11 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         );
-        Fluttertoast.showToast(msg: "Login Successful");
+        Fluttertoast.showToast(msg: localizations.loginSuccess);
       } else {
         // If email is not verified, navigate to the email verification page
         Fluttertoast.showToast(
-          msg: "Please verify your email before logging in.",
+          msg: localizations.emailVerificationRequired,
         );
         navigator.pushReplacement(
           MaterialPageRoute(
@@ -140,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = false;
     });
     Fluttertoast.showToast(
-      msg: "An error occurred: $e",
+      msg: '${localizations.genericError} $e',
       backgroundColor: Colors.red,
       textColor: Colors.white,
     );
@@ -156,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (token == null) {
         // print("Token is Null");
       } else {
-        Fluttertoast.showToast(msg: "Welcome Back");
+        Fluttertoast.showToast(msg: AppLocalizations.of(context).welcomeBack);
         navigator.pushReplacement(MaterialPageRoute(
             builder: (context) => const TabsScreen(
                   pageIndex: 0,
@@ -173,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
   }
 
-  InputDecoration getInputDecoration(String hintext) {
+  InputDecoration getInputDecoration(String hintText, {String? labelText}) {
     return InputDecoration(
       enabledBorder: OutlineInputBorder(
         borderRadius: const BorderRadius.all(Radius.circular(16.0)),
@@ -197,7 +200,8 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       filled: true,
       hintStyle: const TextStyle(color: Colors.black54, fontSize: 16),
-      hintText: hintext,
+      hintText: hintText,
+      labelText: labelText ?? hintText,
       fillColor: kInputBoxBackGroundColor,
       contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
     );
@@ -205,11 +209,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     // _emailController.text = 'student@example.com';
     // _passwordController.text = '12345678';
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           child: Form(
             key: globalFormKey,
             child: Column(
@@ -218,10 +224,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(
                   height: 20,
                 ),
-                const Center(
+                Center(
                   child: Text(
-                    'Log In',
-                    style: TextStyle(
+                    localizations.loginTitle,
+                    style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w500,
                     ),
@@ -236,14 +242,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: TextFormField(
                     style: const TextStyle(fontSize: 14),
                     decoration: getInputDecoration(
-                      'E-mail',
+                      localizations.emailLabel,
+                      labelText: localizations.emailLabel,
                     ),
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.email],
                     validator: (input) =>
                         !RegExp(r"[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
                                 .hasMatch(input!)
-                            ? "Email Id should be valid"
+                            ? localizations.emailValidationError
                             : null,
                     onSaved: (value) {
                       setState(() {
@@ -262,13 +271,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: const TextStyle(color: Colors.black),
                     keyboardType: TextInputType.text,
                     controller: _passwordController,
+                    textInputAction: TextInputAction.done,
+                    autofillHints: const [AutofillHints.password],
                     onSaved: (input) {
                       setState(() {
                         _passwordController.text = input as String;
                       });
                     },
                     validator: (input) => input!.length < 3
-                        ? "Password should be more than 3 characters"
+                        ? localizations.passwordValidationError
                         : null,
                     obscureText: hidePassword,
                     decoration: InputDecoration(
@@ -293,7 +304,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       filled: true,
                       hintStyle:
                           const TextStyle(color: Colors.black54, fontSize: 14),
-                      hintText: "Password",
+                      hintText: localizations.passwordLabel,
+                      labelText: localizations.passwordLabel,
                       fillColor: kInputBoxBackGroundColor,
                       contentPadding: const EdgeInsets.symmetric(
                           vertical: 18, horizontal: 15),
@@ -321,69 +333,74 @@ class _LoginScreenState extends State<LoginScreen> {
                       : Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20.0),
                           child: Center(
-                            child: Stack(
-                              children: [
-                                Positioned.fill(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                      gradient: const LinearGradient(
-                                        colors: [
-                                          Color(0xFFCC61FF),
-                                          Color(0xFF5851EF),
-                                        ],
-                                        stops: [0.05, 0.88],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.centerLeft,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                MaterialButton(
-                                  elevation: 0,
-                                  onPressed: () {
-                                    if (_emailController.text.isNotEmpty &&
-                                        _passwordController.text.isNotEmpty) {
-                                      getLogin();
-                                    } else if (_emailController.text.isEmpty) {
-                                      Fluttertoast.showToast(
-                                          msg: "Email field cannot be empty");
-                                    } else if (_passwordController
-                                        .text.isEmpty) {
-                                      Fluttertoast.showToast(
-                                          msg:
-                                              "Password field cannot be empty");
-                                    } else {
-                                      Fluttertoast.showToast(
-                                          msg:
-                                              "Email & password field cannot be empty");
-                                    }
-                                  },
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadiusDirectional.circular(16),
-                                    side: BorderSide(
-                                      color: kGreyLightColor.withOpacity(0.3),
-                                      width: 1.0,
-                                    ),
-                                  ),
-                                  child: const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        'Log In',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: kWhiteColor,
-                                          fontWeight: FontWeight.w500,
+                            child: Semantics(
+                              button: true,
+                              label: localizations.loginButton,
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16),
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFFCC61FF),
+                                            Color(0xFF5851EF),
+                                          ],
+                                          stops: [0.05, 0.88],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.centerLeft,
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  MaterialButton(
+                                    elevation: 0,
+                                    onPressed: () {
+                                      if (_emailController.text.isNotEmpty &&
+                                          _passwordController.text.isNotEmpty) {
+                                        getLogin();
+                                      } else if (_emailController.text.isEmpty) {
+                                        Fluttertoast.showToast(
+                                            msg: localizations.emptyEmailError);
+                                      } else if (_passwordController
+                                          .text.isEmpty) {
+                                        Fluttertoast.showToast(
+                                            msg:
+                                                localizations.emptyPasswordError);
+                                      } else {
+                                        Fluttertoast.showToast(
+                                            msg: localizations
+                                                .emptyCredentialsError);
+                                      }
+                                    },
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadiusDirectional.circular(16),
+                                      side: BorderSide(
+                                        color: kGreyLightColor.withOpacity(0.3),
+                                        width: 1.0,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          localizations.loginButton,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            color: kWhiteColor,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -409,12 +426,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: 1.0,
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Register',
-                            style: TextStyle(
+                            localizations.registerButton,
+                            style: const TextStyle(
                               fontSize: 16,
                               color: kInputBoxIconColor,
                               fontWeight: FontWeight.w500,
@@ -437,8 +454,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Not have an account yet?',
-                        style: TextStyle(
+                        localizations.accountCta,
+                        style: const TextStyle(
                           color: kGreyLightColor,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -450,8 +467,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               builder: (context) => const SignUpScreen()));
                         },
                         child: Text(
-                          ' Sign Up',
-                          style: TextStyle(
+                          ' ${localizations.signUp}',
+                          style: const TextStyle(
                             color: kSignUpTextColor,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -472,8 +489,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           builder: (context) => const ForgetPasswordScreen()));
                     },
                     child: Text(
-                      'Forget password',
-                      style: TextStyle(
+                      localizations.forgotPassword,
+                      style: const TextStyle(
                         color: kGreyLightColor,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,

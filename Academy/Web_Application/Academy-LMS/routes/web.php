@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CommonController;
 use App\Http\Controllers\InstallController;
+use App\Http\Controllers\LocalizationController;
 use App\Http\Controllers\ModalController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
@@ -23,6 +24,8 @@ Route::get('/clear-cache', function () {
 });
 
 Route::get('home/switch/{id}', [HomeController::class, 'homepage_switcher'])->name('home.switch');
+
+Route::post('locale/switch', LocalizationController::class)->name('locale.switch');
 
 //Redirect route
 Route::get('/dashboard', function () {

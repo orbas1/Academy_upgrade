@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="{{ str_replace('_', '-', $currentLocale['code'] ?? app()->getLocale()) }}" dir="{{ $localeDirection ?? 'ltr' }}">
 <head>
     @include('layouts.seo')
     @stack('meta')
@@ -57,10 +56,9 @@
     <!-- Jquery Js -->
     <script src="{{ asset('assets/frontend/default/js/jquery-3.7.1.min.js') }}"></script>
     @stack('css')
-
 </head>
 
-<body>
+<body class="layout-default" data-direction="{{ $localeDirection ?? 'ltr' }}">
     @php $current_route_name = Route::currentRouteName(); @endphp
     @php
         if (session('home')) {
@@ -70,41 +68,44 @@
         }
     @endphp
 
-    @if ($home_page->is_permanent == 1)
-        @include('components.home_made_by_developer.top_bar')
-        @include('components.home_made_by_developer.header')
-        <section>
-            @yield('content')
-        </section>
-        @include('components.home_made_by_developer.footer')
-    @else
-        @if ($current_route_name == 'home' || $current_route_name == 'admin.page.preview')
-            <section>
+    @include('components.accessibility.skip-link')
+
+    <div id="page-wrapper">
+        @if ($home_page->is_permanent == 1)
+            @include('components.home_made_by_developer.top_bar')
+            @include('components.home_made_by_developer.header')
+            <main id="main-content" tabindex="-1">
                 @yield('content')
-            </section>
+            </main>
+            @include('components.home_made_by_developer.footer')
         @else
-            @php $builder_files = $home_page->html ? json_decode($home_page->html, true) : []; @endphp
-            @if (in_array('top_bar', $builder_files))
-                @include('components.home_made_by_builder.top_bar')
-            @endif
+            @if ($current_route_name == 'home' || $current_route_name == 'admin.page.preview')
+                <main id="main-content" tabindex="-1">
+                    @yield('content')
+                </main>
+            @else
+                @php $builder_files = $home_page->html ? json_decode($home_page->html, true) : []; @endphp
+                @if (in_array('top_bar', $builder_files))
+                    @include('components.home_made_by_builder.top_bar')
+                @endif
 
-            @if (in_array('header', $builder_files))
-                @include('components.home_made_by_builder.header')
-            @endif
+                @if (in_array('header', $builder_files))
+                    @include('components.home_made_by_builder.header')
+                @endif
 
-            <section>
-                @yield('content')
-            </section>
+                <main id="main-content" tabindex="-1">
+                    @yield('content')
+                </main>
 
-            @if (in_array('footer', $builder_files))
-                @include('components.home_made_by_builder.footer')
+                @if (in_array('footer', $builder_files))
+                    @include('components.home_made_by_builder.footer')
+                @endif
             @endif
         @endif
-    @endif
+    </div>
 
     <!-- Bootstrap Js -->
     <script src="{{ asset('assets/frontend/default/js/bootstrap.bundle.min.js') }}"></script>
-
 
     <!-- nice select js -->
     <script src="{{ asset('assets/frontend/default/js/jquery.nice-select.min.js') }}"></script>
@@ -120,22 +121,17 @@
     <!-- owl carousel js -->
     <script src="{{ asset('assets/frontend/default/js/owl.carousel.min.js') }}"></script>
 
-
     <!-- Player Js -->
     <script src="{{ asset('assets/frontend/default/js/plyr.js') }}"></script>
-
 
     <!-- Yaireo Tagify -->
     <script src="{{ asset('assets/global/tagify-master/dist/tagify.min.js') }}"></script>
 
-
     <!-- Jquery Ui Js -->
     <script src="{{ asset('assets/frontend/default/js/jquery-ui.min.js') }}"></script>
 
-
     <!-- price range Js -->
     <script src="{{ asset('assets/frontend/default/js/price_range_script.js') }}"></script>
-
 
     <!-- Main Js -->
     <script src="{{ asset('assets/frontend/default/js/script.js') }}"></script>

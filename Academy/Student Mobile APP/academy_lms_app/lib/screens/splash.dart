@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:academy_lms_app/l10n/app_localizations.dart';
 import 'package:academy_lms_app/screens/tab_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -26,6 +27,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return Scaffold(
       body: Center(
         child: SizedBox(
@@ -34,6 +36,8 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Image.asset(
             'assets/images/splash.png',
             fit: BoxFit.cover,
+            semanticLabel: localizations.splashImageLabel,
+            excludeFromSemantics: false,
           ),
         ),
       ),
