@@ -7,6 +7,7 @@ import '../data/offline_action_queue.dart';
 import '../data/queue_health_repository.dart';
 import '../state/community_notifier.dart';
 import '../state/community_onboarding_notifier.dart';
+import '../../../providers/presence_controller.dart';
 
 List<SingleChildWidget> communityProviders({CommunityCache? cache}) {
   final sharedCache = cache ?? CommunityCache();
@@ -17,6 +18,14 @@ List<SingleChildWidget> communityProviders({CommunityCache? cache}) {
       create: (_) => OfflineCommunityActionQueue(),
       dispose: (_, queue) {
         queue.close();
+      },
+    ),
+    ChangeNotifierProxyProvider<Auth, PresenceController>(
+      create: (_) => PresenceController(),
+      update: (_, auth, controller) {
+        final notifier = controller ?? PresenceController();
+        notifier.updateAuthToken(auth.token);
+        return notifier;
       },
     ),
     ChangeNotifierProvider<CommunityOnboardingNotifier>(

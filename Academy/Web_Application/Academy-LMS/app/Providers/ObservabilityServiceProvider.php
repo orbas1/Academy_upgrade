@@ -1,0 +1,99 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Providers;
+
+use App\Support\Observability\CorrelationIdStore;
+use App\Support\Observability\Metrics\StatsdClient;
+use App\Support\Observability\Metrics\UdpMetricTransport;
+use App\Support\Observability\ObservabilityManager;
+use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Queue\Events\JobFailed;
+use Illuminate\Queue\Events\JobProcessed;
+use Illuminate\Support\ServiceProvider;
+
+class ObservabilityServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        $this->app->scoped(CorrelationIdStore::class, static fn () => new CorrelationIdStore());
+
+        $this->app->singleton(StatsdClient::class, function ($app) {
+            $config = $app['config']->get('observability.metrics');
+
+            $transport = new UdpMetricTransport(
+                $config['host'],
+                (int) $config['port'],
+                (float) $config['timeout']
+            );
+
+            return new StatsdClient(
+                $transport,
+                (string) $config['prefix'],
+                (bool) $config['enabled'],
+                (array) ($config['default_tags'] ?? [])
+            );
+        });
+
+        $this->app->singleton(ObservabilityManager::class, function ($app) {
+            $config = $app['config']->get('observability', []);
+            $logManager = $app['log'];
+            $channel = $config['logging']['channel'] ?? null;
+            $defaultChannel = $logManager->getDefaultDriver();
+            $logger = $channel
+                ? $logManager->channel($channel)
+                : $logManager->channel($defaultChannel);
+
+            return new ObservabilityManager(
+                $app->make(StatsdClient::class),
+                $logger,
+                $config
+            );
+        });
+    }
+
+    public function boot(Dispatcher $events): void
+    {
+        $config = $this->app['config']->get('observability.logging', []);
+        if (($config['share_context'] ?? true) === true) {
+            $this->app['log']->shareContext(function () {
+                $store = $this->app->make(CorrelationIdStore::class);
+
+                return array_filter([
+                    'application' => config('app.name'),
+                    'environment' => config('app.env'),
+                    'correlation_id' => $store->get(),
+                ]);
+            });
+        }
+
+        $manager = $this->app->make(ObservabilityManager::class);
+
+        $events->listen(JobProcessed::class, static function (JobProcessed $event) use ($manager): void {
+            $jobName = method_exists($event->job, 'resolveName')
+                ? $event->job->resolveName()
+                : $event->job::class;
+
+            $manager->recordQueueJob(
+                $jobName,
+                $event->connectionName,
+                method_exists($event->job, 'getQueue') ? $event->job->getQueue() : null,
+                $event->time
+            );
+        });
+
+        $events->listen(JobFailed::class, static function (JobFailed $event) use ($manager): void {
+            $jobName = method_exists($event->job, 'resolveName')
+                ? $event->job->resolveName()
+                : $event->job::class;
+
+            $manager->recordQueueFailure(
+                $jobName,
+                $event->connectionName,
+                method_exists($event->job, 'getQueue') ? $event->job->getQueue() : null,
+                $event->exception
+            );
+        });
+    }
+}
