@@ -18,6 +18,31 @@ DB_PASSWORD="${DB_PASSWORD:-}"
 LOCAL_DOMAIN="${LOCAL_DOMAIN:-academy.test}"
 APP_PORT="${APP_PORT:-8000}"
 SEED_DATABASE="${SEED_DATABASE:-1}"
+SKIP_DATABASE="${SKIP_DATABASE:-0}"
+SKIP_FRONTEND_BUILD="${SKIP_FRONTEND_BUILD:-0}"
+SKIP_VHOST="${SKIP_VHOST:-0}"
+
+usage() {
+  cat <<USAGE
+Start_Up Script – Laravel local environment bootstrap
+
+Environment variables:
+  DB_HOST, DB_PORT, DB_NAME, DB_USERNAME, DB_PASSWORD   Database connection
+  LOCAL_DOMAIN                                          Apache virtual host + APP_URL (default: academy.test)
+  APP_PORT                                              Port used for APP_URL + artisan serve (default: 8000)
+  SEED_DATABASE                                         1 to run db:seed, 0 to skip (default: 1)
+  SKIP_DATABASE                                         1 to skip database creation/migrations (default: 0)
+  SKIP_FRONTEND_BUILD                                   1 to skip npm run build (default: 0)
+  SKIP_VHOST                                            1 to skip writing Apache stub (default: 0)
+USAGE
+}
+
+if [[ "${1:-}" =~ ^(--help|-h)$ ]]; then
+  usage
+  exit 0
+fi
+
+trap 'printf "\n\033[1;31m[Start_Up][error]\033[0m Installation failed (line %s).\n" "$LINENO" >&2' ERR
 
 note() {
   printf '\n\033[1;34m[Start_Up]\033[0m %s\n' "$1"
@@ -36,11 +61,16 @@ command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
-missing=()
-for bin in php composer npm mysql; do
-  if ! command_exists "$bin"; then
-    missing+=("$bin")
+ensure_in_path() {
+  local name="$1"
+  if ! command_exists "$name"; then
+    missing+=("$name")
   fi
+}
+
+missing=()
+for bin in php composer node npm mysql; do
+  ensure_in_path "$bin"
 done
 
 if [ "${#missing[@]}" -gt 0 ]; then
@@ -51,15 +81,37 @@ if [ ! -d "$LARAVEL_ROOT" ]; then
   fail "Laravel root not found at $LARAVEL_ROOT"
 fi
 
+PHP_REQUIRED_MAJOR=8
+PHP_REQUIRED_MINOR=2
+php_version="$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION.".".PHP_RELEASE_VERSION;')"
+php_major="${php_version%%.*}"
+php_minor_patch="${php_version#*.}"
+php_minor="${php_minor_patch%%.*}"
+if (( php_major < PHP_REQUIRED_MAJOR )) || { (( php_major == PHP_REQUIRED_MAJOR )) && (( php_minor < PHP_REQUIRED_MINOR )); }; then
+  warn "Detected PHP ${php_version}. PHP 8.2+ is recommended."
+fi
+
 cd "$LARAVEL_ROOT"
 
 if [ ! -f .env ]; then
   note "Creating .env from template"
   cp .env.example .env
+elif [ ! -f .env.startup.bak ]; then
+  note "Saving existing .env to .env.startup.bak"
+  cp .env .env.startup.bak
 fi
 
 escape_for_sed() {
   printf '%s' "$1" | sed -e 's/[\\&/]/\\&/g'
+}
+
+sed_inplace() {
+  # shellcheck disable=SC2001
+  if sed --version >/dev/null 2>&1; then
+    sed -i "${1}" "${2}"
+  else
+    sed -i '' "${1}" "${2}"
+  fi
 }
 
 set_env() {
@@ -68,13 +120,15 @@ set_env() {
   local escaped
   escaped="$(escape_for_sed "$value")"
   if grep -q "^${key}=" .env; then
-    sed -i "s/^${key}=.*/${key}=${escaped}/" .env
+    sed_inplace "s/^${key}=.*/${key}=${escaped}/" .env
   else
     printf '%s=%s\n' "$key" "$value" >> .env
   fi
 }
 
 note "Updating .env defaults"
+set_env APP_ENV local
+set_env APP_DEBUG true
 set_env APP_URL "http://${LOCAL_DOMAIN}:${APP_PORT}"
 set_env DB_CONNECTION mysql
 set_env DB_HOST "$DB_HOST"
@@ -87,22 +141,31 @@ set_env CACHE_DRIVER file
 set_env QUEUE_CONNECTION database
 set_env SESSION_DRIVER file
 
-note "Ensuring MySQL database '${DB_NAME}' exists"
-MYSQL_CMD=(mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" --protocol=tcp)
-if [ -n "$DB_PASSWORD" ]; then
-  MYSQL_CMD+=(-p"$DB_PASSWORD")
-fi
+if [ "$SKIP_DATABASE" != "1" ]; then
+  note "Checking MySQL connectivity"
+  MYSQL_CMD=(mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" --protocol=tcp)
+  if [ -n "$DB_PASSWORD" ]; then
+    MYSQL_CMD+=(-p"$DB_PASSWORD")
+  fi
 
-if ! "${MYSQL_CMD[@]}" -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"; then
-  fail "Unable to create or access database '$DB_NAME'. Verify credentials and rerun."
+  if ! "${MYSQL_CMD[@]}" -e "SELECT 1" >/dev/null 2>&1; then
+    fail "Unable to connect to MySQL with provided credentials."
+  fi
+
+  note "Ensuring MySQL database '${DB_NAME}' exists"
+  if ! "${MYSQL_CMD[@]}" -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"; then
+    fail "Unable to create or access database '$DB_NAME'. Verify credentials and rerun."
+  fi
+else
+  warn "Skipping database connectivity checks (SKIP_DATABASE=1)"
 fi
 
 note "Installing PHP dependencies"
-composer install --no-interaction --prefer-dist --ansi
+composer install --no-interaction --prefer-dist --ansi --no-progress
 
 note "Installing Node dependencies"
 if [ -f package-lock.json ]; then
-  npm ci
+  npm ci --no-audit
 else
   npm install
 fi
@@ -119,14 +182,18 @@ else
   note "Storage link already present"
 fi
 
-note "Running database migrations"
-php artisan migrate --force
+if [ "$SKIP_DATABASE" != "1" ]; then
+  note "Running database migrations"
+  php artisan migrate --force
 
-if [ "$SEED_DATABASE" = "1" ]; then
-  note "Seeding demo data"
-  php artisan db:seed --force
+  if [ "$SEED_DATABASE" = "1" ]; then
+    note "Seeding demo data"
+    php artisan db:seed --force
+  else
+    note "Skipping database seeding (SEED_DATABASE=${SEED_DATABASE})"
+  fi
 else
-  note "Skipping database seeding (SEED_DATABASE=${SEED_DATABASE})"
+  warn "Skipping migrations/seeders (SKIP_DATABASE=1)"
 fi
 
 note "Optimizing Laravel caches"
@@ -134,14 +201,20 @@ php artisan optimize:clear
 php artisan config:cache
 php artisan route:cache
 
-note "Building front-end assets"
-npm run build
+if [ "$SKIP_FRONTEND_BUILD" = "1" ]; then
+  warn "Skipping Vite production build (SKIP_FRONTEND_BUILD=1)"
+else
+  note "Building front-end assets"
+  npm run build
+fi
 
 VHOST_FILENAME="local_${LOCAL_DOMAIN}.conf"
 VHOST_PATH="${APACHE_DIR}/${VHOST_FILENAME}"
 DOCUMENT_ROOT="${LARAVEL_ROOT}/public"
 
-if [ ! -f "$VHOST_PATH" ]; then
+if [ "$SKIP_VHOST" = "1" ]; then
+  warn "Skipping Apache virtual host generation (SKIP_VHOST=1)"
+elif [ ! -f "$VHOST_PATH" ]; then
   note "Writing Apache virtual host stub to ${VHOST_PATH}"
   cat > "$VHOST_PATH" <<VHOST
 # Auto-generated by Start_Up Script for local testing
@@ -174,5 +247,12 @@ note "Setup complete!"
 printf '\nNext steps:\n'
 printf '  • Add "127.0.0.1 %s" to /etc/hosts (or equivalent).\n' "$LOCAL_DOMAIN"
 printf '  • Start the Laravel dev server: APP_PORT=%s php artisan serve --host=0.0.0.0 --port=%s\n' "$APP_PORT" "$APP_PORT"
-printf '  • Or configure Apache using %s and PHP-FPM/mod_php.\n' "$VHOST_PATH"
+if [ "$SKIP_FRONTEND_BUILD" = "1" ]; then
+  printf '  • Run "npm run dev -- --host" for the Vite dev server when ready.\n'
+else
+  printf '  • Use "npm run dev" for hot reloading or the pre-built assets from npm run build.\n'
+fi
+if [ "$SKIP_VHOST" != "1" ]; then
+  printf '  • Configure Apache using %s and PHP-FPM/mod_php if desired.\n' "$VHOST_PATH"
+fi
 printf '\nHappy building!\n'

@@ -7,6 +7,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../Web_Application/Academy-LMS" && pwd)"
 cd "$ROOT_DIR"
 
+SKIP_FRONTEND_BUILD="${SKIP_FRONTEND_BUILD:-0}"
+
 note() {
   printf '\n\033[1;34m[bootstrap]\033[0m %s\n' "$1"
 }
@@ -38,14 +40,17 @@ fi
 if [ ! -f .env ] && [ -f .env.example ]; then
   note "Creating .env from .env.example"
   cp .env.example .env
+elif [ -f .env ] && [ ! -f .env.bootstrap.bak ]; then
+  note "Saving .env snapshot to .env.bootstrap.bak"
+  cp .env .env.bootstrap.bak
 fi
 
 note "Installing PHP dependencies via composer install"
-composer install --no-interaction --prefer-dist --ansi
+composer install --no-interaction --prefer-dist --ansi --no-progress
 
 note "Installing Node dependencies"
 if [ -f package-lock.json ]; then
-  npm ci
+  npm ci --no-audit
 else
   npm install
 fi
@@ -68,7 +73,11 @@ else
   note "Storage link already exists"
 fi
 
-note "Building front-end assets"
-npm run build
+if [ "$SKIP_FRONTEND_BUILD" = "1" ]; then
+  warn "Skipping Vite production build (SKIP_FRONTEND_BUILD=1)"
+else
+  note "Building front-end assets"
+  npm run build
+fi
 
 note "Bootstrap complete. Configure your database credentials in .env and run php artisan migrate when ready."
