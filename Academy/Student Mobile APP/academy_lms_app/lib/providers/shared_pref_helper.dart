@@ -1,6 +1,7 @@
 // ignore_for_file: constant_identifier_names, camel_case_types
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/security/auth_session_manager.dart';
 import '../services/security/secure_credential_store.dart';
 
 class SharedPreferenceHelper {
@@ -14,9 +15,9 @@ class SharedPreferenceHelper {
   }
 
   Future<String?> getAuthToken() async {
-    final secureToken = await SecureCredentialStore.instance.readAccessToken();
-    if (secureToken != null && secureToken.isNotEmpty) {
-      return secureToken;
+    final sessionToken = await AuthSessionManager.instance.getValidAccessToken();
+    if (sessionToken != null && sessionToken.isNotEmpty) {
+      return sessionToken;
     }
 
     final pref = await SharedPreferences.getInstance();

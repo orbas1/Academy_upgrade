@@ -6,9 +6,8 @@ import 'package:academy_lms_app/widgets/appbar_one.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/security/secure_credential_store.dart';
+import '../services/security/auth_session_manager.dart';
 
 import '../constants.dart';
 import '../providers/auth.dart';
@@ -28,8 +27,7 @@ class _AccountRemoveScreenState extends State<AccountRemoveScreen> {
   bool hidePassword = true;
 
   accountDelete() async {
-    final prefs = await SharedPreferences.getInstance();
-    final authToken = await SecureCredentialStore.instance.requireAccessToken();
+    final authToken = await AuthSessionManager.instance.requireAccessToken();
 
     var url = "$baseUrl/api/account_disable";
 

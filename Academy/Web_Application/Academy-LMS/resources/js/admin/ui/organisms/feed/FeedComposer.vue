@@ -65,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import UiButton from '../../atoms/UiButton.vue';
 import UiTextarea from '../../atoms/UiTextarea.vue';
 
@@ -78,6 +78,7 @@ type ComposerAttachment = {
 
 const props = defineProps<{
     submitting?: boolean;
+    prefill?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -89,7 +90,7 @@ const emit = defineEmits<{
     }): void;
 }>();
 
-const body = ref('');
+const body = ref(props.prefill ?? '');
 const visibility = ref<'public' | 'community' | 'paid'>('community');
 const scheduledAt = ref<string | null>(null);
 const attachments = reactive<ComposerAttachment[]>([]);
@@ -143,7 +144,7 @@ function toggleScheduling() {
 }
 
 function resetForm() {
-    body.value = '';
+    body.value = props.prefill ?? '';
     scheduledAt.value = null;
     attachments.splice(0, attachments.length);
 }
@@ -170,4 +171,15 @@ onBeforeUnmount(() => {
         }
     });
 });
+
+watch(
+    () => props.prefill,
+    (value) => {
+        if (typeof value === 'string' && value.length > 0) {
+            body.value = value;
+        } else if (!props.submitting && value === null) {
+            body.value = '';
+        }
+    },
+);
 </script>

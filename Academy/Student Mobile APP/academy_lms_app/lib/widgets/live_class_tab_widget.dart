@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/security/secure_credential_store.dart';
+import '../services/security/auth_session_manager.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../constants.dart';
@@ -28,7 +28,7 @@ class _LiveClassTabWidgetState extends State<LiveClassTabWidget> {
 
   Future<LiveClassModel> fetchLiveClassModel() async {
     final prefs = await SharedPreferences.getInstance();
-    final authToken = await SecureCredentialStore.instance.requireAccessToken();
+    final authToken = await AuthSessionManager.instance.requireAccessToken();
     var url = '$baseUrl/api/zoom/meetings?course_id=${widget.courseId}';
     try {
       final response = await http.get(Uri.parse(url), headers: {

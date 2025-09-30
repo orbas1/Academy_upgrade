@@ -7,7 +7,7 @@ import 'package:pod_player/pod_player.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/security/secure_credential_store.dart';
+import '../services/security/auth_session_manager.dart';
 
 import '../constants.dart';
 import '../providers/my_courses.dart';
@@ -49,7 +49,7 @@ class _PlayVideoFromVimeoIdState extends State<PlayVideoFromYoutube> {
   Future<void> updateWatchHistory() async {
     if (controller.isVideoPlaying) {
       final prefs = await SharedPreferences.getInstance();
-      final token = await SecureCredentialStore.instance.requireAccessToken();
+      final token = await AuthSessionManager.instance.requireAccessToken();
       dynamic url;
       if (token.isNotEmpty) {
         url = "$baseUrl/api/update_watch_history/$token";

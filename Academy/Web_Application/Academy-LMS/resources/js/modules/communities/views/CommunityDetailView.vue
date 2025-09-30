@@ -107,7 +107,11 @@
                 </div>
             </template>
 
-            <FeedComposer :submitting="composerSubmitting" @submit="handleComposerSubmit" />
+            <FeedComposer
+                :submitting="composerSubmitting"
+                :prefill="composerPrefill"
+                @submit="handleComposerSubmit"
+            />
             <div
                 v-if="composerError"
                 class="rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-600"
@@ -115,15 +119,96 @@
                 {{ composerError }}
             </div>
 
-            <div v-if="feedError" class="rounded-lg border border-red-100 bg-red-50 p-4 text-sm text-red-600">
+            <div
+                v-if="feedIssue"
+                class="mt-4 rounded-lg border p-4 text-sm"
+                :class="issueClasses(feedIssue.kind)"
+            >
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="space-y-1">
+                        <p class="text-sm font-semibold text-slate-900">{{ issueTitle(feedIssue.kind) }}</p>
+                        <p class="text-sm text-slate-600">{{ feedIssue.message }}</p>
+                        <p v-if="feedIssue.details" class="text-xs text-slate-500">{{ feedIssue.details }}</p>
+                        <p v-if="feedIssue.retryAt" class="text-xs text-slate-500">
+                            Retry scheduled {{ formatRelative(feedIssue.retryAt) }}
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <UiButton
+                            v-if="feedIssue.kind === 'offline'"
+                            size="sm"
+                            variant="secondary"
+                            :disabled="!isOnline"
+                            @click="retryFeed"
+                        >
+                            Retry now
+                        </UiButton>
+                        <UiButton
+                            v-else-if="feedIssue.kind === 'forbidden'"
+                            size="sm"
+                            variant="secondary"
+                            @click="() => openInsightsPanel('members')"
+                        >
+                            Review member access
+                        </UiButton>
+                        <UiButton
+                            v-else-if="feedIssue.kind === 'paywall'"
+                            size="sm"
+                            variant="secondary"
+                            @click="() => openInsightsPanel('paywalls')"
+                        >
+                            Manage tiers
+                        </UiButton>
+                        <UiButton
+                            v-else-if="feedIssue.kind === 'moderation_hold'"
+                            size="sm"
+                            variant="secondary"
+                            @click="() => openInsightsPanel('moderation')"
+                        >
+                            Open moderation queue
+                        </UiButton>
+                        <UiButton
+                            v-else-if="feedIssue.kind === 'rate_limited'"
+                            size="sm"
+                            variant="secondary"
+                            :disabled="!canRetryRateLimited"
+                            @click="retryFeed"
+                        >
+                            Retry now
+                        </UiButton>
+                        <UiButton
+                            v-else-if="feedIssue.kind === 'error'"
+                            size="sm"
+                            variant="secondary"
+                            @click="retryFeed"
+                        >
+                            Retry feed
+                        </UiButton>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="feedError" class="mt-4 rounded-lg border border-red-100 bg-red-50 p-4 text-sm text-red-600">
                 {{ feedError }}
             </div>
-            <div v-else-if="store.loadingFeed && !feed.length" class="text-sm text-slate-500">Loading feed…</div>
+
+            <div v-if="store.loadingFeed && !feed.length" class="mt-4 text-sm text-slate-500">Loading feed…</div>
             <UiEmptyState v-else-if="!feed.length">
                 <template #title>No posts yet</template>
                 Encourage moderators to share a welcome note or scheduled update.
+                <template #actions>
+                    <UiButton
+                        v-for="starter in smartStarters"
+                        :key="starter.label"
+                        size="sm"
+                        variant="secondary"
+                        @click="() => applyStarter(starter.body)"
+                    >
+                        {{ starter.label }}
+                    </UiButton>
+                </template>
             </UiEmptyState>
-            <div v-else class="space-y-4">
+            <div v-else class="mt-4 space-y-4">
                 <FeedItemCard
                     v-for="item in feed"
                     :key="item.id"
@@ -224,8 +309,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import {
     FeedComposer,
     FeedItemCard,
@@ -238,20 +323,62 @@ import {
 } from '@/admin/ui';
 import { useCommunityStore } from '@/modules/communities/stores/communityStore';
 import type { CommunityFeedItem } from '@/modules/communities/types';
+import { pushToast } from '@/core/feedback/toast-bus';
+import { useNetworkStatus } from '@/core/composables/useNetworkStatus';
+
+type FeedIssueKind = 'offline' | 'forbidden' | 'paywall' | 'moderation_hold' | 'rate_limited' | 'error';
+type FeedIssueState = {
+    kind: FeedIssueKind;
+    message: string;
+    details?: string | null;
+    retryAt?: Date | null;
+};
 
 const route = useRoute();
+const router = useRouter();
 const store = useCommunityStore();
 
 const community = computed(() => store.activeCommunity);
 const metrics = computed(() => store.metrics);
 const feed = computed(() => store.feedItems);
 const feedError = computed(() => store.feedError);
+const feedIssue = computed<FeedIssueState | null>(() => store.feedIssue as FeedIssueState | null);
 const lastFeedUpdated = computed(() => feed.value[0]?.createdAt ?? new Date().toISOString());
 
 const composerSubmitting = ref(false);
 const composerError = ref<string | null>(null);
+const composerPrefill = ref<string | null>(null);
 const reactionModalOpen = ref(false);
 const reactionModalItem = ref<CommunityFeedItem | null>(null);
+const smartStarters = [
+    {
+        label: 'Post a welcome note',
+        body: '🎉 Welcome to our community! Introduce yourself below and share what you are hoping to learn this week.',
+    },
+    {
+        label: 'Share weekly goals',
+        body: '📅 Weekly focus: 1) Ship one resource 2) Celebrate a member win 3) Ask a thoughtful question. What will you tackle?',
+    },
+    {
+        label: 'Kick off a discussion',
+        body: '💬 Question of the day: What is one process in your workflow that became dramatically easier after joining this group?',
+    },
+];
+const { isOnline } = useNetworkStatus();
+
+const canRetryRateLimited = computed(() => {
+    if (!feedIssue.value || feedIssue.value.kind !== 'rate_limited') {
+        return true;
+    }
+
+    if (!feedIssue.value.retryAt) {
+        return true;
+    }
+
+    return feedIssue.value.retryAt.getTime() <= Date.now();
+});
+
+let rateLimitTimer: number | null = null;
 
 const reactionEntries = computed(() => {
     if (!reactionModalItem.value) {
@@ -286,8 +413,8 @@ function currency(value: number): string {
     return value.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
 }
 
-function formatRelative(timestamp: string): string {
-    const date = new Date(timestamp);
+function formatRelative(timestamp: string | Date): string {
+    const date = typeof timestamp === 'string' ? new Date(timestamp) : new Date(timestamp);
     return date.toLocaleString();
 }
 
@@ -305,6 +432,14 @@ async function refreshFeed() {
     }
 
     await store.refreshFeed(community.value.id);
+}
+
+async function retryFeed() {
+    if (!community.value) {
+        return;
+    }
+
+    await refreshFeed();
 }
 
 async function loadMoreFeed() {
@@ -334,9 +469,11 @@ async function handleComposerSubmit(payload: {
             scheduledAt: payload.scheduledAt,
         });
         composerError.value = null;
+        pushToast({ intent: 'success', message: 'Update published to the community feed.' });
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to publish post. Please try again.';
         composerError.value = message;
+        pushToast({ intent: 'error', title: 'Publish failed', message });
     } finally {
         composerSubmitting.value = false;
     }
@@ -360,8 +497,105 @@ function openReactionBreakdown(item: CommunityFeedItem) {
     reactionModalOpen.value = true;
 }
 
+function issueTitle(kind: FeedIssueKind): string {
+    switch (kind) {
+        case 'offline':
+            return 'Working offline';
+        case 'forbidden':
+            return 'Membership required';
+        case 'paywall':
+            return 'Paywall protected feed';
+        case 'moderation_hold':
+            return 'Feed locked for moderation';
+        case 'rate_limited':
+            return 'Rate limited';
+        case 'error':
+        default:
+            return 'Feed unavailable';
+    }
+}
+
+function issueClasses(kind: FeedIssueKind): string {
+    switch (kind) {
+        case 'offline':
+            return 'border-amber-200 bg-amber-50';
+        case 'forbidden':
+        case 'paywall':
+            return 'border-indigo-200 bg-indigo-50';
+        case 'moderation_hold':
+            return 'border-rose-200 bg-rose-50';
+        case 'rate_limited':
+            return 'border-emerald-200 bg-emerald-50';
+        case 'error':
+        default:
+            return 'border-rose-200 bg-rose-50';
+    }
+}
+
+async function openInsightsPanel(panel: string) {
+    if (!community.value) {
+        return;
+    }
+
+    await router.push({
+        name: 'communities.insights',
+        params: { id: community.value.id },
+        query: { panel },
+    });
+}
+
+function applyStarter(body: string) {
+    composerPrefill.value = body;
+    void nextTick(() => {
+        composerPrefill.value = null;
+    });
+}
+
 onMounted(async () => {
     const identifier = route.params.id as string;
     await store.loadCommunity(identifier);
+});
+
+watch(
+    () => isOnline.value,
+    async (online, previous) => {
+        if (previous === undefined) {
+            return;
+        }
+        if (online && feedIssue.value?.kind === 'offline') {
+            pushToast({ intent: 'info', message: 'Connection restored. Refreshing feed…' });
+            await refreshFeed();
+        }
+    },
+);
+
+watch(
+    () => feedIssue.value,
+    (issue, previous) => {
+        if (rateLimitTimer !== null) {
+            window.clearTimeout(rateLimitTimer);
+            rateLimitTimer = null;
+        }
+
+        if (issue?.kind === 'rate_limited' && issue.retryAt && community.value) {
+            const delay = issue.retryAt.getTime() - Date.now();
+            if (delay > 0) {
+                rateLimitTimer = window.setTimeout(async () => {
+                    pushToast({ intent: 'info', message: 'Retrying community feed after rate limit window.' });
+                    await refreshFeed();
+                }, delay);
+            }
+        }
+
+        if (issue?.kind === 'error' && issue.message !== previous?.message) {
+            pushToast({ intent: 'error', title: 'Feed error', message: issue.message });
+        }
+    },
+);
+
+onBeforeUnmount(() => {
+    if (rateLimitTimer !== null) {
+        window.clearTimeout(rateLimitTimer);
+    }
 });
 </script>

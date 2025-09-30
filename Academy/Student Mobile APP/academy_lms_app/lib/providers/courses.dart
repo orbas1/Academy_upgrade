@@ -7,7 +7,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/security/secure_credential_store.dart';
+import '../services/security/auth_session_manager.dart';
 
 import '../constants.dart';
 import '../models/course.dart';
@@ -166,7 +166,7 @@ class Courses with ChangeNotifier {
   }
 
   Future<void> fetchMyWishlist() async {
-    final authToken = await SecureCredentialStore.instance.requireAccessToken();
+    final authToken = await AuthSessionManager.instance.requireAccessToken();
     var url = '$baseUrl/api/my_wishlist';
     try {
       final response = await http.get(Uri.parse(url), headers: {
@@ -189,7 +189,7 @@ class Courses with ChangeNotifier {
   }
 
   Future<void> fetchCartlist() async {
-    final authToken = await SecureCredentialStore.instance.requireAccessToken();
+    final authToken = await AuthSessionManager.instance.requireAccessToken();
     var url = '$baseUrl/api/cart_list';
     try {
       final response = await http.get(Uri.parse(url), headers: {
@@ -244,7 +244,7 @@ class Courses with ChangeNotifier {
   }
 
   Future<void> toggleWishlist(int courseId, bool removeItem) async {
-    final authToken = await SecureCredentialStore.instance.requireAccessToken();
+    final authToken = await AuthSessionManager.instance.requireAccessToken();
     var url = '$baseUrl/api/toggle_wishlist_items?course_id=$courseId';
     if (!removeItem) {
       _courseDetailsitems.first.isWishlisted!
@@ -306,52 +306,52 @@ class Courses with ChangeNotifier {
   //   }
   // }
 
-Future<void> toggleCart(int courseId, bool removeItem) async {
-  final authToken = await SecureCredentialStore.instance.requireAccessToken();
-  var url = '$baseUrl/api/toggle_cart_items?course_id=$courseId';
+  Future<void> toggleCart(int courseId, bool removeItem) async {
+    final authToken = await AuthSessionManager.instance.requireAccessToken();
+    var url = '$baseUrl/api/toggle_cart_items?course_id=$courseId';
 
-  // Optimistically update the local state for immediate UI feedback
-  if (!removeItem) {
-    _courseDetailsitems.first.is_cart!
-        ? _courseDetailsitems.first.is_cart = false
-        : _courseDetailsitems.first.is_cart = true;
-    notifyListeners();
-  }
-
-  try {
-    final response = await http.get(Uri.parse(url), headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': 'Bearer $authToken',
-    });
-
-    final responseData = json.decode(response.body);
-
-    if (responseData['status'] == 'removed') {
-      if (removeItem) {
-        // Remove the course from the `_items` list if needed
-        final existingMyCourseIndex =
-            _items.indexWhere((mc) => mc.id == courseId);
-
-        if (existingMyCourseIndex != -1) {
-          _items.removeAt(existingMyCourseIndex);
-          notifyListeners();
-        }
-      } else {
-        _courseDetailsitems.first.is_cart = false;
-      }
-    } else if (responseData['status'] == 'added') {
-      if (!removeItem) {
-        _courseDetailsitems.first.is_cart = true;
-      }
+    // Optimistically update the local state for immediate UI feedback
+    if (!removeItem) {
+      _courseDetailsitems.first.is_cart!
+          ? _courseDetailsitems.first.is_cart = false
+          : _courseDetailsitems.first.is_cart = true;
+      notifyListeners();
     }
 
-    // Notify listeners to ensure UI updates with the latest state
-    notifyListeners();
-  } catch (error) {
-    rethrow;
+    try {
+      final response = await http.get(Uri.parse(url), headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      });
+
+      final responseData = json.decode(response.body);
+
+      if (responseData['status'] == 'removed') {
+        if (removeItem) {
+          // Remove the course from the `_items` list if needed
+          final existingMyCourseIndex =
+              _items.indexWhere((mc) => mc.id == courseId);
+
+          if (existingMyCourseIndex != -1) {
+            _items.removeAt(existingMyCourseIndex);
+            notifyListeners();
+          }
+        } else {
+          _courseDetailsitems.first.is_cart = false;
+        }
+      } else if (responseData['status'] == 'added') {
+        if (!removeItem) {
+          _courseDetailsitems.first.is_cart = true;
+        }
+      }
+
+      // Notify listeners to ensure UI updates with the latest state
+      notifyListeners();
+    } catch (error) {
+      rethrow;
+    }
   }
-}
 
 // Future<void> toggleCart(int courseId, bool removeItem) async {
 //   final prefs = await SharedPreferences.getInstance();
@@ -398,7 +398,7 @@ Future<void> toggleCart(int courseId, bool removeItem) async {
 
   Future<void> fetchCourseDetailById(int courseId) async {
     final prefs = await SharedPreferences.getInstance();
-    final token = await SecureCredentialStore.instance.requireAccessToken();
+    final token = await AuthSessionManager.instance.requireAccessToken();
     var url = '$baseUrl/api/course_details_by_id?course_id=$courseId';
 
     try {
@@ -479,7 +479,7 @@ Future<void> toggleCart(int courseId, bool removeItem) async {
 // course details
   Future<void> fetchCourseDetails(String? courseId) async {
     final prefs = await SharedPreferences.getInstance();
-    final token = await SecureCredentialStore.instance.requireAccessToken();
+    final token = await AuthSessionManager.instance.requireAccessToken();
 
     var url = "$baseUrl/api/course_details_by_id?course_id=$courseId";
     print(url);

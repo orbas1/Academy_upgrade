@@ -12,7 +12,7 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/security/secure_credential_store.dart';
+import '../services/security/auth_session_manager.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../constants.dart';
@@ -57,8 +57,8 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> fetchUrl() async {
-    final prefs = await SharedPreferences.getInstance();
-    final authToken = await SecureCredentialStore.instance.requireAccessToken();
+    await SharedPreferences.getInstance();
+    final authToken = await AuthSessionManager.instance.requireAccessToken();
 
     var url = '$baseUrl/api/payment';
     try {
@@ -111,7 +111,7 @@ class _CartScreenState extends State<CartScreen> {
     setState(() {
       isLoading = true;
     });
-    final authToken = await SecureCredentialStore.instance.requireAccessToken();
+    final authToken = await AuthSessionManager.instance.requireAccessToken();
     var url = '$baseUrl/api/cart_tools';
 
     try {

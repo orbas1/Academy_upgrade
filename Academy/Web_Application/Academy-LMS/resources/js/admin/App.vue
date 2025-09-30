@@ -9,6 +9,7 @@
                 </main>
             </div>
         </div>
+        <UiToastStack />
     </div>
 </template>
 
@@ -16,6 +17,7 @@
 import { RouterView } from 'vue-router';
 import NavigationSidebar from '@/admin/components/NavigationSidebar.vue';
 import TopBar from '@/admin/components/TopBar.vue';
+import UiToastStack from '@/admin/ui/organisms/feedback/UiToastStack.vue';
 import { moduleNavigation } from '@/core/modules/module-registry';
 import { useAppContext } from '@/core/composables/useAppContext';
 

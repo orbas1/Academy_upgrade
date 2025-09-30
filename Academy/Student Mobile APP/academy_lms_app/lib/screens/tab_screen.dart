@@ -11,9 +11,8 @@ import 'package:academy_lms_app/widgets/appbar_one.dart';
 import 'package:flutter/material.dart';
 import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/security/secure_credential_store.dart';
+import '../services/security/auth_session_manager.dart';
 import 'package:academy_lms_app/features/communities/presentation/community_explorer_screen.dart';
 
 
@@ -39,11 +38,9 @@ class _TabsScreenState extends State<TabsScreen> {
   }
 
   Future<void> _checkAuthStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = await SecureCredentialStore.instance.readAccessToken();
-
+    final token = await AuthSessionManager.instance.getValidAccessToken();
     setState(() {
-      isLoggedIn = token.isNotEmpty;
+      isLoggedIn = token != null && token.isNotEmpty;
       _isInit = false;
     });
   }
