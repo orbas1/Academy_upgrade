@@ -7,6 +7,8 @@ import '../data/offline_action_queue.dart';
 import '../data/queue_health_repository.dart';
 import '../state/community_notifier.dart';
 import '../state/community_onboarding_notifier.dart';
+import '../state/community_presence_notifier.dart';
+import '../../../services/realtime/realtime_presence_service.dart';
 import '../../../providers/presence_controller.dart';
 
 List<SingleChildWidget> communityProviders({CommunityCache? cache}) {
@@ -20,6 +22,9 @@ List<SingleChildWidget> communityProviders({CommunityCache? cache}) {
         queue.close();
       },
     ),
+    Provider<RealtimePresenceService>(
+      create: (_) => RealtimePresenceService(),
+      dispose: (_, service) => service.dispose(),
     ChangeNotifierProxyProvider<Auth, PresenceController>(
       create: (_) => PresenceController(),
       update: (_, auth, controller) {
@@ -31,6 +36,15 @@ List<SingleChildWidget> communityProviders({CommunityCache? cache}) {
     ChangeNotifierProvider<CommunityOnboardingNotifier>(
       create: (_) => CommunityOnboardingNotifier(),
     ),
+    ChangeNotifierProxyProvider2<Auth, RealtimePresenceService, CommunityPresenceNotifier>(
+      create: (_) => CommunityPresenceNotifier(),
+      update: (_, auth, realtime, notifier) {
+        final controller = notifier ?? CommunityPresenceNotifier();
+        controller.attachService(realtime);
+        controller.updateAuthToken(auth.token);
+        return controller;
+      },
+    ),
     ProxyProvider<Auth, QueueHealthRepository>(
       update: (_, auth, repository) {
         final repo = repository ?? QueueHealthRepository();
@@ -38,24 +52,27 @@ List<SingleChildWidget> communityProviders({CommunityCache? cache}) {
         return repo;
       },
     ),
-    ChangeNotifierProxyProvider3<Auth, QueueHealthRepository,
-        OfflineCommunityActionQueue, CommunityNotifier>(
+    ChangeNotifierProxyProvider4<Auth, QueueHealthRepository,
+        OfflineCommunityActionQueue, CommunityPresenceNotifier, CommunityNotifier>(
       create: (context) => CommunityNotifier(
         queueHealthRepository: QueueHealthRepository(),
         cache: sharedCache,
         offlineQueue: context.read<OfflineCommunityActionQueue>(),
+        presenceNotifier: context.read<CommunityPresenceNotifier>(),
       ),
-      update: (_, auth, queueRepo, offlineQueue, notifier) {
+      update: (_, auth, queueRepo, offlineQueue, presenceNotifier, notifier) {
         final controller = notifier ??
             CommunityNotifier(
               queueHealthRepository: queueRepo,
               cache: sharedCache,
               offlineQueue: offlineQueue,
+              presenceNotifier: presenceNotifier,
             );
 
         controller.updateAuthToken(auth.token);
         controller.updateQueueHealthRepository(queueRepo);
         controller.updateOfflineQueue(offlineQueue);
+        controller.updatePresenceNotifier(presenceNotifier);
         return controller;
       },
     ),

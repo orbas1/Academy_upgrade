@@ -16,6 +16,7 @@ import '../models/community_feed_item.dart';
 import '../models/community_leaderboard_entry.dart';
 import '../models/community_member.dart';
 import '../models/community_summary.dart';
+import 'community_presence_notifier.dart';
 
 class CommunityNotifier extends ChangeNotifier {
   CommunityNotifier({
@@ -25,12 +26,14 @@ class CommunityNotifier extends ChangeNotifier {
     CommunityCache? cache,
     OfflineCommunityActionQueue? offlineQueue,
     Connectivity? connectivity,
+    CommunityPresenceNotifier? presenceNotifier,
   })  : _repository = repository ?? CommunityRepository(cache: cache),
         _queueHealthRepository =
             queueHealthRepository ?? QueueHealthRepository(),
         _manifestService = manifestService ?? CommunityManifestService(),
         _offlineQueue = offlineQueue ?? OfflineCommunityActionQueue(),
-        _connectivity = connectivity ?? Connectivity() {
+        _connectivity = connectivity ?? Connectivity(),
+        _presenceNotifier = presenceNotifier {
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen((result) {
       if (result != ConnectivityResult.none) {
         unawaited(processOfflineQueue());
@@ -46,6 +49,7 @@ class CommunityNotifier extends ChangeNotifier {
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
   final Uuid _uuid = const Uuid();
   bool _queueProcessing = false;
+  CommunityPresenceNotifier? _presenceNotifier;
 
   final Map<int, String> _activeFeedFilters = <int, String>{};
   final Map<String, bool> _feedHasMore = <String, bool>{};
@@ -95,6 +99,7 @@ class CommunityNotifier extends ChangeNotifier {
   void updateAuthToken(String? token) {
     _repository.updateAuthToken(token);
     _queueHealthRepository.updateAuthToken(token);
+    _presenceNotifier?.updateAuthToken(token);
   }
 
   void updateQueueHealthRepository(QueueHealthRepository repository) {
@@ -105,6 +110,12 @@ class CommunityNotifier extends ChangeNotifier {
     if (!identical(_offlineQueue, queue)) {
       _offlineQueue = queue;
       unawaited(processOfflineQueue(force: true));
+    }
+  }
+
+  void updatePresenceNotifier(CommunityPresenceNotifier notifier) {
+    if (!identical(_presenceNotifier, notifier)) {
+      _presenceNotifier = notifier;
     }
   }
 
@@ -203,6 +214,7 @@ class CommunityNotifier extends ChangeNotifier {
       _error = null;
       await _persistFeedState(communityId, filter: filter);
       unawaited(processOfflineQueue());
+      _presenceNotifier?.watchCommunity(communityId);
     } catch (err) {
       final cached = await _repository.loadCachedFeed(communityId, filter: filter);
       if (cached != null && cached.items.isNotEmpty) {
@@ -781,6 +793,11 @@ class CommunityNotifier extends ChangeNotifier {
     try {
       final manifest = await _manifestService.fetch();
       _repository.applyManifest(manifest);
+      if (manifest.realtime != null) {
+        _presenceNotifier?.updateRealtimeConfig(
+          manifest.realtime!.toRealtimePresenceConfig(),
+        );
+      }
       _manifestApplied = true;
     } catch (err, stack) {
       debugPrint('Unable to load community manifest: $err');

@@ -7,10 +7,15 @@ import 'package:academy_lms_app/features/communities/models/community_summary.da
 import 'package:academy_lms_app/features/communities/models/paywall_tier.dart';
 import 'package:academy_lms_app/features/communities/state/community_comments_notifier.dart';
 import 'package:academy_lms_app/features/communities/state/community_notifier.dart';
+import 'package:academy_lms_app/features/communities/state/community_presence_notifier.dart';
 import 'package:academy_lms_app/features/communities/ui/community_composer_sheet.dart';
 import 'package:academy_lms_app/features/communities/ui/community_feed_item_card.dart';
+import 'package:academy_lms_app/features/communities/ui/community_presence_header.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
+import '../../../widgets/connectivity_banner.dart';
 
 class CommunityDetailScreen extends StatefulWidget {
   const CommunityDetailScreen({super.key, required this.summary});
@@ -37,6 +42,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
   void dispose() {
     _feedController.removeListener(_onFeedScroll);
     _feedController.dispose();
+    context.read<CommunityPresenceNotifier>().unwatchCommunity(widget.summary.id);
     super.dispose();
   }
 
@@ -49,9 +55,11 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
     _bootstrapped = true;
 
     final notifier = context.read<CommunityNotifier>();
+    final presence = context.read<CommunityPresenceNotifier>();
     unawaited(notifier.refreshMembership(widget.summary.id));
     unawaited(notifier.refreshFeed(widget.summary.id));
     unawaited(notifier.loadLeaderboard(widget.summary.id));
+    presence.watchCommunity(widget.summary.id);
   }
 
   void _onFeedScroll() {
@@ -104,7 +112,10 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
           child: Scaffold(
             floatingActionButton: isMember
                 ? FloatingActionButton.extended(
-                    onPressed: () => _showComposer(context, notifier),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      _showComposer(context, notifier);
+                    },
                     icon: const Icon(Icons.create),
                     label: const Text('New post'),
                   )
@@ -153,6 +164,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
     BuildContext context,
     CommunityNotifier notifier,
   ) async {
+    final presence = context.read<CommunityPresenceNotifier>();
     List<PaywallTier> paywallTiers = const <PaywallTier>[];
     try {
       paywallTiers = await notifier.repository.loadPaywallTiers(widget.summary.id);
@@ -169,6 +181,8 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
 
     final result = await showCommunityComposerSheet(
       context,
+      communityId: widget.summary.id,
+      presenceNotifier: presence,
       paywallTiers: paywallTiers,
       canPostPublic: notifier.canModerate || notifier.isMember,
     );
@@ -183,6 +197,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
         visibility: result.visibility,
         paywallTierId: result.paywallTierId,
       );
+      HapticFeedback.mediumImpact();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Post published to the community feed.')),
@@ -415,6 +430,8 @@ class _FeedTab extends StatelessWidget {
 
         return Column(
           children: [
+            const ConnectivityBanner(),
+            CommunityPresenceHeader(communityId: communityId),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
               child: SegmentedButton<String>(
@@ -445,6 +462,7 @@ class _FeedTab extends StatelessWidget {
                   if (next == filter) {
                     return;
                   }
+                  HapticFeedback.selectionClick();
                   notifier.changeFeedFilter(communityId, filter: next);
                 },
               ),

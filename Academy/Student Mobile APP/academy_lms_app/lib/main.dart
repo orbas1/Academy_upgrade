@@ -8,6 +8,7 @@ import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
 import 'config/design_tokens.dart';
+import 'config/app_configuration.dart';
 import 'providers/auth.dart';
 import 'providers/categories.dart';
 import 'providers/app_locale_notifier.dart';
@@ -25,6 +26,7 @@ import 'screens/courses_screen.dart';
 import 'screens/sub_category.dart';
 import 'services/messaging/deep_link_handler.dart';
 import 'services/messaging/push_notification_router.dart';
+import 'services/telemetry/telemetry_service.dart';
 import 'features/communities/data/community_cache.dart';
 import 'features/communities/di/providers.dart';
 import 'l10n/app_localizations.dart';
@@ -35,13 +37,27 @@ final PushNotificationRouter pushNotificationRouter =
     PushNotificationRouter(deepLinkHandler: deepLinkHandler);
 final CommunityCache communityCache = CommunityCache();
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Logger.root.onRecord.listen((LogRecord rec) {
     debugPrint(
         '${rec.loggerName}>${rec.level.name}: ${rec.time}: ${rec.message}');
   });
-  runApp(const MyApp());
+  final configuration = AppConfiguration.instance;
+  final telemetry = TelemetryService.instance;
+  telemetry.environment = configuration.environment;
+
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    telemetry.recordError(details.exception, details.stack ?? StackTrace.empty);
+  };
+
+  await telemetry.ensureInitialized(
+    sentryDsn: configuration.sentryDsn,
+    runner: () {
+      runApp(const MyApp());
+    },
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -115,6 +131,7 @@ class MyApp extends StatelessWidget {
           theme: buildAppTheme(),
           debugShowCheckedModeBanner: false,
           navigatorKey: appNavigatorKey,
+          navigatorObservers: TelemetryService.instance.navigatorObservers,
           home: const SplashScreen(),
           routes: {
             '/home': (ctx) => const TabsScreen(

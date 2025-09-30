@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../config/app_configuration.dart';
+import 'realtime/realtime_presence_service.dart';
 
 class CommunityModuleNavigationItem {
   CommunityModuleNavigationItem({
@@ -62,10 +63,16 @@ class CommunityModuleManifest {
     required this.generatedAt,
     required this.modules,
     this.apiBaseUrl,
+    this.realtime,
   });
 
   factory CommunityModuleManifest.fromJson(Map<String, dynamic> json) {
     final api = json['api'];
+    CommunityRealtimeConfig? realtimeConfig;
+    final realtime = json['realtime'];
+    if (realtime is Map<String, dynamic>) {
+      realtimeConfig = CommunityRealtimeConfig.fromJson(realtime);
+    }
     return CommunityModuleManifest(
       version: json['version'] as String? ?? '0.0.0',
       generatedAt: json['generated_at'] as String? ?? DateTime.now().toIso8601String(),
@@ -73,6 +80,7 @@ class CommunityModuleManifest {
           .map((dynamic module) => CommunityModuleDescriptor.fromJson(Map<String, dynamic>.from(module as Map)))
           .toList(growable: false),
       apiBaseUrl: api is Map<String, dynamic> ? api['base_url'] as String? : null,
+      realtime: realtimeConfig,
     );
   }
 
@@ -80,6 +88,53 @@ class CommunityModuleManifest {
   final String generatedAt;
   final List<CommunityModuleDescriptor> modules;
   final String? apiBaseUrl;
+  final CommunityRealtimeConfig? realtime;
+}
+
+class CommunityRealtimeConfig {
+  CommunityRealtimeConfig({
+    required this.socketUrl,
+    this.authEndpoint,
+    this.heartbeatInterval = const Duration(seconds: 25),
+    this.typingDebounce = const Duration(milliseconds: 900),
+  });
+
+  factory CommunityRealtimeConfig.fromJson(Map<String, dynamic> json) {
+    final socket = json['socket_url'] as String?;
+    if (socket == null || socket.isEmpty) {
+      throw ArgumentError('Realtime config requires `socket_url`.');
+    }
+    final heartbeatSeconds = json['heartbeat_interval'] as int? ?? 25;
+    final typingMs = json['typing_debounce_ms'] as int? ?? 900;
+    return CommunityRealtimeConfig(
+      socketUrl: Uri.parse(socket),
+      authEndpoint: _parseOptionalUri(json['auth_endpoint'] as String?),
+      heartbeatInterval: Duration(seconds: heartbeatSeconds),
+      typingDebounce: Duration(milliseconds: typingMs),
+    );
+  }
+
+  final Uri socketUrl;
+  final Uri? authEndpoint;
+  final Duration heartbeatInterval;
+  final Duration typingDebounce;
+
+  RealtimePresenceConfig toRealtimePresenceConfig() {
+    return RealtimePresenceConfig(
+      socketUrl: socketUrl,
+      authEndpoint: authEndpoint,
+      heartbeatInterval: heartbeatInterval,
+      typingDebounce: typingDebounce,
+    );
+  }
+
+  static Uri? _parseOptionalUri(String? value) {
+    final text = value?.trim();
+    if (text == null || text.isEmpty) {
+      return null;
+    }
+    return Uri.parse(text);
+  }
 }
 
 class CommunityManifestService {
