@@ -13,16 +13,21 @@ return new class extends Migration
     {
         Schema::create('quizzes', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('course_id');
-            $table->string('section_id', 255)->nullable();
-            $table->integer('duration', 255)->nullable();
-            $table->integer('num_questions', 255)->nullable();
-            $table->integer('total_mark', 255)->nullable();
-            $table->integer('pass_mark', 255)->nullable();
-            $table->integer('drip_rule', 255)->nullable();
-            $table->integer('summary', 255)->nullable();
-            $table->timestamp('created_at')->useCurrent();
-            $table->timestamp('updated_at')->useCurrent();
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->unsignedBigInteger('course_id')->nullable();
+            $table->unsignedBigInteger('section_id')->nullable();
+            $table->string('title')->nullable();
+            $table->string('duration')->nullable();
+            $table->unsignedInteger('total_mark')->nullable();
+            $table->unsignedInteger('pass_mark')->nullable();
+            $table->unsignedInteger('drip_rule')->nullable();
+            $table->longText('summary')->nullable();
+            $table->longText('attempts')->nullable();
+            $table->unsignedInteger('sort')->nullable();
+            $table->timestamps();
+
+            $table->index('course_id');
+            $table->index('section_id');
         });
     }
 

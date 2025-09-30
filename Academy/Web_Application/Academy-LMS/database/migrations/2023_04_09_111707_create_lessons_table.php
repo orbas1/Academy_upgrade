@@ -19,11 +19,18 @@ return new class extends Migration
             $table->unsignedBigInteger('section_id')->nullable();
             $table->string('lesson_type')->nullable();
             $table->string('duration')->nullable();
+            $table->unsignedInteger('total_mark')->nullable();
+            $table->unsignedInteger('pass_mark')->nullable();
+            $table->unsignedInteger('retake')->nullable();
             $table->string('lesson_src')->nullable();
+            $table->longText('attachment')->nullable();
+            $table->string('attachment_type')->nullable();
+            $table->text('video_type')->nullable();
             $table->string('thumbnail')->nullable();
             $table->integer('is_free')->nullable();
             $table->integer('sort')->nullable();
             $table->mediumText('description')->nullable();
+            $table->longText('summary')->nullable();
             $table->integer('status')->nullable();
             $table->timestamps();
 

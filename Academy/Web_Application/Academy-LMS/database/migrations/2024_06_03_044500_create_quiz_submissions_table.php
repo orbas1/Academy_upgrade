@@ -6,29 +6,24 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('sections', function (Blueprint $table) {
+        Schema::create('quiz_submissions', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('quiz_id')->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
-            $table->unsignedBigInteger('course_id')->nullable();
-            $table->string('title')->nullable();
-            $table->unsignedInteger('sort')->nullable();
+            $table->longText('correct_answer')->nullable();
+            $table->longText('wrong_answer')->nullable();
+            $table->longText('submits')->nullable();
             $table->timestamps();
 
+            $table->index('quiz_id');
             $table->index('user_id');
-            $table->index('course_id');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('sections');
+        Schema::dropIfExists('quiz_submissions');
     }
 };

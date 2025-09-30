@@ -26,9 +26,12 @@ return new class extends Migration
             $table->string('language')->nullable();
 
             $table->integer('is_paid')->nullable();
-            $table->double('price', 10, 2)->nullable();
+            $table->boolean('is_best')->default(false);
+            $table->decimal('price', 12, 2)->nullable();
             $table->integer('discount_flag')->nullable();
-            $table->double('discounted_price', 10, 2)->nullable();
+            $table->decimal('discounted_price', 12, 2)->nullable();
+            $table->boolean('enable_drip_content')->default(false);
+            $table->longText('drip_content_settings')->nullable();
 
             $table->text('meta_keywords')->nullable();
             $table->text('meta_description')->nullable();
@@ -42,6 +45,8 @@ return new class extends Migration
             $table->mediumText('outcomes')->nullable();
             $table->mediumText('faqs')->nullable();
             $table->text('instructor_ids')->nullable();
+            $table->integer('average_rating')->default(0);
+            $table->unsignedInteger('expiry_period')->nullable();
 
             $table->timestamps();
 

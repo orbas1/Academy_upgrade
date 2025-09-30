@@ -6,22 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('watche_durations', function (Blueprint $table) {
+        Schema::create('blog_likes', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('blog_id')->nullable();
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->timestamps();
+
+            $table->index('blog_id');
+            $table->index('user_id');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('watche_durations');
+        Schema::dropIfExists('blog_likes');
     }
 };

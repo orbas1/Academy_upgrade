@@ -13,7 +13,14 @@ return new class extends Migration
     {
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('thread_id')->nullable();
+            $table->foreignId('sender_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('receiver_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->longText('message')->nullable();
+            $table->unsignedTinyInteger('read')->default(0);
             $table->timestamps();
+
+            $table->index('thread_id');
         });
     }
 
