@@ -25,15 +25,15 @@ import 'screens/courses_screen.dart';
 import 'screens/sub_category.dart';
 import 'services/messaging/deep_link_handler.dart';
 import 'services/messaging/push_notification_router.dart';
-import 'features/communities/data/queue_health_repository.dart';
-import 'features/communities/state/community_notifier.dart';
-import 'features/communities/state/community_onboarding_notifier.dart';
+import 'features/communities/data/community_cache.dart';
+import 'features/communities/di/providers.dart';
 import 'l10n/app_localizations.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 final DeepLinkHandler deepLinkHandler = DeepLinkHandler(navigatorKey: appNavigatorKey);
 final PushNotificationRouter pushNotificationRouter =
     PushNotificationRouter(deepLinkHandler: deepLinkHandler);
+final CommunityCache communityCache = CommunityCache();
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -66,28 +66,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (ctx) => CommunityDefaultsProvider()..hydrateFromSeed(),
         ),
-        ProxyProvider<Auth, QueueHealthRepository>(
-          update: (ctx, auth, repository) {
-            final repo = repository ?? QueueHealthRepository();
-            repo.updateAuthToken(auth.token);
-            return repo;
-          },
-        ),
-        ChangeNotifierProvider(
-          create: (ctx) => CommunityOnboardingNotifier(),
-        ),
-        ChangeNotifierProxyProvider2<Auth, QueueHealthRepository, CommunityNotifier>(
-          create: (ctx) => CommunityNotifier(
-            queueHealthRepository: QueueHealthRepository(),
-          ),
-          update: (ctx, auth, queueRepo, notifier) {
-            final communityNotifier = notifier ??
-                CommunityNotifier(queueHealthRepository: queueRepo);
-            communityNotifier.updateAuthToken(auth.token);
-            communityNotifier.updateQueueHealthRepository(queueRepo);
-            return communityNotifier;
-          },
-        ),
+        ...communityProviders(cache: communityCache),
         ChangeNotifierProvider(
           create: (ctx) => Languages(),
         ),

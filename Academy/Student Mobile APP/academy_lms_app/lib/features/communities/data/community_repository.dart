@@ -14,12 +14,16 @@ import '../models/subscription_checkout.dart';
 import '../models/subscription_status.dart';
 import 'package:academy_lms_app/services/community_manifest_service.dart';
 import 'community_api_service.dart';
+import 'community_cache.dart';
 import 'paginated_response.dart';
 
 class CommunityRepository {
-  CommunityRepository({CommunityApiService? api}) : _api = api ?? CommunityApiService();
+  CommunityRepository({CommunityApiService? api, CommunityCache? cache})
+      : _api = api ?? CommunityApiService(),
+        _cache = cache ?? CommunityCache();
 
   final CommunityApiService _api;
+  final CommunityCache _cache;
   final Map<String, String?> _communityCursors = <String, String?>{};
   final Map<String, String?> _feedCursors = <String, String?>{};
   final Map<int, String?> _notificationCursors = <int, String?>{};
@@ -52,6 +56,9 @@ class CommunityRepository {
     );
 
     _communityCursors[filter] = response.nextCursor;
+    if (resetCursor) {
+      await _cache.writeCommunityList(filter, response);
+    }
     return response;
   }
 
@@ -95,6 +102,13 @@ class CommunityRepository {
     );
 
     _feedCursors[key] = response.nextCursor;
+    if (resetCursor) {
+      await _cache.writeCommunityFeed(
+        communityId,
+        filter,
+        response,
+      );
+    }
     return response;
   }
 
@@ -175,6 +189,59 @@ class CommunityRepository {
   void resetPointHistoryPaging(int communityId) {
     _pointHistoryCursors.remove(communityId);
   }
+
+  Future<PaginatedResponse<CommunitySummary>?> loadCachedCommunities(String filter) {
+    return _cache.readCommunityList(filter);
+  }
+
+  Future<PaginatedResponse<CommunityFeedItem>?> loadCachedFeed(
+    int communityId, {
+    String filter = 'new',
+  }) {
+    return _cache.readCommunityFeed(communityId, filter);
+  }
+
+  Future<void> saveCommunitySnapshot({
+    required String filter,
+    required List<CommunitySummary> items,
+    String? nextCursor,
+    bool hasMore = false,
+  }) {
+    return _cache.writeCommunityList(
+      filter,
+      PaginatedResponse<CommunitySummary>.fromCache(
+        items: items,
+        nextCursor: nextCursor,
+        hasMore: hasMore,
+      ),
+    );
+  }
+
+  Future<void> saveFeedSnapshot({
+    required int communityId,
+    required String filter,
+    required List<CommunityFeedItem> items,
+    String? nextCursor,
+    bool hasMore = false,
+  }) {
+    return _cache.writeCommunityFeed(
+      communityId,
+      filter,
+      PaginatedResponse<CommunityFeedItem>.fromCache(
+        items: items,
+        nextCursor: nextCursor,
+        hasMore: hasMore,
+      ),
+    );
+  }
+
+  String? communityCursorFor(String filter) => _communityCursors[filter];
+
+  String? feedCursorFor(
+    int communityId, {
+    String filter = 'new',
+  }) =>
+      _feedCursors[_feedKey(communityId, filter)];
 
   Future<PaginatedResponse<CommunityComment>> loadComments(
     int communityId,
@@ -395,6 +462,7 @@ class CommunityRepository {
 
   Future<void> dispose() async {
     await _api.dispose();
+    await _cache.close();
     _communityCursors.clear();
     _feedCursors.clear();
     _notificationCursors.clear();

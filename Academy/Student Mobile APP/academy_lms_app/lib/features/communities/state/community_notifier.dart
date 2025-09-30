@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:academy_lms_app/services/community_manifest_service.dart';
 
+import '../data/community_cache.dart';
 import '../data/community_repository.dart';
 import '../data/queue_health_repository.dart';
 import '../models/community_feed_item.dart';
@@ -16,7 +17,8 @@ class CommunityNotifier extends ChangeNotifier {
     CommunityRepository? repository,
     QueueHealthRepository? queueHealthRepository,
     CommunityManifestService? manifestService,
-  })  : _repository = repository ?? CommunityRepository(),
+    CommunityCache? cache,
+  })  : _repository = repository ?? CommunityRepository(cache: cache),
         _queueHealthRepository =
             queueHealthRepository ?? QueueHealthRepository(),
         _manifestService = manifestService ?? CommunityManifestService();
@@ -98,9 +100,23 @@ class CommunityNotifier extends ChangeNotifier {
       _communities = response.items;
       _communitiesHasMore = response.hasMore;
       _error = null;
+      await _repository.saveCommunitySnapshot(
+        filter: filter,
+        items: _communities,
+        nextCursor: _repository.communityCursorFor(filter),
+        hasMore: _communitiesHasMore,
+      );
     } catch (err) {
-      _communitiesHasMore = false;
-      _error = err.toString();
+      final cached = await _repository.loadCachedCommunities(filter);
+      if (cached != null && cached.items.isNotEmpty) {
+        _communities = cached.items;
+        _communitiesHasMore = cached.hasMore;
+        _error = _offlineFallbackMessage(err);
+      } else {
+        _communities = <CommunitySummary>[];
+        _communitiesHasMore = false;
+        _error = err.toString();
+      }
     } finally {
       _setLoading(false);
     }
@@ -126,6 +142,12 @@ class CommunityNotifier extends ChangeNotifier {
       }
       _communitiesHasMore = response.hasMore;
       _error = null;
+      await _repository.saveCommunitySnapshot(
+        filter: _currentCommunitiesFilter,
+        items: _communities,
+        nextCursor: _repository.communityCursorFor(_currentCommunitiesFilter),
+        hasMore: _repository.hasMoreCommunities(filter: _currentCommunitiesFilter),
+      );
     } catch (err) {
       _error = err.toString();
     } finally {
@@ -142,19 +164,34 @@ class CommunityNotifier extends ChangeNotifier {
     _setLoading(true);
     try {
       await _ensureManifest();
+      _activeFeedFilters[communityId] = filter;
       final response = await _repository.loadFeed(
         communityId,
         filter: filter,
         resetCursor: true,
         pageSize: pageSize,
       );
-      _activeFeedFilters[communityId] = filter;
       _feed = response.items;
       _feedHasMore[_feedKey(communityId, filter)] = response.hasMore;
       _error = null;
+      await _repository.saveFeedSnapshot(
+        communityId: communityId,
+        filter: filter,
+        items: _feed,
+        nextCursor: _repository.feedCursorFor(communityId, filter: filter),
+        hasMore: _repository.hasMoreFeed(communityId, filter: filter),
+      );
     } catch (err) {
-      _feedHasMore[_feedKey(communityId, filter)] = false;
-      _error = err.toString();
+      final cached = await _repository.loadCachedFeed(communityId, filter: filter);
+      if (cached != null && cached.items.isNotEmpty) {
+        _feed = cached.items;
+        _feedHasMore[_feedKey(communityId, filter)] = cached.hasMore;
+        _error = _offlineFallbackMessage(err);
+      } else {
+        _feed = <CommunityFeedItem>[];
+        _feedHasMore[_feedKey(communityId, filter)] = false;
+        _error = err.toString();
+      }
     } finally {
       _setLoading(false);
     }
@@ -189,6 +226,13 @@ class CommunityNotifier extends ChangeNotifier {
 
       _feedHasMore[key] = response.hasMore;
       _error = null;
+      await _repository.saveFeedSnapshot(
+        communityId: communityId,
+        filter: filter,
+        items: _feed,
+        nextCursor: _repository.feedCursorFor(communityId, filter: filter),
+        hasMore: _repository.hasMoreFeed(communityId, filter: filter),
+      );
     } catch (err) {
       _error = err.toString();
     } finally {
@@ -394,6 +438,11 @@ class CommunityNotifier extends ChangeNotifier {
       _leaderboardLoading = false;
       notifyListeners();
     }
+  }
+
+  String _offlineFallbackMessage(Object error) {
+    final description = error.toString();
+    return 'Offline mode — displaying cached data. Last error: $description';
   }
 
   void _setLoading(bool value) {
