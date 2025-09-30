@@ -2,6 +2,7 @@ import 'package:academy_lms_app/constants.dart' as constants;
 import 'package:academy_lms_app/features/communities/models/community_summary.dart';
 import 'package:academy_lms_app/features/communities/presentation/community_detail_screen.dart';
 import 'package:academy_lms_app/features/communities/state/community_notifier.dart';
+import 'package:academy_lms_app/features/communities/ui/community_card.dart';
 import 'package:academy_lms_app/providers/auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -69,7 +70,7 @@ class _CommunityExplorerScreenState extends State<CommunityExplorerScreen> {
               final summary = communities[index];
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: _CommunityCard(
+                child: CommunityCard(
                   summary: summary,
                   isBusy: notifier.isMutatingMembership,
                   onJoin: () => notifier.joinCommunity(summary.id),
@@ -89,135 +90,6 @@ class _CommunityExplorerScreenState extends State<CommunityExplorerScreen> {
       MaterialPageRoute<Widget>(
         builder: (context) => CommunityDetailScreen(summary: summary),
       ),
-    );
-  }
-}
-
-class _CommunityCard extends StatelessWidget {
-  const _CommunityCard({
-    required this.summary,
-    required this.isBusy,
-    required this.onJoin,
-    required this.onLeave,
-    required this.onOpen,
-  });
-
-  final CommunitySummary summary;
-  final bool isBusy;
-  final VoidCallback onJoin;
-  final VoidCallback onLeave;
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isMember = summary.isMember;
-
-    return Card(
-      elevation: 2,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: onOpen,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      summary.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: constants.kBlackColor,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: summary.visibility == 'public'
-                          ? constants.kDefaultColor.withOpacity(0.12)
-                          : constants.kGreyLightColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: Text(
-                      summary.visibility.toUpperCase(),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        letterSpacing: 0.8,
-                        fontWeight: FontWeight.w600,
-                        color: summary.visibility == 'public'
-                            ? constants.kDefaultColor
-                            : constants.kGreyLightColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                summary.tagline.isEmpty ? 'Stay tuned for updates.' : summary.tagline,
-                style: theme.textTheme.bodyMedium?.copyWith(color: constants.kGreyLightColor),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(Icons.people_alt_outlined, size: 18, color: constants.kGreyLightColor),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${summary.memberCount} members',
-                    style: theme.textTheme.bodySmall?.copyWith(color: constants.kGreyLightColor),
-                  ),
-                  const Spacer(),
-                  _CommunityActionButton(
-                    isMember: isMember,
-                    isBusy: isBusy,
-                    onJoin: onJoin,
-                    onLeave: onLeave,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CommunityActionButton extends StatelessWidget {
-  const _CommunityActionButton({
-    required this.isMember,
-    required this.isBusy,
-    required this.onJoin,
-    required this.onLeave,
-  });
-
-  final bool isMember;
-  final bool isBusy;
-  final VoidCallback onJoin;
-  final VoidCallback onLeave;
-
-  @override
-  Widget build(BuildContext context) {
-    if (isMember) {
-      return OutlinedButton(
-        onPressed: isBusy ? null : onLeave,
-        child: const Text('Leave'),
-      );
-    }
-
-    return ElevatedButton(
-      onPressed: isBusy ? null : onJoin,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: constants.kDefaultColor,
-        foregroundColor: constants.kWhiteColor,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-      ),
-      child: const Text('Join'),
     );
   }
 }

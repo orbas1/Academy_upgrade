@@ -12,6 +12,7 @@ import '../models/point_event.dart';
 import '../models/points_summary.dart';
 import '../models/subscription_checkout.dart';
 import '../models/subscription_status.dart';
+import 'package:academy_lms_app/services/community_manifest_service.dart';
 import 'community_api_service.dart';
 import 'paginated_response.dart';
 
@@ -27,6 +28,12 @@ class CommunityRepository {
 
   void updateAuthToken(String? token) {
     _api.updateAuthToken(token);
+  }
+
+  void applyManifest(CommunityModuleManifest manifest) {
+    if (manifest.apiBaseUrl != null && manifest.apiBaseUrl!.isNotEmpty) {
+      _api.updateBaseUrl(manifest.apiBaseUrl);
+    }
   }
 
   Future<PaginatedResponse<CommunitySummary>> loadCommunities({

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-const baseUrl = 'your_application_url_will_be_here'; // Example: const BASE_URL = 'http://creativeitem.com/academy';
+import 'config/app_configuration.dart';
+
+final baseUrl = AppConfiguration.instance.apiBaseUrl.toString();
 
 // list of colors that we use in our app
 const kWhiteColor = Colors.white;

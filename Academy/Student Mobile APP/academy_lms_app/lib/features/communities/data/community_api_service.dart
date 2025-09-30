@@ -27,6 +27,7 @@ class CommunityApiService {
 
   final http.Client _client;
   String? _authToken;
+  String? _baseUrlOverride;
 
   void updateAuthToken(String? token) {
     if (token == null || token.isEmpty) {
@@ -34,6 +35,15 @@ class CommunityApiService {
     } else {
       _authToken = token;
     }
+  }
+
+  void updateBaseUrl(String? baseUrl) {
+    if (baseUrl == null || baseUrl.isEmpty) {
+      _baseUrlOverride = null;
+      return;
+    }
+
+    _baseUrlOverride = baseUrl;
   }
 
   Uri _buildUri(String path, [Map<String, String?>? query]) {
@@ -46,9 +56,10 @@ class CommunityApiService {
       });
     }
 
-    final normalizedBase = constants.baseUrl.endsWith('/')
-        ? constants.baseUrl.substring(0, constants.baseUrl.length - 1)
-        : constants.baseUrl;
+    final baseSource = _baseUrlOverride ?? constants.baseUrl;
+    final normalizedBase = baseSource.endsWith('/')
+        ? baseSource.substring(0, baseSource.length - 1)
+        : baseSource;
 
     return Uri.parse('$normalizedBase$path').replace(queryParameters: cleanQuery.isEmpty ? null : cleanQuery);
   }
