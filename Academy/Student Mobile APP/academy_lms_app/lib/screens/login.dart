@@ -13,7 +13,10 @@ import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 
+import '../services/security/secure_credential_store.dart';
+import '../providers/auth.dart';
 class LoginScreen extends StatefulWidget {
   static const routeName = '/login';
   const LoginScreen({super.key});
@@ -109,13 +112,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (emailVerifiedAt != null) {
         // If email is verified, proceed with login
+        await SecureCredentialStore.instance
+            .persistAccessToken(data["token"] as String);
         setState(() {
-          sharedPreferences!.setString("access_token", data["token"]);
           sharedPreferences!.setString("user", jsonEncode(user));
-          sharedPreferences!.setString("email", _emailController.text.toString());
-          sharedPreferences!.setString("password", _passwordController.text.toString());
+          sharedPreferences!
+              .setString("email", _emailController.text.toString());
+          sharedPreferences!
+              .setString("password", _passwordController.text.toString());
         });
-        token = sharedPreferences!.getString("access_token");
+        token = await SecureCredentialStore.instance.readAccessToken();
+        Provider.of<Auth>(context, listen: false).setToken(token);
         navigator.pushReplacement(
           MaterialPageRoute(
             builder: (context) => const TabsScreen(
@@ -154,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
   isLogin() async {
     var navigator = Navigator.of(context);
     sharedPreferences = await SharedPreferences.getInstance();
-    token = sharedPreferences!.getString("access_token");
+    token = await SecureCredentialStore.instance.readAccessToken();
     try {
       if (token == null) {
         // print("Token is Null");

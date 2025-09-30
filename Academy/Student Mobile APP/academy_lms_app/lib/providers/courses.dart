@@ -7,6 +7,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/security/secure_credential_store.dart';
+
 import '../constants.dart';
 import '../models/course.dart';
 import '../models/course_detail.dart';
@@ -164,8 +166,7 @@ class Courses with ChangeNotifier {
   }
 
   Future<void> fetchMyWishlist() async {
-    final prefs = await SharedPreferences.getInstance();
-    final authToken = (prefs.getString('access_token') ?? '');
+    final authToken = await SecureCredentialStore.instance.requireAccessToken();
     var url = '$baseUrl/api/my_wishlist';
     try {
       final response = await http.get(Uri.parse(url), headers: {
@@ -188,8 +189,7 @@ class Courses with ChangeNotifier {
   }
 
   Future<void> fetchCartlist() async {
-    final prefs = await SharedPreferences.getInstance();
-    final authToken = (prefs.getString('access_token') ?? '');
+    final authToken = await SecureCredentialStore.instance.requireAccessToken();
     var url = '$baseUrl/api/cart_list';
     try {
       final response = await http.get(Uri.parse(url), headers: {
@@ -244,8 +244,7 @@ class Courses with ChangeNotifier {
   }
 
   Future<void> toggleWishlist(int courseId, bool removeItem) async {
-    final prefs = await SharedPreferences.getInstance();
-    final authToken = (prefs.getString('access_token') ?? '');
+    final authToken = await SecureCredentialStore.instance.requireAccessToken();
     var url = '$baseUrl/api/toggle_wishlist_items?course_id=$courseId';
     if (!removeItem) {
       _courseDetailsitems.first.isWishlisted!
@@ -308,8 +307,7 @@ class Courses with ChangeNotifier {
   // }
 
 Future<void> toggleCart(int courseId, bool removeItem) async {
-  final prefs = await SharedPreferences.getInstance();
-  final authToken = (prefs.getString('access_token') ?? '');
+  final authToken = await SecureCredentialStore.instance.requireAccessToken();
   var url = '$baseUrl/api/toggle_cart_items?course_id=$courseId';
 
   // Optimistically update the local state for immediate UI feedback
@@ -400,7 +398,7 @@ Future<void> toggleCart(int courseId, bool removeItem) async {
 
   Future<void> fetchCourseDetailById(int courseId) async {
     final prefs = await SharedPreferences.getInstance();
-    final token = (prefs.getString('access_token') ?? '');
+    final token = await SecureCredentialStore.instance.requireAccessToken();
     var url = '$baseUrl/api/course_details_by_id?course_id=$courseId';
 
     try {
@@ -481,7 +479,7 @@ Future<void> toggleCart(int courseId, bool removeItem) async {
 // course details
   Future<void> fetchCourseDetails(String? courseId) async {
     final prefs = await SharedPreferences.getInstance();
-    final token = (prefs.getString('access_token') ?? '');
+    final token = await SecureCredentialStore.instance.requireAccessToken();
 
     var url = "$baseUrl/api/course_details_by_id?course_id=$courseId";
     print(url);

@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../services/security/secure_credential_store.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../constants.dart';
@@ -56,7 +58,7 @@ class _CartScreenState extends State<CartScreen> {
 
   Future<void> fetchUrl() async {
     final prefs = await SharedPreferences.getInstance();
-    final authToken = prefs.getString('access_token') ?? '';
+    final authToken = await SecureCredentialStore.instance.requireAccessToken();
 
     var url = '$baseUrl/api/payment';
     try {
@@ -109,8 +111,7 @@ class _CartScreenState extends State<CartScreen> {
     setState(() {
       isLoading = true;
     });
-    final prefs = await SharedPreferences.getInstance();
-    final authToken = (prefs.getString('access_token') ?? '');
+    final authToken = await SecureCredentialStore.instance.requireAccessToken();
     var url = '$baseUrl/api/cart_tools';
 
     try {

@@ -37,6 +37,22 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->runInBackground();
 
+        if (config('secrets.rotation.enabled')) {
+            $schedule->command('secrets:rotate')
+                ->cron(config('secrets.rotation.cron', '0 3 * * *'))
+                ->environments(['staging', 'production'])
+                ->onOneServer()
+                ->withoutOverlapping();
+        }
+
+        if ($syncKeys = config('secrets.sync.keys')) {
+            $schedule->command('secrets:sync')
+                ->twiceDaily(3, 15)
+                ->environments(['staging', 'production'])
+                ->onOneServer()
+                ->withoutOverlapping();
+        }
+
         $schedule->command('communities:maintain --prune')
             ->dailyAt('01:30')
             ->onOneServer()

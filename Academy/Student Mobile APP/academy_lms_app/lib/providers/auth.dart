@@ -4,8 +4,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../services/security/secure_credential_store.dart';
 import '../constants.dart';
 import '../models/user.dart';
 
@@ -16,10 +18,7 @@ class Auth with ChangeNotifier {
   User _user = User(userId: '', name: '', email: '', role: '');
 
   String? get token {
-    if (_token != null) {
-      return _token;
-    }
-    return null;
+    return _token;
   }
 
   String? get userId {
@@ -33,23 +32,31 @@ class Auth with ChangeNotifier {
     return _user;
   }
 
+  Future<String?> synchronizeToken() async {
+    _token = await SecureCredentialStore.instance.readAccessToken();
+    return _token;
+  }
+
+  void setToken(String? token) {
+    _token = token;
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     _token = null;
-    // _user = null;
     notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
 
-    prefs.remove('access_token');
+    final prefs = await SharedPreferences.getInstance();
+    await SecureCredentialStore.instance.clearAll();
+
     prefs.remove('user_name');
     prefs.remove('user_photo');
     prefs.remove('school_name');
-    prefs.clear();
   }
 
   Future<void> updateUserPassword(String currentPassword, String newPassword,
       String confirmPassword) async {
-    final prefs = await SharedPreferences.getInstance();
-    final authToken = (prefs.getString('access_token') ?? '');
+    final authToken = await SecureCredentialStore.instance.requireAccessToken();
     const url = '$baseUrl/api/update_password';
     try {
       final response = await http.post(
@@ -77,7 +84,7 @@ class Auth with ChangeNotifier {
 
 Future<void> updateUserData(User user) async {
   final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString('access_token') ?? '';
+  final token = await SecureCredentialStore.instance.requireAccessToken();
   const url = '$baseUrl/api/update_userdata';
 
   try {

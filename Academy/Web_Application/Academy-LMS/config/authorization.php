@@ -42,6 +42,7 @@ return [
             'paywall.manage',
             'search.audit',
             'search.saved',
+            'secrets.manage',
         ],
         'admin' => ['*'],
     ],
