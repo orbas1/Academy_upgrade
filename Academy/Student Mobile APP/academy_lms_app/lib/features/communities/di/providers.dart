@@ -9,6 +9,7 @@ import '../state/community_notifier.dart';
 import '../state/community_onboarding_notifier.dart';
 import '../state/community_presence_notifier.dart';
 import '../../../services/realtime/realtime_presence_service.dart';
+import '../../../providers/presence_controller.dart';
 
 List<SingleChildWidget> communityProviders({CommunityCache? cache}) {
   final sharedCache = cache ?? CommunityCache();
@@ -24,6 +25,13 @@ List<SingleChildWidget> communityProviders({CommunityCache? cache}) {
     Provider<RealtimePresenceService>(
       create: (_) => RealtimePresenceService(),
       dispose: (_, service) => service.dispose(),
+    ChangeNotifierProxyProvider<Auth, PresenceController>(
+      create: (_) => PresenceController(),
+      update: (_, auth, controller) {
+        final notifier = controller ?? PresenceController();
+        notifier.updateAuthToken(auth.token);
+        return notifier;
+      },
     ),
     ChangeNotifierProvider<CommunityOnboardingNotifier>(
       create: (_) => CommunityOnboardingNotifier(),

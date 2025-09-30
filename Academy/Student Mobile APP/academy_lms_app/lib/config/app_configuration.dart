@@ -6,6 +6,12 @@ class AppConfiguration {
             defaultValue: 'https://academy.local/api',
           ),
         ),
+        realtimeGatewayUrl = Uri.parse(
+          const String.fromEnvironment(
+            'ACADEMY_REALTIME_GATEWAY_URL',
+            defaultValue: 'wss://academy.local/ws',
+          ),
+        ),
         communityManifestUrl = Uri.parse(
           const String.fromEnvironment(
             'ACADEMY_COMMUNITY_MANIFEST_URL',
@@ -35,6 +41,7 @@ class AppConfiguration {
   static final AppConfiguration instance = AppConfiguration._internal();
 
   final Uri apiBaseUrl;
+  final Uri realtimeGatewayUrl;
   Uri communityManifestUrl;
   final Uri oauthTokenEndpoint;
   final String? oauthClientId;
@@ -59,6 +66,7 @@ class AppConfiguration {
     communityManifestUrl = endpoint;
   }
 
+
   static String? _emptyToNull(String value) {
     final trimmed = value.trim();
     return trimmed.isEmpty ? null : trimmed;
@@ -70,5 +78,17 @@ class AppConfiguration {
       return null;
     }
     return Uri.parse(trimmed);
+  Uri buildRealtimePresenceUri({required String communityId, String? token}) {
+    final queryParameters = <String, String>{
+      'community_id': communityId,
+      if (token != null && token.isNotEmpty) 'token': token,
+    };
+
+    return realtimeGatewayUrl.replace(
+      queryParameters: {
+        ...realtimeGatewayUrl.queryParameters,
+        ...queryParameters,
+      },
+    );
   }
 }
