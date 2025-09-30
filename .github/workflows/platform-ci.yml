@@ -1,0 +1,116 @@
+name: Platform CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - staging
+  pull_request:
+
+concurrency:
+  group: platform-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (Laravel)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Academy/Web_Application/Academy-LMS
+    env:
+      APP_ENV: testing
+      APP_URL: http://localhost
+      CACHE_DRIVER: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+      BROADCAST_DRIVER: log
+      MAIL_MAILER: array
+      DB_CONNECTION: sqlite
+      DB_DATABASE: database/database.sqlite
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, pcntl, pdo_sqlite, redis
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: ${{ runner.os }}-composer-${{ hashFiles('Academy/Web_Application/Academy-LMS/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          touch database/database.sqlite
+          php artisan key:generate
+
+      - name: Run application tests
+        run: php artisan test
+
+      - name: Static analysis (PHPStan)
+        run: vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --no-progress --memory-limit=1G
+
+  flutter:
+    name: Mobile (Flutter)
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: 'Academy/Student Mobile APP/academy_lms_app'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            build
+          key: ${{ runner.os }}-flutter-${{ hashFiles('Academy/Student Mobile APP/academy_lms_app/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
+
+      - name: Fetch dependencies
+        run: flutter pub get
+
+      - name: Flutter analyze
+        run: flutter analyze
+
+      - name: Run widget tests
+        run: flutter test
+
+      - name: Build Android appbundle (staging)
+        run: flutter build appbundle --flavor staging --release
+
+      - name: Build iOS IPA (no codesign)
+        run: flutter build ipa --release --no-codesign --export-options-plist ios/ExportOptions.plist
+
+  deploy-gate:
+    name: Deploy Gate
+    runs-on: ubuntu-latest
+    needs:
+      - backend
+      - flutter
+    steps:
+      - name: Summary
+        run: echo "All build jobs finished successfully."
