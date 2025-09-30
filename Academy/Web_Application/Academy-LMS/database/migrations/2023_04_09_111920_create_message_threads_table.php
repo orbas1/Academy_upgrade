@@ -11,9 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('watche_histories', function (Blueprint $table) {
+        Schema::create('message_threads', function (Blueprint $table) {
             $table->id();
+            $table->string('code')->nullable();
+            $table->unsignedBigInteger('contact_one')->nullable();
+            $table->unsignedBigInteger('contact_two')->nullable();
             $table->timestamps();
+
+            $table->index('contact_one');
+            $table->index('contact_two');
         });
     }
 
@@ -22,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('watche_histories');
+        Schema::dropIfExists('message_threads');
     }
 };

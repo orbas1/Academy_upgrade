@@ -15,8 +15,9 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('user_id')->nullable();
             $table->unsignedBigInteger('course_id')->nullable();
-            $table->string('enrollment_type')->nullable();//subscription or lifetime
-            $table->timestamp('expiry_date')->nullable();
+            $table->string('enrollment_type')->nullable();
+            $table->unsignedInteger('entry_date')->nullable();
+            $table->unsignedInteger('expiry_date')->nullable();
             $table->timestamps();
 
             $table->index('user_id');

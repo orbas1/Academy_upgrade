@@ -11,15 +11,19 @@ return new class extends Migration {
     public function up(): void {
         Schema::create('offline_payments', function (Blueprint $table) {
             $table->id();
-            $table->integer('user_id')->nullable();
-            $table->string('items', 255)->nullable();
-            $table->float('tax', 10, 2)->nullable();
-            $table->float('total_amount', 10, 2)->nullable();
-            $table->string('phone_on', 255)->nullable();
-            $table->string('bank_no', 255)->nullable();
-            $table->string('doc', 255)->nullable();
-            $table->integer('status')->default(0);
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->string('item_type')->nullable();
+            $table->string('items')->nullable();
+            $table->decimal('tax', 12, 2)->nullable();
+            $table->decimal('total_amount', 12, 2)->nullable();
+            $table->string('coupon')->nullable();
+            $table->string('phone_no')->nullable();
+            $table->string('bank_no')->nullable();
+            $table->string('doc')->nullable();
+            $table->unsignedTinyInteger('status')->default(0);
             $table->timestamps();
+
+            $table->index('user_id');
         });
     }
 

@@ -13,7 +13,15 @@ return new class extends Migration
     {
         Schema::create('questions', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('quiz_id')->nullable();
+            $table->longText('title')->nullable();
+            $table->string('type')->nullable();
+            $table->mediumText('answer')->nullable();
+            $table->longText('options')->nullable();
+            $table->unsignedInteger('sort')->nullable();
             $table->timestamps();
+
+            $table->index('quiz_id');
         });
     }
 

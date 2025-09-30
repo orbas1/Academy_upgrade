@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('seo_fields', function (Blueprint $table) {
             $table->id();
+            $table->unsignedInteger('course_id')->nullable();
+            $table->unsignedInteger('blog_id')->nullable();
+            $table->unsignedInteger('bootcamp_id')->nullable();
             $table->string('route')->nullable();
             $table->string('name_route')->nullable();
             $table->string('meta_title')->nullable();
@@ -25,7 +28,10 @@ return new class extends Migration
             $table->string('og_title')->nullable();
             $table->text('og_description')->nullable();
             $table->string('og_image')->nullable();
-            $table->timestamps(); // Add timestamps if needed
+            $table->timestamps();
+
+            $table->index('course_id');
+            $table->index('blog_id');
         });
     }
 

@@ -206,3 +206,4 @@ Route::prefix('v1')->group(function () {
             ->middleware('role:member,moderator,owner,admin')
             ->name('api.security.device-sessions.update');
     });
+});
