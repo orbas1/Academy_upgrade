@@ -23,7 +23,7 @@ return [
         ],
         'aws' => [
             'class' => App\Support\Secrets\Drivers\AwsSecretsManagerDriver::class,
-            'region' => env('AWS_SECRET_MANAGER_REGION', env('AWS_DEFAULT_REGION', 'us-east-1')),
+            'region' => env('CLOUDFLARE_R2_SECRET_MANAGER_REGION', env('AWS_SECRET_MANAGER_REGION', env('AWS_DEFAULT_REGION', 'us-east-1'))),
         ],
         'vault' => [
             'class' => App\Support\Secrets\Drivers\HashicorpVaultDriver::class,

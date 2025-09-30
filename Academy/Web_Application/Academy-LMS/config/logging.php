@@ -158,7 +158,7 @@ return [
             'stream' => env('OBS_CLOUDWATCH_STREAM', env('APP_NAME', 'academy').'-'.(gethostname() ?: 'web')),
             'retention_days' => (int) env('OBS_CLOUDWATCH_RETENTION_DAYS', 30),
             'client' => array_filter([
-                'region' => env('OBS_CLOUDWATCH_REGION', env('AWS_DEFAULT_REGION', 'us-east-1')),
+                'region' => env('OBS_CLOUDWATCH_REGION', env('CLOUDFLARE_R2_DEFAULT_REGION', env('AWS_DEFAULT_REGION', 'us-east-1'))),
                 'version' => 'latest',
                 'credentials' => env('OBS_CLOUDWATCH_KEY') && env('OBS_CLOUDWATCH_SECRET') ? [
                     'key' => env('OBS_CLOUDWATCH_KEY'),

@@ -38,7 +38,7 @@ class AwsSecretsManagerDriver implements SecretDriver
                 return null;
             }
 
-            $this->logger->error('Failed to fetch AWS secret', [
+            $this->logger->error('Failed to fetch Cloudflare R2 secret', [
                 'secret' => $key,
                 'message' => $exception->getMessage(),
                 'code' => $exception->getAwsErrorCode(),
@@ -53,7 +53,7 @@ class AwsSecretsManagerDriver implements SecretDriver
         }
 
         if ($secretString === null) {
-            throw SecretNotFoundException::forKey($key, 'aws');
+            throw SecretNotFoundException::forKey($key, 'cloudflare_r2');
         }
 
         $createdDate = $result['CreatedDate'] ?? null;
@@ -91,7 +91,7 @@ class AwsSecretsManagerDriver implements SecretDriver
             key: $key,
             version: (string) Arr::get($request, 'ClientRequestToken', Str::uuid()->toString()),
             rotatedAt: $rotatedAt,
-            metadata: ['source' => 'aws'],
+            metadata: ['source' => 'cloudflare_r2'],
         );
     }
 
@@ -111,13 +111,13 @@ class AwsSecretsManagerDriver implements SecretDriver
 
         $this->client->rotateSecret($request);
 
-        $this->logger->info('Triggered AWS secret rotation', ['secret' => $key]);
+        $this->logger->info('Triggered Cloudflare R2 secret rotation', ['secret' => $key]);
 
         return new SecretRotationResult(
             key: $key,
             version: (string) Arr::get($request, 'ClientRequestToken', Str::uuid()->toString()),
             rotatedAt: CarbonImmutable::now(),
-            metadata: ['source' => 'aws'],
+            metadata: ['source' => 'cloudflare_r2'],
         );
     }
 }

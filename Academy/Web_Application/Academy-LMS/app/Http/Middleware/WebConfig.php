@@ -16,6 +16,11 @@ class WebConfig
     public function handle(Request $request, Closure $next): Response
     {
         $s3_keys = get_settings('amazon_s3', 'object');
+        $s3Settings = (array) $s3_keys;
+        $resolve = static function (array $settings, string $primary, string $fallback) {
+            return $settings[$primary] ?? $settings[$fallback] ?? null;
+        };
+
         config(
             [
                 'app.name' => get_settings('system_title'),
@@ -33,10 +38,10 @@ class WebConfig
                 'mail.from.name' => get_settings('system_title'),
                 'mail.from.address' => get_settings('smtp_from_email'),
 
-                'filesystems.disks.s3.key' => $s3_keys->AWS_ACCESS_KEY_ID,
-                'filesystems.disks.s3.secret' => $s3_keys->AWS_SECRET_ACCESS_KEY,
-                'filesystems.disks.s3.region' => $s3_keys->AWS_DEFAULT_REGION,
-                'filesystems.disks.s3.bucket' => $s3_keys->AWS_BUCKET,
+                'filesystems.disks.s3.key' => $resolve($s3Settings, 'CLOUDFLARE_R2_ACCESS_KEY_ID', 'AWS_ACCESS_KEY_ID'),
+                'filesystems.disks.s3.secret' => $resolve($s3Settings, 'CLOUDFLARE_R2_SECRET_ACCESS_KEY', 'AWS_SECRET_ACCESS_KEY'),
+                'filesystems.disks.s3.region' => $resolve($s3Settings, 'CLOUDFLARE_R2_DEFAULT_REGION', 'AWS_DEFAULT_REGION'),
+                'filesystems.disks.s3.bucket' => $resolve($s3Settings, 'CLOUDFLARE_R2_BUCKET', 'AWS_BUCKET'),
             ]
         );
 
