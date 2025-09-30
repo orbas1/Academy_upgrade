@@ -1,8 +1,5 @@
 <template>
-    <span
-        class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide"
-        :class="variantClasses"
-    >
+    <span class="ds-badge" :class="variantClasses">
         <slot />
     </span>
 </template>
@@ -15,18 +12,7 @@ const props = defineProps<{
 }>();
 
 const variantClasses = computed(() => {
-    switch (props.variant) {
-        case 'success':
-            return 'bg-emerald-50 text-emerald-700';
-        case 'danger':
-            return 'bg-red-50 text-red-700';
-        case 'warning':
-            return 'bg-amber-50 text-amber-700';
-        case 'muted':
-            return 'bg-slate-100 text-slate-500';
-        case 'default':
-        default:
-            return 'bg-indigo-50 text-indigo-700';
-    }
+    const variant = props.variant ?? 'default';
+    return `ds-badge--${variant}`;
 });
 </script>

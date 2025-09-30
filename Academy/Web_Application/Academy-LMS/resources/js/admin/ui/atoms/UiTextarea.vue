@@ -1,18 +1,18 @@
 <template>
-    <label class="block text-sm font-medium text-slate-600">
-        <span v-if="label">{{ label }}</span>
-        <div class="mt-1">
+    <label class="ds-field">
+        <span v-if="label" class="ds-field__label">{{ label }}</span>
+        <div class="ds-field__control">
             <textarea
                 v-bind="$attrs"
                 :rows="rows"
                 :value="modelValue"
-                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 disabled:cursor-not-allowed disabled:bg-slate-50"
+                class="ds-input"
                 @input="onInput"
                 @blur="$emit('blur')"
             />
         </div>
-        <p v-if="supportingText" class="mt-1 text-xs text-slate-500">{{ supportingText }}</p>
-        <p v-if="error" class="mt-1 text-xs text-red-600">{{ error }}</p>
+        <p v-if="supportingText" class="ds-field__support">{{ supportingText }}</p>
+        <p v-if="error" class="ds-field__error">{{ error }}</p>
     </label>
 </template>
 

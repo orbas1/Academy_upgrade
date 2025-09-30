@@ -1,4 +1,4 @@
-import 'package:academy_lms_app/constants.dart' as constants;
+import 'package:academy_lms_app/config/design_tokens.dart';
 import 'package:academy_lms_app/features/communities/models/community_feed_item.dart';
 import 'package:academy_lms_app/features/communities/ui/community_feed_reaction_bar.dart';
 import 'package:flutter/material.dart';
@@ -36,21 +36,23 @@ class CommunityFeedItemCard extends StatelessWidget {
     };
 
     return Card(
-      elevation: 1,
+      elevation: theme.cardTheme.elevation ?? 1,
       margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(DesignRadii.xl),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(DesignSpacing.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: constants.kDefaultColor.withOpacity(0.12),
+                  backgroundColor: DesignColors.primary100,
                   child: Text(item.authorName.isNotEmpty ? item.authorName[0].toUpperCase() : '?'),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: DesignSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,7 +60,9 @@ class CommunityFeedItemCard extends StatelessWidget {
                       Text(item.authorName, style: theme.textTheme.titleSmall),
                       Text(
                         formatter.format(item.createdAt),
-                        style: theme.textTheme.bodySmall?.copyWith(color: constants.kGreyLightColor),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: DesignColors.textMuted,
+                        ),
                       ),
                     ],
                   ),
@@ -101,18 +105,18 @@ class CommunityFeedItemCard extends StatelessWidget {
               const SizedBox(height: 12),
               _SyncStatusBanner(item: item),
             ],
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignSpacing.md),
             Text(
               item.body.isEmpty ? 'Attachment-only post' : item.body,
               style: theme.textTheme.bodyMedium,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: DesignSpacing.lg),
             CommunityFeedReactionBar(
               reactionCounts: reactionCounts,
               activeReaction: item.isLiked ? 'like' : null,
               onReactionSelected: item.isPending ? null : onToggleReaction,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignSpacing.md),
             Row(
               children: [
                 TextButton.icon(
@@ -120,7 +124,7 @@ class CommunityFeedItemCard extends StatelessWidget {
                   icon: const Icon(Icons.comment_outlined),
                   label: Text('${item.commentCount} comments'),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: DesignSpacing.sm),
                 TextButton(
                   onPressed: item.isPending ? null : onShowReactions,
                   child: Text('${item.likeCount} total reactions'),
@@ -141,22 +145,31 @@ class _VisibilityBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = visibility == 'public'
-        ? constants.kDefaultColor
-        : visibility == 'paid'
-            ? const Color(0xFFE5A663)
-            : constants.kGreyLightColor;
+    Color color;
+    switch (visibility) {
+      case 'public':
+        color = DesignColors.primary600;
+        break;
+      case 'paid':
+        color = DesignColors.paywall500;
+        break;
+      default:
+        color = DesignColors.textMuted;
+    }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignSpacing.sm,
+        vertical: DesignSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(100),
+        borderRadius: DesignRadii.pillRadius,
       ),
       child: Text(
         visibility.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
+              letterSpacing: 0.6,
               color: color,
             ),
       ),
@@ -174,10 +187,13 @@ class _SyncStatusBanner extends StatelessWidget {
     final theme = Theme.of(context);
     if (item.isPending) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignSpacing.lg,
+          vertical: DesignSpacing.sm,
+        ),
         decoration: BoxDecoration(
           color: theme.colorScheme.primary.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(DesignRadii.lg),
         ),
         child: Row(
           children: [
@@ -189,7 +205,7 @@ class _SyncStatusBanner extends StatelessWidget {
                 valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: DesignSpacing.md),
             Expanded(
               child: Text(
                 'Waiting for connection. This post will sync automatically once you are back online.',
@@ -206,16 +222,19 @@ class _SyncStatusBanner extends StatelessWidget {
 
     if (item.isFailed) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignSpacing.lg,
+          vertical: DesignSpacing.sm,
+        ),
         decoration: BoxDecoration(
           color: theme.colorScheme.error.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(DesignRadii.lg),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(Icons.error_outline, color: theme.colorScheme.error),
-            const SizedBox(width: 12),
+            const SizedBox(width: DesignSpacing.md),
             Expanded(
               child: Text(
                 item.failureReason ?? 'We could not sync this post. Please retry when you have a stable connection.',

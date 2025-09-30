@@ -1,4 +1,3 @@
-import 'package:academy_lms_app/constants.dart';
 import 'package:academy_lms_app/screens/course_details.dart';
 import 'package:academy_lms_app/screens/login.dart';
 import 'package:academy_lms_app/screens/splash.dart';
@@ -8,6 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
+import 'config/design_tokens.dart';
 import 'providers/auth.dart';
 import 'providers/categories.dart';
 import 'providers/app_locale_notifier.dart';
@@ -112,11 +112,7 @@ class MyApp extends StatelessWidget {
           ],
           localeResolutionCallback: (locale, supportedLocales) =>
               AppLocalizations.resolutionCallback(locale, supportedLocales),
-          theme: ThemeData(
-            fontFamily: 'Poppins',
-            colorScheme: const ColorScheme.light(primary: kWhiteColor),
-            useMaterial3: true,
-          ),
+          theme: buildAppTheme(),
           debugShowCheckedModeBanner: false,
           navigatorKey: appNavigatorKey,
           home: const SplashScreen(),

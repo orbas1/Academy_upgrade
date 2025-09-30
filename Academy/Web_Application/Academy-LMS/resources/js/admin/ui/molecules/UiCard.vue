@@ -1,14 +1,12 @@
 <template>
-    <section
-        class="rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md focus-within:shadow-md"
-    >
-        <header v-if="$slots.header" class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+    <section class="ds-card">
+        <header v-if="$slots.header" class="ds-card__header">
             <slot name="header" />
         </header>
-        <div class="px-5 py-4">
+        <div class="ds-card__body">
             <slot />
         </div>
-        <footer v-if="$slots.footer" class="border-t border-slate-200 bg-slate-50 px-5 py-4">
+        <footer v-if="$slots.footer" class="ds-card__footer">
             <slot name="footer" />
         </footer>
     </section>

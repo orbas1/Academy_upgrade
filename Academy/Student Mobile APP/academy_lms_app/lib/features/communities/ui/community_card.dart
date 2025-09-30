@@ -1,4 +1,4 @@
-import 'package:academy_lms_app/constants.dart' as constants;
+import 'package:academy_lms_app/config/design_tokens.dart';
 import 'package:academy_lms_app/features/communities/models/community_summary.dart';
 import 'package:flutter/material.dart';
 
@@ -22,20 +22,31 @@ class CommunityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isMember = summary.isMember;
-    final visibilityColor = summary.visibility == 'public'
-        ? constants.kDefaultColor
-        : summary.visibility == 'private'
-            ? constants.kGreyLightColor
-            : const Color(0xFF6366F1);
+    Color visibilityColor;
+    switch (summary.visibility) {
+      case 'public':
+        visibilityColor = DesignColors.primary600;
+        break;
+      case 'private':
+        visibilityColor = DesignColors.textMuted;
+        break;
+      case 'paid':
+        visibilityColor = DesignColors.paywall500;
+        break;
+      default:
+        visibilityColor = DesignColors.primary500;
+    }
 
     return Card(
-      elevation: 2,
+      elevation: theme.cardTheme.elevation ?? 2,
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(DesignRadii.xl),
+      ),
       child: InkWell(
         onTap: onOpen,
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(DesignSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -47,55 +58,49 @@ class CommunityCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          summary.name,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: constants.kBlackColor,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
+                        Text(summary.name, style: theme.textTheme.titleMedium),
+                        const SizedBox(height: DesignSpacing.xs),
                         Text(
                           summary.tagline.isEmpty
                               ? 'Stay tuned for updates.'
                               : summary.tagline,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: constants.kGreyLightColor,
-                          ),
+                          style: theme.textTheme.bodyMedium,
                         ),
                       ],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignSpacing.sm,
+                      vertical: DesignSpacing.xs,
+                    ),
                     decoration: BoxDecoration(
                       color: visibilityColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(100),
+                      borderRadius: DesignRadii.pillRadius,
                     ),
                     child: Text(
                       summary.visibility.toUpperCase(),
                       style: theme.textTheme.labelSmall?.copyWith(
-                        letterSpacing: 0.8,
-                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.6,
                         color: visibilityColor,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: DesignSpacing.lg),
               Row(
                 children: [
                   _InfoPill(
                     icon: Icons.people_alt_outlined,
                     label: '${summary.memberCount} members',
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: DesignSpacing.md),
                   _InfoPill(
                     icon: Icons.podcasts_outlined,
                     label: '${summary.onlineCount} online',
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: DesignSpacing.md),
                   _InfoPill(
                     icon: Icons.leaderboard_outlined,
                     label: summary.postsPerDay > 0
@@ -105,7 +110,7 @@ class CommunityCard extends StatelessWidget {
                             : 'Discover',
                   ),
                   if (summary.paywallEnabled) ...[
-                    const SizedBox(width: 12),
+                    const SizedBox(width: DesignSpacing.md),
                     _InfoPill(
                       icon: Icons.lock_outline,
                       label: 'Premium access',
@@ -137,21 +142,23 @@ class _InfoPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignSpacing.sm,
+        vertical: DesignSpacing.xs,
+      ),
       decoration: BoxDecoration(
-        color: constants.kGreyLightColor.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(100),
+        color: DesignColors.textMuted.withOpacity(0.12),
+        borderRadius: DesignRadii.pillRadius,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: constants.kGreyLightColor),
-          const SizedBox(width: 6),
+          Icon(icon, size: 16, color: DesignColors.textMuted),
+          const SizedBox(width: DesignSpacing.xs),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: constants.kGreyLightColor,
-                  fontWeight: FontWeight.w500,
+                  color: DesignColors.textMuted,
                 ),
           ),
         ],
@@ -179,8 +186,9 @@ class _CommunityActionButton extends StatelessWidget {
       return OutlinedButton(
         onPressed: isBusy ? null : onLeave,
         style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-          foregroundColor: constants.kDefaultColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(DesignRadii.pill),
+          ),
         ),
         child: const Text('Leave'),
       );
@@ -189,10 +197,13 @@ class _CommunityActionButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: isBusy ? null : onJoin,
       style: ElevatedButton.styleFrom(
-        backgroundColor: constants.kDefaultColor,
-        foregroundColor: constants.kWhiteColor,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignSpacing.lg,
+          vertical: DesignSpacing.sm,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(DesignRadii.pill),
+        ),
       ),
       child: const Text('Join'),
     );
