@@ -1,11 +1,16 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:uuid/uuid.dart';
 
 import 'package:academy_lms_app/services/community_manifest_service.dart';
 
 import '../data/community_cache.dart';
 import '../data/community_repository.dart';
+import '../data/offline_action_queue.dart';
 import '../data/queue_health_repository.dart';
 import '../models/community_feed_item.dart';
 import '../models/community_leaderboard_entry.dart';
@@ -18,14 +23,29 @@ class CommunityNotifier extends ChangeNotifier {
     QueueHealthRepository? queueHealthRepository,
     CommunityManifestService? manifestService,
     CommunityCache? cache,
+    OfflineCommunityActionQueue? offlineQueue,
+    Connectivity? connectivity,
   })  : _repository = repository ?? CommunityRepository(cache: cache),
         _queueHealthRepository =
             queueHealthRepository ?? QueueHealthRepository(),
-        _manifestService = manifestService ?? CommunityManifestService();
+        _manifestService = manifestService ?? CommunityManifestService(),
+        _offlineQueue = offlineQueue ?? OfflineCommunityActionQueue(),
+        _connectivity = connectivity ?? Connectivity() {
+    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((result) {
+      if (result != ConnectivityResult.none) {
+        unawaited(processOfflineQueue());
+      }
+    });
+  }
 
   final CommunityRepository _repository;
   QueueHealthRepository _queueHealthRepository;
   final CommunityManifestService _manifestService;
+  OfflineCommunityActionQueue _offlineQueue;
+  final Connectivity _connectivity;
+  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+  final Uuid _uuid = const Uuid();
+  bool _queueProcessing = false;
 
   final Map<int, String> _activeFeedFilters = <int, String>{};
   final Map<String, bool> _feedHasMore = <String, bool>{};
@@ -79,6 +99,13 @@ class CommunityNotifier extends ChangeNotifier {
 
   void updateQueueHealthRepository(QueueHealthRepository repository) {
     _queueHealthRepository = repository;
+  }
+
+  void updateOfflineQueue(OfflineCommunityActionQueue queue) {
+    if (!identical(_offlineQueue, queue)) {
+      _offlineQueue = queue;
+      unawaited(processOfflineQueue(force: true));
+    }
   }
 
   String? consumeQueueWarning() {
@@ -174,13 +201,8 @@ class CommunityNotifier extends ChangeNotifier {
       _feed = response.items;
       _feedHasMore[_feedKey(communityId, filter)] = response.hasMore;
       _error = null;
-      await _repository.saveFeedSnapshot(
-        communityId: communityId,
-        filter: filter,
-        items: _feed,
-        nextCursor: _repository.feedCursorFor(communityId, filter: filter),
-        hasMore: _repository.hasMoreFeed(communityId, filter: filter),
-      );
+      await _persistFeedState(communityId, filter: filter);
+      unawaited(processOfflineQueue());
     } catch (err) {
       final cached = await _repository.loadCachedFeed(communityId, filter: filter);
       if (cached != null && cached.items.isNotEmpty) {
@@ -226,13 +248,8 @@ class CommunityNotifier extends ChangeNotifier {
 
       _feedHasMore[key] = response.hasMore;
       _error = null;
-      await _repository.saveFeedSnapshot(
-        communityId: communityId,
-        filter: filter,
-        items: _feed,
-        nextCursor: _repository.feedCursorFor(communityId, filter: filter),
-        hasMore: _repository.hasMoreFeed(communityId, filter: filter),
-      );
+      await _persistFeedState(communityId, filter: filter);
+      unawaited(processOfflineQueue());
     } catch (err) {
       _error = err.toString();
     } finally {
@@ -344,42 +361,118 @@ class CommunityNotifier extends ChangeNotifier {
     int? paywallTierId,
   }) async {
     await _ensureManifest();
-    final item = await _repository.createPost(
-      communityId,
-      bodyMarkdown: bodyMarkdown,
-      visibility: visibility,
-      paywallTierId: paywallTierId,
-    );
+    final filter = feedFilterFor(communityId);
+    try {
+      final item = await _repository.createPost(
+        communityId,
+        bodyMarkdown: bodyMarkdown,
+        visibility: visibility,
+        paywallTierId: paywallTierId,
+      );
 
-    _feed = <CommunityFeedItem>[item, ..._feed];
-    notifyListeners();
+      _feed = <CommunityFeedItem>[item, ..._feed];
+      await _persistFeedState(communityId, filter: filter);
+      notifyListeners();
 
-    unawaited(_evaluateQueueHealth());
+      unawaited(_evaluateQueueHealth());
+      unawaited(processOfflineQueue());
+    } catch (err) {
+      if (_isConnectivityException(err)) {
+        final clientReference = _uuid.v4();
+        final placeholder = _buildPendingFeedItem(
+          bodyMarkdown: bodyMarkdown,
+          visibility: visibility,
+          paywallTierId: paywallTierId,
+          clientReference: clientReference,
+        );
+
+        _feed = <CommunityFeedItem>[placeholder, ..._feed];
+        await _persistFeedState(communityId, filter: filter);
+
+        try {
+          await _offlineQueue.enqueue(
+            CommunityOfflineAction(
+              type: CommunityOfflineActionType.createPost,
+              communityId: communityId,
+              payload: <String, dynamic>{
+                'body_md': bodyMarkdown,
+                'visibility': visibility,
+                'paywall_tier_id': paywallTierId,
+              },
+              clientReference: clientReference,
+            ),
+          );
+          _queueWarning =
+              'Offline mode — your post will sync automatically when a connection is available.';
+        } catch (queueError, stackTrace) {
+          debugPrint('Unable to enqueue offline post: $queueError');
+          debugPrint('$stackTrace');
+          _feed = _feed
+              .map(
+                (item) => item.clientReference == clientReference
+                    ? item.copyWith(
+                        isPending: false,
+                        isFailed: true,
+                        failureReason: queueError.toString(),
+                      )
+                    : item,
+              )
+              .toList(growable: false);
+          await _persistFeedState(communityId, filter: filter);
+          _queueWarning =
+              'We could not queue your post for sync. Please retry when you are back online.';
+        }
+
+        notifyListeners();
+      } else {
+        rethrow;
+      }
+    }
   }
 
-  Future<void> togglePostReaction(int communityId, int postId, {String reaction = 'like'}) async {
+  Future<void> togglePostReaction(
+    int communityId,
+    int postId, {
+    String reaction = 'like',
+    String? clientReference,
+  }) async {
     await _ensureManifest();
-    await _repository.togglePostReaction(communityId, postId, reaction: reaction);
-    _feed = _feed
-        .map(
-          (item) => item.id == postId
-              ? CommunityFeedItem(
-                  id: item.id,
-                  type: item.type,
-                  authorName: item.authorName,
-                  body: item.body,
-                  bodyMarkdown: item.bodyMarkdown,
-                  createdAt: item.createdAt,
-                  likeCount: item.isLiked ? item.likeCount - 1 : item.likeCount + 1,
-                  commentCount: item.commentCount,
-                  visibility: item.visibility,
-                  isLiked: !item.isLiked,
-                  paywallTierId: item.paywallTierId,
-                )
-              : item,
-        )
-        .toList(growable: false);
+    final index = _feed.indexWhere(
+      (item) => item.id == postId || (clientReference != null && item.clientReference == clientReference),
+    );
+
+    if (index == -1) {
+      return;
+    }
+
+    final current = _feed[index];
+    if (current.isPending) {
+      return;
+    }
+
+    final toggled = current.copyWith(
+      isLiked: !current.isLiked,
+      likeCount: current.isLiked
+          ? (current.likeCount > 0 ? current.likeCount - 1 : 0)
+          : current.likeCount + 1,
+    );
+
+    _feed = List<CommunityFeedItem>.of(_feed)..[index] = toggled;
     notifyListeners();
+
+    try {
+      await _repository.togglePostReaction(communityId, postId, reaction: reaction);
+    } catch (err) {
+      _feed = List<CommunityFeedItem>.of(_feed)..[index] = current;
+      notifyListeners();
+
+      if (_isConnectivityException(err)) {
+        _queueWarning = 'Reaction could not sync. Please try again when you are back online.';
+        notifyListeners();
+      } else {
+        rethrow;
+      }
+    }
   }
 
   Future<void> reportPost(
@@ -421,6 +514,188 @@ class CommunityNotifier extends ChangeNotifier {
     if (beforeLength != _feed.length) {
       notifyListeners();
     }
+  }
+
+  Future<void> processOfflineQueue({bool force = false}) async {
+    if (_queueProcessing) {
+      return;
+    }
+
+    if (!force) {
+      final connectivityStatus = await _connectivity.checkConnectivity();
+      if (connectivityStatus == ConnectivityResult.none) {
+        return;
+      }
+    }
+
+    _queueProcessing = true;
+
+    try {
+      var queueMutatedFeed = false;
+      final report = await _offlineQueue.process(
+        handler: (action) async {
+          switch (action.type) {
+            case CommunityOfflineActionType.createPost:
+              final payload = action.payload;
+              final item = await _repository.createPost(
+                action.communityId,
+                bodyMarkdown: payload['body_md'] as String? ?? '',
+                visibility: payload['visibility'] as String? ?? 'community',
+                paywallTierId: payload['paywall_tier_id'] as int?,
+              );
+              final changed = await _replacePendingFeedItem(
+                communityId: action.communityId,
+                clientReference: action.clientReference,
+                replacement: item,
+              );
+              queueMutatedFeed = queueMutatedFeed || changed;
+              break;
+          }
+        },
+      );
+
+      bool shouldNotify = report.hasChanges || queueMutatedFeed;
+      if (report.successes.isNotEmpty) {
+        _queueWarning =
+            'Synced ${report.successes.length} offline post${report.successes.length == 1 ? '' : 's'} successfully.';
+        shouldNotify = true;
+      }
+
+      if (report.permanentlyFailed.isNotEmpty) {
+        for (final action in report.permanentlyFailed) {
+          final changed = await _markPendingFeedItemFailed(
+            action.communityId,
+            action.clientReference,
+            action.lastError ?? 'Failed to sync post.',
+          );
+          shouldNotify = shouldNotify || changed;
+        }
+        _queueWarning =
+            'Some offline posts could not be synced. Edit and retry once your connection is stable.';
+        shouldNotify = true;
+      }
+
+      if (shouldNotify) {
+        notifyListeners();
+      }
+    } catch (err, stack) {
+      debugPrint('Offline queue processing failed: $err');
+      debugPrint('$stack');
+    } finally {
+      _queueProcessing = false;
+    }
+  }
+
+  Future<void> _persistFeedState(int communityId, {String? filter}) {
+    final resolvedFilter = filter ?? feedFilterFor(communityId);
+    return _repository.saveFeedSnapshot(
+      communityId: communityId,
+      filter: resolvedFilter,
+      items: _feed,
+      nextCursor: _repository.feedCursorFor(communityId, filter: resolvedFilter),
+      hasMore: _repository.hasMoreFeed(communityId, filter: resolvedFilter),
+    );
+  }
+
+  CommunityFeedItem _buildPendingFeedItem({
+    required String bodyMarkdown,
+    required String visibility,
+    int? paywallTierId,
+    required String clientReference,
+  }) {
+    final now = DateTime.now();
+    return CommunityFeedItem(
+      id: -now.millisecondsSinceEpoch,
+      type: 'text',
+      authorName: 'You',
+      body: bodyMarkdown,
+      bodyMarkdown: bodyMarkdown,
+      createdAt: now,
+      likeCount: 0,
+      commentCount: 0,
+      visibility: visibility,
+      isLiked: false,
+      paywallTierId: paywallTierId,
+      isPending: true,
+      clientReference: clientReference,
+    );
+  }
+
+  Future<bool> _replacePendingFeedItem({
+    required int communityId,
+    required String? clientReference,
+    required CommunityFeedItem replacement,
+  }) async {
+    bool changed = false;
+    if (clientReference != null) {
+      _feed = _feed
+          .map((item) {
+            if (item.clientReference == clientReference) {
+              changed = true;
+              return replacement;
+            }
+            return item;
+          })
+          .toList(growable: false);
+    }
+
+    if (!changed) {
+      _feed = <CommunityFeedItem>[replacement, ..._feed];
+      changed = true;
+    }
+
+    if (changed) {
+      await _persistFeedState(communityId);
+    }
+
+    return changed;
+  }
+
+  Future<bool> _markPendingFeedItemFailed(
+    int communityId,
+    String? clientReference,
+    String error,
+  ) async {
+    if (clientReference == null) {
+      return false;
+    }
+
+    bool changed = false;
+    _feed = _feed
+        .map((item) {
+          if (item.clientReference == clientReference) {
+            changed = true;
+            return item.copyWith(
+              isPending: false,
+              isFailed: true,
+              failureReason: error,
+            );
+          }
+          return item;
+        })
+        .toList(growable: false);
+
+    if (changed) {
+      await _persistFeedState(communityId);
+    }
+
+    return changed;
+  }
+
+  bool _isConnectivityException(Object error) {
+    if (error is SocketException || error is TimeoutException) {
+      return true;
+    }
+
+    if (error is http.ClientException) {
+      final message = error.message.toLowerCase();
+      return message.contains('failed host lookup') ||
+          message.contains('network is unreachable') ||
+          message.contains('timed out') ||
+          message.contains('connection closed');
+    }
+
+    return false;
   }
 
   Future<void> loadLeaderboard(int communityId, {String period = 'weekly'}) async {
@@ -505,6 +780,7 @@ class CommunityNotifier extends ChangeNotifier {
 
   @override
   void dispose() {
+    _connectivitySubscription?.cancel();
     _queueHealthRepository.dispose();
     unawaited(_repository.dispose());
     super.dispose();

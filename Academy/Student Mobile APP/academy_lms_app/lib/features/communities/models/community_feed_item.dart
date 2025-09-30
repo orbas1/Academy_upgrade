@@ -14,6 +14,10 @@ class CommunityFeedItem {
     required this.visibility,
     required this.isLiked,
     required this.paywallTierId,
+    this.isPending = false,
+    this.isFailed = false,
+    this.clientReference,
+    this.failureReason,
   });
 
   factory CommunityFeedItem.fromJson(Map<String, dynamic> json) {
@@ -29,6 +33,10 @@ class CommunityFeedItem {
       visibility: json['visibility'] as String? ?? 'community',
       isLiked: json['liked'] as bool? ?? false,
       paywallTierId: json['paywall_tier_id'] as int?,
+      isPending: json['is_pending'] as bool? ?? false,
+      isFailed: json['is_failed'] as bool? ?? false,
+      clientReference: json['client_reference'] as String?,
+      failureReason: json['failure_reason'] as String?,
     );
   }
 
@@ -43,6 +51,46 @@ class CommunityFeedItem {
   final String visibility;
   final bool isLiked;
   final int? paywallTierId;
+  final bool isPending;
+  final bool isFailed;
+  final String? clientReference;
+  final String? failureReason;
+
+  CommunityFeedItem copyWith({
+    int? id,
+    String? type,
+    String? authorName,
+    String? body,
+    String? bodyMarkdown,
+    DateTime? createdAt,
+    int? likeCount,
+    int? commentCount,
+    String? visibility,
+    bool? isLiked,
+    int? paywallTierId,
+    bool? isPending,
+    bool? isFailed,
+    String? clientReference,
+    String? failureReason,
+  }) {
+    return CommunityFeedItem(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      authorName: authorName ?? this.authorName,
+      body: body ?? this.body,
+      bodyMarkdown: bodyMarkdown ?? this.bodyMarkdown,
+      createdAt: createdAt ?? this.createdAt,
+      likeCount: likeCount ?? this.likeCount,
+      commentCount: commentCount ?? this.commentCount,
+      visibility: visibility ?? this.visibility,
+      isLiked: isLiked ?? this.isLiked,
+      paywallTierId: paywallTierId ?? this.paywallTierId,
+      isPending: isPending ?? this.isPending,
+      isFailed: isFailed ?? this.isFailed,
+      clientReference: clientReference ?? this.clientReference,
+      failureReason: failureReason ?? this.failureReason,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
@@ -57,6 +105,10 @@ class CommunityFeedItem {
       'visibility': visibility,
       'liked': isLiked,
       'paywall_tier_id': paywallTierId,
+      'is_pending': isPending,
+      'is_failed': isFailed,
+      'client_reference': clientReference,
+      'failure_reason': failureReason,
     };
   }
 }

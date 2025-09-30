@@ -5,12 +5,12 @@ class CommunityFeedReactionBar extends StatelessWidget {
     super.key,
     required this.reactionCounts,
     required this.activeReaction,
-    required this.onReactionSelected,
+    this.onReactionSelected,
   });
 
   final Map<String, int> reactionCounts;
   final String? activeReaction;
-  final ValueChanged<String?> onReactionSelected;
+  final ValueChanged<String?>? onReactionSelected;
 
   static const Map<String, String> _reactionLabels = <String, String>{
     'like': 'Like',
@@ -40,7 +40,9 @@ class CommunityFeedReactionBar extends StatelessWidget {
           return FilterChip(
             label: Text('${_reactionEmoji[reaction]} ${_reactionLabels[reaction]} • $count'),
             selected: isActive,
-            onSelected: (selected) => onReactionSelected(selected ? reaction : null),
+            onSelected: onReactionSelected == null
+                ? null
+                : (selected) => onReactionSelected!(selected ? reaction : null),
             selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
             checkmarkColor: Theme.of(context).colorScheme.primary,
           );

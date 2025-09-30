@@ -18,10 +18,10 @@ class CommunityFeedItemCard extends StatelessWidget {
   });
 
   final CommunityFeedItem item;
-  final ValueChanged<String?> onToggleReaction;
-  final VoidCallback onShowComments;
-  final VoidCallback onShowReactions;
-  final ValueChanged<CommunityFeedItemAction> onAction;
+  final ValueChanged<String?>? onToggleReaction;
+  final VoidCallback? onShowComments;
+  final VoidCallback? onShowReactions;
+  final ValueChanged<CommunityFeedItemAction>? onAction;
   final bool canModerate;
 
   @override
@@ -67,7 +67,8 @@ class CommunityFeedItemCard extends StatelessWidget {
                 PopupMenuButton<CommunityFeedItemAction>(
                   icon: const Icon(Icons.more_vert),
                   tooltip: 'Post actions',
-                  onSelected: onAction,
+                  enabled: !item.isPending && onAction != null,
+                  onSelected: (value) => onAction?.call(value),
                   itemBuilder: (context) {
                     return <PopupMenuEntry<CommunityFeedItemAction>>[
                       PopupMenuItem<CommunityFeedItemAction>(
@@ -96,6 +97,10 @@ class CommunityFeedItemCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (item.isPending || item.isFailed) ...[
+              const SizedBox(height: 12),
+              _SyncStatusBanner(item: item),
+            ],
             const SizedBox(height: 12),
             Text(
               item.body.isEmpty ? 'Attachment-only post' : item.body,
@@ -105,19 +110,19 @@ class CommunityFeedItemCard extends StatelessWidget {
             CommunityFeedReactionBar(
               reactionCounts: reactionCounts,
               activeReaction: item.isLiked ? 'like' : null,
-              onReactionSelected: onToggleReaction,
+              onReactionSelected: item.isPending ? null : onToggleReaction,
             ),
             const SizedBox(height: 12),
             Row(
               children: [
                 TextButton.icon(
-                  onPressed: onShowComments,
+                  onPressed: item.isPending ? null : onShowComments,
                   icon: const Icon(Icons.comment_outlined),
                   label: Text('${item.commentCount} comments'),
                 ),
                 const SizedBox(width: 8),
                 TextButton(
-                  onPressed: onShowReactions,
+                  onPressed: item.isPending ? null : onShowReactions,
                   child: Text('${item.likeCount} total reactions'),
                 ),
               ],
@@ -156,5 +161,75 @@ class _VisibilityBadge extends StatelessWidget {
             ),
       ),
     );
+  }
+}
+
+class _SyncStatusBanner extends StatelessWidget {
+  const _SyncStatusBanner({required this.item});
+
+  final CommunityFeedItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    if (item.isPending) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              height: 16,
+              width: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Waiting for connection. This post will sync automatically once you are back online.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (item.isFailed) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.error.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.error_outline, color: theme.colorScheme.error),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                item.failureReason ?? 'We could not sync this post. Please retry when you have a stable connection.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 }
