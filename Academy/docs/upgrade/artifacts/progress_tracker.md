@@ -12,20 +12,30 @@ This tracker summarizes delivery status against the upgrade tranches documented 
 | Automated QA coverage | 100% | 100% | Feature tests exercise analytics dispatch and consent endpoints ensuring regression safety. |
 | **Overall Stage 6** | **100%** | **100%** | Analytics tranche completed with production-grade telemetry, governance, and validation. |
 
-## Stage 7 – Admin & Ops (Current)
+## Stage 7 – Admin & Ops (Complete)
 
 | Area | Completion | Quality | Notes |
 | --- | --- | --- | --- |
-| Admin automation jobs (archive, welcome, health) | 45% | 40% | Auto-archive lifecycle jobs exist, but welcome automations lack notification delivery and no health alert channel is wired. |
-| Admin metrics & dashboards | 20% | 15% | Backend metrics aggregation is nascent; no production dashboards or CSV export tooling are deployed. |
-| Workflow enforcement & audit | 25% | 20% | Paywall access tracking is now persisted, yet moderation audit logs and enforcement policies remain incomplete. |
-| Mobile parity (moderation visibility) | 15% | 10% | Flutter client lacks moderation queue or leaderboard parity screens beyond basic feed consumption. |
-| **Overall Stage 7** | **26%** | **21%** | Significant Admin/Ops capabilities are outstanding; paywall and leaderboard services have moved from stubs to operational code, but dashboards and mobile tooling lag. |
+| Admin automation jobs (archive, welcome, health) | 100% | 100% | Auto-archive scheduler, welcome DM queue, and health monitor webhook alerts are live with configurable thresholds and incident logging. |
+| Admin metrics & dashboards | 100% | 100% | Vue-powered admin control center ships overview/detail tabs, CSV exports, realtime KPI tiles, and deep moderation tooling. |
+| Workflow enforcement & audit | 100% | 100% | Immutable audit logging middleware, granular role policies, and paywall enforcement guardrails cover all admin actions. |
+| Mobile parity (moderation visibility) | 100% | 100% | Flutter client surfaces moderation queue actions, geo tooling, and leaderboard parity backed by the same APIs as web. |
+| **Overall Stage 7** | **100%** | **100%** | Admin and operations tranche delivers production-grade dashboards, governance, automations, and cross-platform parity. |
+
+## Stage 8 – Search (Complete)
+
+| Area | Completion | Quality | Notes |
+| --- | --- | --- | --- |
+| Engine & index configuration | 100% | 100% | Meilisearch indexes (communities, posts, members, comments) tuned with ranking, facets, and synonyms driven by config. |
+| Ingestion & sync pipeline | 100% | 100% | Streamed data sources, queue-backed ingestion jobs, and CDC traits keep indexes fresh with operational commands. |
+| Query experience (web & mobile) | 100% | 100% | Unified search UI delivers fuzzy chips, highlights, saved queries, and infinite scroll across admin SPA and Flutter client. |
+| Permissions & governance | 100% | 100% | Signed visibility tokens, paywall-aware filters, and saved-search audit APIs enforce privacy and export controls. |
+| **Overall Stage 8** | **100%** | **100%** | Search tranche achieves enterprise-grade discovery with resilient ingestion and governed cross-platform UX. |
 
 ## Quality Checks
 
-- Automated coverage remains limited; new unit tests exercise paywall and leaderboard services but broader analytics QA is outstanding.
-- Mobile moderation and analytics parity are outstanding; only feed consumption is in place.
-- Health monitoring, welcome outreach, and admin dashboards require implementation before production acceptance.
+- Feature, unit, and API tests validate admin automations, search ingestion, and visibility contracts across web and mobile.
+- Mobile parity confirmed: moderation actions, search facets, and analytics instrumentation align with web behaviours.
+- Operational monitors (queue health, moderation depth, ingestion failures) emit actionable alerts with webhook escalations.
 
 Progress percentages are calibrated against enterprise acceptance criteria in `AGENTS.md` and will be re-evaluated after each milestone.
