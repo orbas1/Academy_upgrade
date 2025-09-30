@@ -2,6 +2,7 @@
 
 namespace App\Domain\Communities\Services;
 
+use App\Domain\Analytics\Services\AnalyticsDispatcher;
 use App\Domain\Communities\Models\CommunityMember;
 use App\Domain\Communities\Models\CommunityPost;
 use App\Domain\Communities\Models\CommunityPostComment;
@@ -13,9 +14,14 @@ use Illuminate\Support\Facades\Log;
 
 class CommunityCommentService
 {
+    public function __construct(private readonly AnalyticsDispatcher $analytics)
+    {
+    }
+
     public function createComment(CommunityPost $post, User $author, array $payload): CommunityPostComment
     {
         return DB::transaction(function () use ($post, $author, $payload) {
+            $community = $post->community ?? $post->community()->first();
             $comment = new CommunityPostComment();
             $comment->community_id = $post->community_id;
             $comment->post()->associate($post);
@@ -42,11 +48,19 @@ class CommunityCommentService
                 ->first();
 
             if ($membership) {
+                $freshComment = $comment->fresh('author');
                 event(new CommentCreated(
                     $membership,
                     $post->fresh('author'),
-                    $comment->fresh('author')
+                    $freshComment
                 ));
+
+                $this->analytics->record('comment_create', $author, [
+                    'community_id' => $post->community_id,
+                    'post_id' => $post->getKey(),
+                    'comment_id' => $freshComment->getKey(),
+                    'parent_id' => $freshComment->parent_id,
+                ], $community);
             }
 
             return $comment;
@@ -64,12 +78,27 @@ class CommunityCommentService
         ]);
         $comment->save();
 
+        $updated = $comment->fresh('post');
+
+        if ($updated) {
+            $updated->loadMissing('post.community', 'author');
+        }
+
+        if ($updated?->post?->community && $updated->author) {
+            $this->analytics->record('comment_update', $updated->author, [
+                'community_id' => $updated->post->community_id,
+                'post_id' => $updated->post_id,
+                'comment_id' => $updated->getKey(),
+            ], $updated->post->community);
+        }
+
         return $comment;
     }
 
     public function deleteComment(CommunityPostComment $comment, ?User $actor = null): void
     {
         DB::transaction(function () use ($comment, $actor): void {
+            $community = $comment->post?->community ?? $comment->post()->with('community')->first()?->community;
             $comment->delete();
 
             CommunityPost::query()
@@ -80,6 +109,14 @@ class CommunityCommentService
                 CommunityPostComment::query()
                     ->where('id', $comment->parent_id)
                     ->decrement('reply_count');
+            }
+
+            if ($actor) {
+                $this->analytics->record('comment_delete', $actor, [
+                    'community_id' => $comment->community_id,
+                    'post_id' => $comment->post_id,
+                    'comment_id' => $comment->getKey(),
+                ], $community);
             }
         });
     }

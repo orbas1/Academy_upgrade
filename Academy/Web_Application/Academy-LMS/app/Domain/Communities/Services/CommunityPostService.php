@@ -2,6 +2,7 @@
 
 namespace App\Domain\Communities\Services;
 
+use App\Domain\Analytics\Services\AnalyticsDispatcher;
 use App\Domain\Communities\Models\Community;
 use App\Domain\Communities\Models\CommunityMember;
 use App\Domain\Communities\Models\CommunityPost;
@@ -14,6 +15,10 @@ use Illuminate\Support\Facades\Log;
 
 class CommunityPostService
 {
+    public function __construct(private readonly AnalyticsDispatcher $analytics)
+    {
+    }
+
     public function compose(Community $community, User $author, array $payload): CommunityPost
     {
         return DB::transaction(function () use ($community, $author, $payload) {
@@ -59,7 +64,16 @@ class CommunityPostService
                 ->first();
 
             if ($membership) {
-                event(new PostCreated($post->fresh(['author', 'community']), $membership));
+                $freshPost = $post->fresh(['author', 'community']);
+                event(new PostCreated($freshPost, $membership));
+
+                $this->analytics->record('post_create', $author, [
+                    'community_id' => $community->getKey(),
+                    'post_id' => $freshPost->getKey(),
+                    'visibility' => $freshPost->visibility,
+                    'media_types' => $this->resolveMediaTypes($freshPost->media ?? []),
+                    'scheduled' => (bool) $freshPost->scheduled_at,
+                ], $community);
             }
 
             return $post->fresh(['author', 'community']);
@@ -109,6 +123,12 @@ class CommunityPostService
                 'post_id' => $post->getKey(),
             ]);
 
+            $this->analytics->record('post_update', $post->author, [
+                'community_id' => $post->community_id,
+                'post_id' => $post->getKey(),
+                'changes' => array_keys($payload),
+            ], $post->community);
+
             return $post->fresh(['author', 'paywallTier']);
         });
     }
@@ -133,7 +153,34 @@ class CommunityPostService
                 'post_id' => $post->getKey(),
                 'actor_id' => $actor->getKey(),
             ]);
+
+            $this->analytics->record('post_delete', $actor, [
+                'community_id' => $post->community_id,
+                'post_id' => $post->getKey(),
+            ], $post->community);
         });
+    }
+
+    /**
+     * @param array<int, mixed> $media
+     * @return array<int, string>
+     */
+    private function resolveMediaTypes(array $media): array
+    {
+        return collect($media)
+            ->map(function ($item) {
+                if (is_array($item) && isset($item['type'])) {
+                    return (string) $item['type'];
+                }
+
+                if (is_string($item)) {
+                    return str_contains($item, '.mp4') ? 'video' : 'image';
+                }
+
+                return 'file';
+            })
+            ->values()
+            ->all();
     }
 }
 

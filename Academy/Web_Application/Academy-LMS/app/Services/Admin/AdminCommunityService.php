@@ -40,6 +40,13 @@ class AdminCommunityService
         ];
     }
 
+    public function findCommunityById(int $communityId): Community
+    {
+        return Community::query()
+            ->with(['category', 'geoPlace'])
+            ->findOrFail($communityId);
+    }
+
     public function showCommunity(Community $community): array
     {
         $community->loadMissing(['category:id,name', 'geoPlace:id,name,country_code,timezone']);
@@ -104,6 +111,7 @@ class AdminCommunityService
             return [
                 'id' => (int) $member->user_id,
                 'name' => $member->user?->name ?? 'Unknown member',
+                'email' => $member->user?->email,
                 'avatar_url' => $this->avatarUrl($member->user),
                 'role' => $member->role,
                 'status' => $member->status,
@@ -262,6 +270,8 @@ class AdminCommunityService
                     ?->toArray() ?? [],
                 'attachments' => $media,
                 'paywall_tier_id' => $post->paywall_tier_id ? (int) $post->paywall_tier_id : null,
+                'is_archived' => (bool) $post->is_archived,
+                'archived_at' => $post->archived_at?->toIso8601String(),
             ];
         }));
 
@@ -407,6 +417,7 @@ class AdminCommunityService
                     ->where('status', 'active')
                     ->where('is_online', true),
                 'posts as posts_last_24h' => fn (Builder $builder) => $builder
+                    ->where('is_archived', false)
                     ->whereNotNull('published_at')
                     ->where('published_at', '>=', $sinceDay),
             ])
@@ -415,6 +426,7 @@ class AdminCommunityService
                 CommunityPost::query()
                     ->selectRaw('COALESCE(SUM(comment_count), 0)')
                     ->whereColumn('community_id', 'communities.id')
+                    ->where('is_archived', false)
                     ->whereNotNull('published_at')
                     ->where('published_at', '>=', $sinceDay),
                 'comments_last_24h'
@@ -426,11 +438,26 @@ class AdminCommunityService
                 'last_activity_at'
             )
             ->selectSub(
+                CommunityPost::query()
+                    ->selectRaw('COUNT(*)')
+                    ->whereColumn('community_id', 'communities.id')
+                    ->whereRaw("JSON_EXTRACT(COALESCE(metadata, '{}'), '$.moderation.status') = '" . json_encode('flagged') . "'"),
+                'open_flags'
+            )
+            ->selectSub(
                 CommunitySubscriptionTier::query()
                     ->selectRaw('COUNT(*)')
                     ->whereColumn('community_id', 'communities.id')
                     ->whereNull('deleted_at'),
                 'tier_count'
+            )
+            ->selectSub(
+                CommunitySubscription::query()
+                    ->selectRaw('COALESCE(SUM(tiers.price_cents), 0)')
+                    ->join('community_subscription_tiers as tiers', 'tiers.id', '=', 'community_subscriptions.subscription_tier_id')
+                    ->whereColumn('community_subscriptions.community_id', 'communities.id')
+                    ->whereIn('community_subscriptions.status', ['active', 'trialing']),
+                'mrr_cents'
             )
             ->orderByDesc('communities.created_at')
             ->orderByDesc('communities.id');
@@ -454,8 +481,8 @@ class AdminCommunityService
             }
         }
 
-        if (! empty($filters['query'])) {
-            $term = '%' . trim((string) $filters['query']) . '%';
+        if (! empty($filters['search'])) {
+            $term = '%' . trim((string) $filters['search']) . '%';
             $query->where(function (Builder $builder) use ($term) {
                 $builder->where('communities.name', 'like', $term)
                     ->orWhere('communities.slug', 'like', $term)
@@ -481,17 +508,21 @@ class AdminCommunityService
         }
 
         $comments = (int) ($community->getAttribute('comments_last_24h') ?? 0);
+        $mrrCents = (int) ($community->getAttribute('mrr_cents') ?? 0);
 
         return [
             'id' => (int) $community->getKey(),
             'name' => $community->name,
             'slug' => $community->slug,
             'visibility' => $community->visibility,
-            'members_count' => (int) $community->getAttribute('members_count'),
-            'online_count' => (int) $community->getAttribute('online_count'),
+            'tagline' => $community->tagline,
+            'member_count' => (int) $community->getAttribute('members_count'),
+            'online_now' => (int) $community->getAttribute('online_count'),
             'posts_per_day' => (int) $community->getAttribute('posts_last_24h'),
             'comments_per_day' => $comments,
             'paywall_enabled' => (int) ($community->getAttribute('tier_count') ?? 0) > 0,
+            'mrr' => round($mrrCents / 100, 2),
+            'open_flags' => (int) $community->getAttribute('open_flags'),
             'last_activity_at' => $lastActivity?->toIso8601String(),
         ];
     }

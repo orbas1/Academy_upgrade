@@ -2,6 +2,7 @@
 
 namespace App\Domain\Communities\Services;
 
+use App\Domain\Analytics\Services\AnalyticsDispatcher;
 use App\Domain\Communities\Models\CommunityCommentLike;
 use App\Domain\Communities\Models\CommunityMember;
 use App\Domain\Communities\Models\CommunityPost;
@@ -14,6 +15,10 @@ use Illuminate\Support\Facades\DB;
 
 class CommunityReactionService
 {
+    public function __construct(private readonly AnalyticsDispatcher $analytics)
+    {
+    }
+
     public function togglePostReaction(CommunityPost $post, User $user, string $reaction = 'like'): CommunityPostLike
     {
         return DB::transaction(function () use ($post, $user, $reaction) {
@@ -53,7 +58,15 @@ class CommunityReactionService
                     ->first();
 
                 if ($membership) {
-                    event(new PostLiked($membership, $post->fresh('author'), $existing));
+                    $freshPost = $post->fresh('author');
+                    $freshPost?->loadMissing('community');
+                    event(new PostLiked($membership, $freshPost, $existing));
+
+                    $this->analytics->record('like_add', $user, [
+                        'community_id' => $post->community_id,
+                        'post_id' => $post->getKey(),
+                        'reaction' => $existing->reaction,
+                    ], $freshPost?->community);
                 }
             }
 
@@ -88,6 +101,16 @@ class CommunityReactionService
                     'reacted_at' => CarbonImmutable::now(),
                 ]);
                 $comment->increment('like_count');
+            }
+
+            if ($existing) {
+                $comment->loadMissing('post.community');
+                $this->analytics->record('comment_like', $user, [
+                    'community_id' => $comment->community_id,
+                    'post_id' => $comment->post_id,
+                    'comment_id' => $comment->getKey(),
+                    'reaction' => $existing->reaction,
+                ], $comment->post?->community);
             }
 
             return $existing;

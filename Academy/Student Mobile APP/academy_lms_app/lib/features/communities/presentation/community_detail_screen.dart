@@ -14,6 +14,7 @@ import 'package:academy_lms_app/features/communities/ui/community_presence_heade
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:academy_lms_app/services/analytics/mobile_analytics_service.dart';
 
 import '../../../widgets/connectivity_banner.dart';
 
@@ -493,6 +494,7 @@ class _FeedTab extends StatelessWidget {
             repository: notifier.repository,
             communityId: communityId,
             postId: item.id,
+            analytics: context.read<MobileAnalyticsService>(),
           )..refresh(),
           child: _CommunityCommentsSheet(item: item),
         );

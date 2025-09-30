@@ -79,6 +79,14 @@ class Community extends Model
         return $this->hasOne(CommunityAdminSetting::class);
     }
 
+    public function owner(): HasOne
+    {
+        return $this->hasOne(CommunityMember::class)
+            ->where('role', 'owner')
+            ->where('status', 'active')
+            ->orderBy('joined_at');
+    }
+
     public function leaderboards(): HasMany
     {
         return $this->hasMany(CommunityLeaderboard::class);

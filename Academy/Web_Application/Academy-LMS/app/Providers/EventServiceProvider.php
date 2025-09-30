@@ -15,6 +15,7 @@ use App\Events\Community\SubscriptionStarted;
 use App\Listeners\Community\DispatchCommentCreatedNotifications;
 use App\Listeners\Community\DispatchPostCreatedNotifications;
 use App\Listeners\Community\HandlePaymentSucceeded;
+use App\Listeners\Community\QueueWelcomeMessage;
 use App\Listeners\Community\RecordPointsLedgerEntry;
 use App\Listeners\Community\SendWelcomeNotification;
 use App\Listeners\Community\SyncSubscriptionEntitlements;
@@ -38,6 +39,7 @@ class EventServiceProvider extends ServiceProvider
         ],
         MemberApproved::class => [
             SendWelcomeNotification::class,
+            QueueWelcomeMessage::class,
         ],
         PostCreated::class => [
             DispatchPostCreatedNotifications::class,

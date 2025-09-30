@@ -29,6 +29,7 @@ import 'services/messaging/push_notification_router.dart';
 import 'services/telemetry/telemetry_service.dart';
 import 'features/communities/data/community_cache.dart';
 import 'features/communities/di/providers.dart';
+import 'services/analytics/mobile_analytics_service.dart';
 import 'l10n/app_localizations.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
@@ -46,6 +47,8 @@ Future<void> main() async {
   final configuration = AppConfiguration.instance;
   final telemetry = TelemetryService.instance;
   telemetry.environment = configuration.environment;
+
+  await MobileAnalyticsService.instance.ensureInitialised();
 
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);

@@ -1,18 +1,24 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../data/community_repository.dart';
 import '../models/community_comment.dart';
+import '../../../services/analytics/mobile_analytics_service.dart';
 
 class CommunityCommentsNotifier extends ChangeNotifier {
   CommunityCommentsNotifier({
     required CommunityRepository repository,
     required this.communityId,
     required this.postId,
-  }) : _repository = repository;
+    MobileAnalyticsService? analytics,
+  })  : _repository = repository,
+        _analytics = analytics ?? MobileAnalyticsService.instance;
 
   final CommunityRepository _repository;
   final int communityId;
   final int postId;
+  final MobileAnalyticsService _analytics;
 
   List<CommunityComment> _comments = <CommunityComment>[];
   bool _isLoading = false;
@@ -92,5 +98,19 @@ class CommunityCommentsNotifier extends ChangeNotifier {
     _comments = <CommunityComment>[comment, ..._comments];
     _error = null;
     notifyListeners();
+
+    if (_analytics.isEnabled) {
+      unawaited(
+        _analytics.logEvent(
+          'comment_create',
+          {
+            'community_id': communityId,
+            'post_id': postId,
+            'comment_id': comment.id,
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        ),
+      );
+    }
   }
 }

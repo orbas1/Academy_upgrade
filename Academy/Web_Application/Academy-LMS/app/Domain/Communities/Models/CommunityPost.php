@@ -4,6 +4,7 @@ namespace App\Domain\Communities\Models;
 
 use App\Domain\Search\Concerns\Searchable;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,12 +26,62 @@ class CommunityPost extends Model
         'mentions' => 'array',
         'topics' => 'array',
         'metadata' => 'array',
+        'lifecycle' => 'array',
         'is_pinned' => 'boolean',
         'is_locked' => 'boolean',
+        'is_archived' => 'boolean',
         'scheduled_at' => 'datetime',
         'published_at' => 'datetime',
         'expires_at' => 'datetime',
+        'archived_at' => 'datetime',
     ];
+
+    public function markArchived(string $reason, CarbonImmutable $archivedAt, array $context = []): void
+    {
+        $lifecycle = $this->lifecycle ?? [];
+        $history = $lifecycle['history'] ?? [];
+
+        $history[] = [
+            'event' => 'archived',
+            'reason' => $reason,
+            'context' => $context,
+            'occurred_at' => $archivedAt->toIso8601String(),
+        ];
+
+        $lifecycle['history'] = $history;
+        $lifecycle['archived'] = [
+            'reason' => $reason,
+            'context' => $context,
+            'archived_at' => $archivedAt->toIso8601String(),
+        ];
+
+        $this->forceFill([
+            'is_archived' => true,
+            'archived_at' => $archivedAt,
+            'lifecycle' => $lifecycle,
+        ])->save();
+    }
+
+    public function markActive(CarbonImmutable $reactivatedAt, string $reason = 'activity'): void
+    {
+        $lifecycle = $this->lifecycle ?? [];
+        $history = $lifecycle['history'] ?? [];
+
+        $history[] = [
+            'event' => 'reactivated',
+            'reason' => $reason,
+            'occurred_at' => $reactivatedAt->toIso8601String(),
+        ];
+
+        unset($lifecycle['archived']);
+        $lifecycle['history'] = $history;
+
+        $this->forceFill([
+            'is_archived' => false,
+            'archived_at' => null,
+            'lifecycle' => $lifecycle,
+        ])->save();
+    }
 
     public function community(): BelongsTo
     {

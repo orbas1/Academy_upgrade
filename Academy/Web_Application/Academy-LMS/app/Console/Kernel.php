@@ -71,6 +71,25 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->runInBackground();
 
+        $schedule->command('communities:auto-archive')
+            ->hourly()
+            ->onOneServer()
+            ->withoutOverlapping()
+            ->runInBackground();
+
+        $schedule->command('analytics:prune')
+            ->dailyAt('02:30')
+            ->onOneServer()
+            ->withoutOverlapping()
+            ->runInBackground();
+
+        $schedule->command('communities:health-monitor')
+            ->everyTenMinutes()
+            ->environments(['staging', 'production'])
+            ->onOneServer()
+            ->withoutOverlapping()
+            ->runInBackground();
+
         foreach (config('storage_lifecycle.profiles', []) as $profile => $settings) {
             $backup = $settings['backup'] ?? null;
             if (! is_array($backup) || empty($backup['enabled'])) {

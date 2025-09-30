@@ -23,6 +23,7 @@ class CommunityFeedService
         return $community->posts()
             ->with(['author', 'paywallTier'])
             ->where('is_pinned', true)
+            ->where('is_archived', false)
             ->orderByDesc('published_at')
             ->limit(10)
             ->get();
@@ -38,6 +39,8 @@ class CommunityFeedService
             ->where('scheduled_at', '<=', $now)
             ->update([
                 'published_at' => $now,
+                'is_archived' => false,
+                'archived_at' => null,
             ]);
     }
 
@@ -46,6 +49,7 @@ class CommunityFeedService
         $query = $community->posts()
             ->with(['author', 'paywallTier'])
             ->whereNotNull('published_at')
+            ->where('is_archived', false)
             ->where(function (Builder $builder) use ($community): void {
                 $builder->where('visibility', '!=', 'paid')
                     ->orWhereNull('paywall_tier_id')

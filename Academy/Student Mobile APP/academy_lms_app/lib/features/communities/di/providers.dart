@@ -10,6 +10,7 @@ import '../state/community_onboarding_notifier.dart';
 import '../state/community_presence_notifier.dart';
 import '../../../services/realtime/realtime_presence_service.dart';
 import '../../../providers/presence_controller.dart';
+import '../../../services/analytics/mobile_analytics_service.dart';
 
 List<SingleChildWidget> communityProviders({CommunityCache? cache}) {
   final sharedCache = cache ?? CommunityCache();
@@ -25,6 +26,10 @@ List<SingleChildWidget> communityProviders({CommunityCache? cache}) {
     Provider<RealtimePresenceService>(
       create: (_) => RealtimePresenceService(),
       dispose: (_, service) => service.dispose(),
+    ),
+    Provider<MobileAnalyticsService>(
+      create: (_) => MobileAnalyticsService.instance,
+    ),
     ChangeNotifierProxyProvider<Auth, PresenceController>(
       create: (_) => PresenceController(),
       update: (_, auth, controller) {
@@ -55,10 +60,11 @@ List<SingleChildWidget> communityProviders({CommunityCache? cache}) {
     ChangeNotifierProxyProvider4<Auth, QueueHealthRepository,
         OfflineCommunityActionQueue, CommunityPresenceNotifier, CommunityNotifier>(
       create: (context) => CommunityNotifier(
-        queueHealthRepository: QueueHealthRepository(),
+        queueHealthRepository: context.read<QueueHealthRepository>(),
         cache: sharedCache,
         offlineQueue: context.read<OfflineCommunityActionQueue>(),
         presenceNotifier: context.read<CommunityPresenceNotifier>(),
+        analytics: context.read<MobileAnalyticsService>(),
       ),
       update: (_, auth, queueRepo, offlineQueue, presenceNotifier, notifier) {
         final controller = notifier ??
@@ -67,6 +73,7 @@ List<SingleChildWidget> communityProviders({CommunityCache? cache}) {
               cache: sharedCache,
               offlineQueue: offlineQueue,
               presenceNotifier: presenceNotifier,
+              analytics: context.read<MobileAnalyticsService>(),
             );
 
         controller.updateAuthToken(auth.token);

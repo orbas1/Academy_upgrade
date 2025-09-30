@@ -32,7 +32,10 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'role',
         'status',
-        'email_verified_at'
+        'email_verified_at',
+        'analytics_consent_at',
+        'analytics_consent_version',
+        'analytics_consent_revoked_at'
 
     ];
 
@@ -60,6 +63,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'skills' => EncryptedAttribute::class,
         'social_links' => EncryptedAttribute::class,
         'about' => EncryptedAttribute::class,
+        'analytics_consent_at' => 'datetime',
+        'analytics_consent_revoked_at' => 'datetime',
     ];
 
     public function hasTwoFactorEnabled(): bool
@@ -110,5 +115,35 @@ class User extends Authenticatable implements MustVerifyEmail
     public function toSearchRecord(): array
     {
         return app(MemberSearchTransformer::class)->fromModel($this);
+    }
+
+    public function grantAnalyticsConsent(?string $version = null): void
+    {
+        $this->forceFill([
+            'analytics_consent_at' => now(),
+            'analytics_consent_version' => $version ?: config('analytics.consent.version'),
+            'analytics_consent_revoked_at' => null,
+        ])->save();
+    }
+
+    public function revokeAnalyticsConsent(): void
+    {
+        $this->forceFill([
+            'analytics_consent_revoked_at' => now(),
+        ])->save();
+    }
+
+    public function hasAnalyticsConsent(?string $version = null): bool
+    {
+        if (! $this->analytics_consent_at || $this->analytics_consent_revoked_at) {
+            return false;
+        }
+
+        $expected = $version ?: config('analytics.consent.version');
+        if (! $expected) {
+            return true;
+        }
+
+        return $this->analytics_consent_version === $expected;
     }
 }
