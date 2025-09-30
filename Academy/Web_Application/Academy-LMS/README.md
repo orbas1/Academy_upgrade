@@ -16,6 +16,7 @@ Install the following tooling before running either installer:
 | npm | 10+ | Used for Vite/asset builds |
 | MySQL Client & Server | 8.x | Script will create the `academy` database if credentials allow |
 | Redis | 7.x | Optional but required for queue/broadcast testing |
+| Apache (optional) | 2.4+ | Needed if you want to use the generated virtual host |
 | Git | latest | Clone the repository |
 
 ## 1. One-Command Setup (Start_Up Script)
@@ -27,15 +28,25 @@ cd Academy_upgrade/Academy
 DB_USERNAME=myuser DB_PASSWORD=secret LOCAL_DOMAIN=academy.test ./tools/Start_Up\ Script
 ```
 
-What the script does:
+What the script now covers:
 
-1. Copies `.env.example` to `.env` and injects the database and `APP_URL` values provided via environment variables (defaults to `academy`/`root`).
-2. Verifies PHP, Composer, npm, and the MySQL CLI are installed before continuing.
-3. Creates the MySQL database if it does not already exist.
+1. Copies `.env.example` to `.env` (with a `.env.startup.bak` backup when the file already exists) and injects the database and `APP_URL` values provided via environment variables (defaults to `academy`/`root`).
+2. Verifies PHP, Composer, Node.js, npm, and the MySQL CLI are installed before continuing. PHP versions older than 8.2 trigger a warning.
+3. Performs a live MySQL connectivity test and creates the database if it does not already exist (can be skipped with `SKIP_DATABASE=1`).
 4. Runs `composer install`, `npm ci`/`npm install`, and generates the `APP_KEY` if needed.
-5. Executes Laravel migrations, seeds demo content (set `SEED_DATABASE=0` to skip), links `storage`, clears caches, and rebuilds configuration/route caches.
-6. Builds the Vite assets for production parity.
-7. Writes an Apache virtual host stub to `infra/apache/local_<domain>.conf` and reminds you to add the host entry.
+5. Executes Laravel migrations, optionally seeds demo content (`SEED_DATABASE=0` to skip), links `storage`, clears caches, and rebuilds configuration/route caches.
+6. Builds the Vite assets for production parity (`SKIP_FRONTEND_BUILD=1` to bypass when iterating quickly).
+7. Writes an Apache virtual host stub to `infra/apache/local_<domain>.conf` (`SKIP_VHOST=1` disables this) and reminds you to add the host entry.
+
+Additional runtime toggles are available via environment variables:
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `SEED_DATABASE` | `1` | Run `php artisan db:seed --force` when migrations succeed |
+| `SKIP_DATABASE` | `0` | Skip all database connectivity, creation, migrations, and seeders |
+| `SKIP_FRONTEND_BUILD` | `0` | Skip `npm run build` (useful when you plan to run `npm run dev`) |
+| `SKIP_VHOST` | `0` | Prevent creation/overwrite of the Apache stub |
+| `APP_PORT` | `8000` | Included in the generated `APP_URL` and serve command hint |
 
 After the script completes, start the development server:
 
@@ -52,11 +63,11 @@ If you need a lighter-weight reinstall, use the curated installer in `tools/pref
 ```bash
 cd Academy_upgrade/Academy/Web_Application/Academy-LMS
 cp .env.example .env        # only if you have not created one yet
-../../tools/preflight/bootstrap_local_env.sh
+SKIP_FRONTEND_BUILD=1 ../../tools/preflight/bootstrap_local_env.sh
 php artisan migrate --seed  # run manually after configuring DB creds
 ```
 
-The preflight script installs Composer/npm dependencies, ensures an `APP_KEY` exists, links storage, clears caches, and builds the front-end assets. Update your `.env` before running migrations so the database connection succeeds.
+The preflight script installs Composer/npm dependencies, ensures an `APP_KEY` exists, links storage, clears caches, and (unless you set `SKIP_FRONTEND_BUILD=1`) builds the front-end assets. It now captures a `.env.bootstrap.bak` snapshot for reference. Update your `.env` before running migrations so the database connection succeeds.
 
 ## 3. Database & Credentials
 
@@ -74,7 +85,7 @@ Override these values either by exporting environment variables when running `St
 
 ## 4. Local Virtual Host (Apache)
 
-The Start_Up Script writes an Apache stub at `infra/apache/local_<your-domain>.conf`. To use it:
+The Start_Up Script writes an Apache stub at `infra/apache/local_<your-domain>.conf` (unless `SKIP_VHOST=1`). To use it:
 
 1. Copy or symlink the file into your Apache `sites-available` directory (e.g. `/etc/apache2/sites-available/academy.test.conf`).
 2. Update the PHP handler inside the file to match your local stack (mod_php or PHP-FPM socket/port).
