@@ -1,0 +1,1824 @@
+openapi: 3.1.0
+info:
+  title: Academy Communities API
+  version: 1.0.0
+  summary: Endpoints powering community discovery, feeds, moderation, paywalls, and messaging across web and mobile clients.
+  description: |
+    This specification documents the versioned `/api/v1` surface for the Academy Communities platform. It covers community
+    discovery, membership, feeds, posts, comments, reactions, leaderboards, paywalls, subscriptions, notifications, geo tools,
+    and administrative operations that are consumed by the web admin console, public web experience, and the student mobile app.
+    
+    All responses follow a common envelope with `data`, `meta`, and `errors` keys. Keyset pagination uses opaque cursors that are
+    returned in the `meta.pagination` object as well as the `X-Next-Cursor` header.
+servers:
+  - url: https://api.academy.local
+    description: Local development
+  - url: https://staging-api.academy.io
+    description: Staging environment
+  - url: https://api.academy.io
+    description: Production
+security:
+  - bearerAuth: []
+tags:
+  - name: Communities
+    description: Community discovery, creation, and metadata management.
+  - name: Membership
+    description: Join requests, approvals, roles, and roster management.
+  - name: Feed
+    description: Feeds, posts, comments, reactions, and moderation actions.
+  - name: Points & Levels
+    description: Leaderboards, points accrual, and leveling rules.
+  - name: Paywall
+    description: Subscription tiers, entitlements, and access checks.
+  - name: Geo
+    description: Geo-fencing tools and place directories.
+  - name: Notifications
+    description: Notification streams, digests, and preference management.
+  - name: Search
+    description: Full-text search across communities, posts, comments, and members.
+  - name: Webhooks
+    description: Third-party callbacks (Stripe, analytics, automation).
+paths:
+  /api/v1/communities:
+    get:
+      tags: [Communities]
+      summary: List communities
+      description: Retrieve a cursor-paginated list of communities filtered by category, visibility, or membership status.
+      operationId: listCommunities
+      parameters:
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/AfterCursor'
+        - name: filter
+          in: query
+          description: Named saved filter (e.g. "all", "joined", "recommended").
+          schema:
+            type: string
+            default: all
+        - name: category
+          in: query
+          description: Filter by community category slug.
+          schema:
+            type: string
+        - name: visibility
+          in: query
+          description: Limit to specific visibility values.
+          schema:
+            $ref: '#/components/schemas/CommunityVisibility'
+        - name: q
+          in: query
+          description: Full-text search query against community name/tagline.
+          schema:
+            type: string
+        - name: locale
+          in: query
+          description: Preferred locale for localized text snippets when available.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Communities retrieved successfully.
+          headers:
+            X-Next-Cursor:
+              description: Cursor to request the next page.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityListResponse'
+    post:
+      tags: [Communities]
+      summary: Create a community
+      description: Create a new community. Only users with the `community.create` capability may call this endpoint.
+      operationId: createCommunity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommunityCreateRequest'
+      responses:
+        '201':
+          description: Community created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityResponse'
+        '409':
+          description: A community with the provided slug already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/communities/{communityId}:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Communities]
+      summary: Retrieve a community
+      description: Fetch full community details including stats, paywall tiers, and capability hints for the requesting user.
+      operationId: getCommunity
+      responses:
+        '200':
+          description: Community retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityResponse'
+        '404':
+          description: Community not found or not visible to the requester.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags: [Communities]
+      summary: Update community metadata
+      description: Update mutable community attributes. Requires `community.update` capability.
+      operationId: updateCommunity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommunityUpdateRequest'
+      responses:
+        '200':
+          description: Community updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityResponse'
+    delete:
+      tags: [Communities]
+      summary: Archive a community
+      description: Soft delete/archive a community. Requires owner privileges. Content remains restorable via admin tooling.
+      operationId: archiveCommunity
+      responses:
+        '202':
+          description: Community archival initiated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResponse'
+  /api/v1/communities/{communityId}/capabilities:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Communities]
+      summary: Retrieve capability hints
+      description: Returns the boolean capability map for the authenticated user used by clients to gate UI affordances.
+      operationId: getCommunityCapabilities
+      responses:
+        '200':
+          description: Capability map returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapabilitiesResponse'
+  /api/v1/communities/{communityId}/members:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Membership]
+      summary: List members of a community
+      description: Cursor-paginated roster filtered by role, status, and activity recency. Requires moderator rights.
+      operationId: listCommunityMembers
+      parameters:
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/AfterCursor'
+        - name: role
+          in: query
+          description: Filter by member role (e.g. member, moderator, admin).
+          schema:
+            $ref: '#/components/schemas/MemberRole'
+        - name: status
+          in: query
+          description: Filter by membership status (pending, active, banned).
+          schema:
+            $ref: '#/components/schemas/MemberStatus'
+        - name: online
+          in: query
+          description: When true, returns only members that have been active within the last N minutes.
+          schema:
+            type: boolean
+        - name: joined_after
+          in: query
+          description: Return members who joined after the provided ISO timestamp.
+          schema:
+            type: string
+            format: date-time
+        - name: joined_before
+          in: query
+          description: Return members who joined before the provided ISO timestamp.
+          schema:
+            type: string
+            format: date-time
+        - name: q
+          in: query
+          description: Search by display name or email.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Member roster returned.
+          headers:
+            X-Next-Cursor:
+              description: Cursor to request the next page.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberListResponse'
+    post:
+      tags: [Membership]
+      summary: Join or request membership
+      description: Initiate a membership for the authenticated user. Join policy determines whether the membership is auto-approved.
+      operationId: joinCommunity
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipJoinRequest'
+      responses:
+        '201':
+          description: Membership created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipResponse'
+        '202':
+          description: Join request submitted and pending moderator review.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipResponse'
+  /api/v1/communities/{communityId}/members/{memberId}:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+      - $ref: '#/components/parameters/MemberId'
+    patch:
+      tags: [Membership]
+      summary: Update member role or status
+      description: Promote, demote, approve, or suspend a member. Requires moderator/admin privileges.
+      operationId: updateMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberUpdateRequest'
+      responses:
+        '200':
+          description: Member updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipResponse'
+    delete:
+      tags: [Membership]
+      summary: Remove a member
+      description: Remove a member from the community. For self-removal use the membership endpoint.
+      operationId: removeMember
+      responses:
+        '204':
+          description: Member removed.
+  /api/v1/communities/{communityId}/membership:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Membership]
+      summary: Get current user membership
+      description: Returns the requesting user's membership record or 404 if they are not a member.
+      operationId: getSelfMembership
+      responses:
+        '200':
+          description: Membership found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipResponse'
+        '404':
+          description: The user is not a member of the community.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Membership]
+      summary: Leave a community
+      description: Removes the authenticated user's membership.
+      operationId: leaveCommunity
+      responses:
+        '204':
+          description: Membership cancelled successfully.
+  /api/v1/communities/{communityId}/feed:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Feed]
+      summary: Retrieve community feed
+      description: Returns a cursor-paginated feed sorted by the requested filter (new, top, pins, media).
+      operationId: listFeedItems
+      parameters:
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/AfterCursor'
+        - name: filter
+          in: query
+          description: Feed variant (`new`, `top`, `media`, `scheduled`, `pinned`).
+          schema:
+            type: string
+            default: new
+        - name: include_hidden
+          in: query
+          description: Include moderated/hidden posts (moderator only).
+          schema:
+            type: boolean
+        - name: locale
+          in: query
+          description: Preferred locale for translated content and system prompts.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Feed items returned.
+          headers:
+            X-Next-Cursor:
+              description: Cursor to request the next page.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedListResponse'
+  /api/v1/communities/{communityId}/posts:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    post:
+      tags: [Feed]
+      summary: Create a post
+      description: Compose a new post within the community feed. Supports text, media, scheduled posts, and paywall targeting.
+      operationId: createPost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCreateRequest'
+      responses:
+        '201':
+          description: Post created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+  /api/v1/communities/{communityId}/posts/{postId}:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+      - $ref: '#/components/parameters/PostId'
+    get:
+      tags: [Feed]
+      summary: Retrieve a post
+      operationId: getPost
+      responses:
+        '200':
+          description: Post retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+    patch:
+      tags: [Feed]
+      summary: Update a post
+      description: Edit an existing post's markdown, scheduling, or metadata.
+      operationId: updatePost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostUpdateRequest'
+      responses:
+        '200':
+          description: Post updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+    delete:
+      tags: [Feed]
+      summary: Remove a post
+      operationId: deletePost
+      responses:
+        '204':
+          description: Post removed successfully.
+  /api/v1/communities/{communityId}/posts/{postId}/moderation:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+      - $ref: '#/components/parameters/PostId'
+    post:
+      tags: [Feed]
+      summary: Apply moderation action to a post
+      description: Pin, lock, hide, or archive a post via an atomic moderation command.
+      operationId: moderatePost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostModerationRequest'
+      responses:
+        '200':
+          description: Moderation applied.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+  /api/v1/communities/{communityId}/posts/{postId}/reactions:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+      - $ref: '#/components/parameters/PostId'
+    post:
+      tags: [Feed]
+      summary: Toggle a reaction on a post
+      description: Adds or removes a simple reaction (e.g. like) for the authenticated user. Operation is idempotent.
+      operationId: togglePostReaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReactionRequest'
+      responses:
+        '200':
+          description: Reaction applied and updated post summary returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '204':
+          description: Reaction removed with no response body.
+  /api/v1/communities/{communityId}/posts/{postId}/comments:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+      - $ref: '#/components/parameters/PostId'
+    get:
+      tags: [Feed]
+      summary: List comments for a post
+      operationId: listComments
+      parameters:
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/AfterCursor'
+        - name: parent_id
+          in: query
+          description: Restrict to replies of a specific parent comment when provided.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Comments returned.
+          headers:
+            X-Next-Cursor:
+              description: Cursor to request the next page.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentListResponse'
+    post:
+      tags: [Feed]
+      summary: Create a comment
+      operationId: createComment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentCreateRequest'
+      responses:
+        '201':
+          description: Comment created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+  /api/v1/communities/{communityId}/posts/{postId}/comments/{commentId}:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+      - $ref: '#/components/parameters/PostId'
+      - $ref: '#/components/parameters/CommentId'
+    patch:
+      tags: [Feed]
+      summary: Update a comment
+      operationId: updateComment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentUpdateRequest'
+      responses:
+        '200':
+          description: Comment updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+    delete:
+      tags: [Feed]
+      summary: Delete a comment
+      operationId: deleteComment
+      responses:
+        '204':
+          description: Comment deleted.
+  /api/v1/communities/{communityId}/leaderboard:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Points & Levels]
+      summary: Retrieve leaderboard standings
+      description: Returns leaderboard entries for the given period including the requesting user's rank.
+      operationId: getLeaderboard
+      parameters:
+        - name: period
+          in: query
+          description: Time window for leaderboard points aggregation.
+          schema:
+            type: string
+            enum: [daily, weekly, monthly, all_time]
+            default: weekly
+        - name: limit
+          in: query
+          description: Maximum number of entries to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Leaderboard entries returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardResponse'
+  /api/v1/communities/{communityId}/points/summary:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Points & Levels]
+      summary: Retrieve current points summary
+      description: Returns the authenticated user's point totals, next level target, and daily caps.
+      operationId: getPointsSummary
+      responses:
+        '200':
+          description: Points summary returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointsSummaryResponse'
+  /api/v1/communities/{communityId}/points/history:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Points & Levels]
+      summary: List point events
+      description: Returns a chronological list of point-awarding events for the authenticated user.
+      operationId: listPointEvents
+      parameters:
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/AfterCursor'
+      responses:
+        '200':
+          description: Point events returned.
+          headers:
+            X-Next-Cursor:
+              description: Cursor to request the next page.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointEventListResponse'
+  /api/v1/communities/{communityId}/levels:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Points & Levels]
+      summary: List level definitions
+      description: Returns ordered level metadata used for progress indicators.
+      operationId: listLevels
+      responses:
+        '200':
+          description: Levels returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LevelListResponse'
+    post:
+      tags: [Points & Levels]
+      summary: Create or update level definitions
+      description: Bulk replace level definitions. Requires admin privileges.
+      operationId: upsertLevels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LevelUpsertRequest'
+      responses:
+        '200':
+          description: Levels updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LevelListResponse'
+  /api/v1/communities/{communityId}/paywall/tiers:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Paywall]
+      summary: List subscription tiers
+      description: Returns the available subscription tiers for the community including pricing and benefits.
+      operationId: listPaywallTiers
+      responses:
+        '200':
+          description: Tiers returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaywallTierListResponse'
+    post:
+      tags: [Paywall]
+      summary: Create or update tiers
+      description: Bulk create or update subscription tiers. Requires paywall management capability.
+      operationId: upsertPaywallTiers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaywallTierUpsertRequest'
+      responses:
+        '200':
+          description: Tiers updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaywallTierListResponse'
+  /api/v1/communities/{communityId}/subscriptions/checkout:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    post:
+      tags: [Paywall]
+      summary: Create a Stripe Checkout session
+      description: Creates a hosted checkout session for purchasing a subscription tier.
+      operationId: createSubscriptionCheckout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionCheckoutRequest'
+      responses:
+        '201':
+          description: Checkout session created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionCheckoutResponse'
+  /api/v1/communities/{communityId}/subscriptions:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Paywall]
+      summary: Get subscription status
+      description: Returns the authenticated user's active subscription info and entitlements.
+      operationId: getSubscriptionStatus
+      responses:
+        '200':
+          description: Subscription info returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionStatusResponse'
+  /api/v1/communities/{communityId}/geo/places:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Geo]
+      summary: List geo places for a community
+      description: Returns curated locations associated with a community (chapters, meetup spots, etc.).
+      operationId: listGeoPlaces
+      responses:
+        '200':
+          description: Geo places returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoPlaceListResponse'
+    post:
+      tags: [Geo]
+      summary: Create or update geo places
+      description: Bulk upsert geo places. Requires admin privileges.
+      operationId: upsertGeoPlaces
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeoPlaceUpsertRequest'
+      responses:
+        '200':
+          description: Geo places updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoPlaceListResponse'
+  /api/v1/communities/{communityId}/notifications:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Notifications]
+      summary: List community notifications
+      description: Returns notifications scoped to the community for the authenticated user.
+      operationId: listCommunityNotifications
+      parameters:
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/AfterCursor'
+      responses:
+        '200':
+          description: Notifications returned.
+          headers:
+            X-Next-Cursor:
+              description: Cursor to request the next page.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+  /api/v1/communities/{communityId}/notification-preferences:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Notifications]
+      summary: Get notification preferences
+      operationId: getNotificationPreferences
+      responses:
+        '200':
+          description: Preferences returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferencesResponse'
+    put:
+      tags: [Notifications]
+      summary: Update notification preferences
+      operationId: updateNotificationPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationPreferencesUpdateRequest'
+      responses:
+        '200':
+          description: Preferences updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferencesResponse'
+    delete:
+      tags: [Notifications]
+      summary: Reset notification preferences to defaults
+      operationId: resetNotificationPreferences
+      responses:
+        '204':
+          description: Preferences reset.
+  /api/v1/search:
+    get:
+      tags: [Search]
+      summary: Search communities, posts, comments, or members
+      description: Unified search endpoint backed by Meilisearch. Requires the client to provide a search type and query string.
+      operationId: searchEntities
+      parameters:
+        - name: type
+          in: query
+          description: Index to search.
+          required: true
+          schema:
+            type: string
+            enum: [all, communities, posts, comments, members]
+        - name: q
+          in: query
+          description: Query string (supports fuzzy matching and filters).
+          required: true
+          schema:
+            type: string
+        - name: filters
+          in: query
+          description: Filter expression forwarded to Meilisearch.
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/AfterCursor'
+      responses:
+        '200':
+          description: Search results returned.
+          headers:
+            X-Next-Cursor:
+              description: Cursor to request the next page.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+  /webhooks/stripe:
+    post:
+      tags: [Webhooks]
+      summary: Stripe webhook receiver
+      description: Handles subscription lifecycle events, invoice payments, and refunds from Stripe.
+      operationId: handleStripeWebhook
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StripeWebhookEvent'
+      responses:
+        '200':
+          description: Webhook acknowledged.
+        '202':
+          description: Webhook accepted for asynchronous processing.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    CommunityId:
+      name: communityId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      description: Numeric identifier of the community.
+    MemberId:
+      name: memberId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      description: Numeric identifier of the membership row.
+    PostId:
+      name: postId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      description: Numeric identifier of the post.
+    CommentId:
+      name: commentId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      description: Numeric identifier of the comment.
+    PageSize:
+      name: page_size
+      in: query
+      description: Maximum number of items to return per page.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    AfterCursor:
+      name: after
+      in: query
+      description: Cursor token received from a previous response. When omitted, the first page is returned.
+      schema:
+        type: string
+  schemas:
+    ApiEnvelope:
+      type: object
+      required: [data, meta, errors]
+      properties:
+        data:
+          nullable: true
+          description: Response payload whose type depends on the operation.
+        meta:
+          type: object
+          description: Metadata describing pagination, request tracing, and feature flags.
+          properties:
+            pagination:
+              $ref: '#/components/schemas/PaginationMeta'
+            request_id:
+              type: string
+              description: Unique request identifier for tracing/log correlation.
+            timestamp:
+              type: string
+              format: date-time
+              description: UTC timestamp the response was generated.
+        errors:
+          type: array
+          description: Array of structured errors. Empty when the request succeeded.
+          items:
+            $ref: '#/components/schemas/ApiError'
+    PaginationMeta:
+      type: object
+      properties:
+        limit:
+          type: integer
+          minimum: 1
+        next_cursor:
+          type: string
+          nullable: true
+        previous_cursor:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
+        estimated_total:
+          type: integer
+          nullable: true
+    ApiError:
+      type: object
+      required: [code, title]
+      properties:
+        code:
+          type: string
+          description: Machine readable error code.
+        title:
+          type: string
+          description: Human readable title describing the error.
+        detail:
+          type: string
+          description: Optional detail message.
+        field:
+          type: string
+          description: Field associated with the validation error when applicable.
+    ErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              nullable: true
+            errors:
+              minItems: 1
+    AsyncOperationResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                operation_id:
+                  type: string
+                status:
+                  type: string
+                  enum: [queued, processing]
+    CommunityVisibility:
+      type: string
+      enum: [public, private, unlisted]
+    JoinPolicy:
+      type: string
+      enum: [open, request, invite]
+    MemberRole:
+      type: string
+      enum: [member, moderator, admin, owner]
+    MemberStatus:
+      type: string
+      enum: [pending, active, banned, rejected]
+    DigestFrequency:
+      type: string
+      enum: [never, daily, weekly]
+    CommunitySummary:
+      type: object
+      required: [id, slug, name, member_count, joined, visibility]
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        tagline:
+          type: string
+        category:
+          type: string
+          nullable: true
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+        banner_url:
+          type: string
+          format: uri
+          nullable: true
+        member_count:
+          type: integer
+        online_count:
+          type: integer
+          nullable: true
+        joined:
+          type: boolean
+        visibility:
+          $ref: '#/components/schemas/CommunityVisibility'
+    CommunityDetail:
+      allOf:
+        - $ref: '#/components/schemas/CommunitySummary'
+        - type: object
+          properties:
+            tagline:
+              type: string
+            bio:
+              type: string
+            about_html:
+              type: string
+            join_policy:
+              $ref: '#/components/schemas/JoinPolicy'
+            levels_summary:
+              type: array
+              items:
+                type: object
+                properties:
+                  level:
+                    type: integer
+                  name:
+                    type: string
+                  min_points:
+                    type: integer
+            paywall_tiers:
+              type: array
+              items:
+                $ref: '#/components/schemas/PaywallTier'
+            capabilities:
+              type: object
+              additionalProperties:
+                type: boolean
+              description: Capability map describing permissions for the requesting user.
+    CommunityListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/CommunitySummary'
+    CommunityResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/CommunityDetail'
+    CommunityCreateRequest:
+      type: object
+      required: [name, slug]
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+          pattern: '^[a-z0-9-]+$'
+        tagline:
+          type: string
+          maxLength: 140
+        bio_md:
+          type: string
+        visibility:
+          $ref: '#/components/schemas/CommunityVisibility'
+        join_policy:
+          $ref: '#/components/schemas/JoinPolicy'
+        category_id:
+          type: integer
+          nullable: true
+        banner_path:
+          type: string
+          nullable: true
+        avatar_path:
+          type: string
+          nullable: true
+        geo_bounds:
+          type: string
+          description: Serialized GeoJSON polygon referenced by the geo service.
+    CommunityUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        tagline:
+          type: string
+        bio_md:
+          type: string
+        visibility:
+          $ref: '#/components/schemas/CommunityVisibility'
+        join_policy:
+          $ref: '#/components/schemas/JoinPolicy'
+        banner_path:
+          type: string
+        avatar_path:
+          type: string
+        metadata:
+          type: object
+          description: Arbitrary key/value metadata for admin integrations.
+    CapabilitiesResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              additionalProperties:
+                type: boolean
+    Membership:
+      type: object
+      required: [id, community_id, user_id, role, status, joined_at]
+      properties:
+        id:
+          type: integer
+        community_id:
+          type: integer
+        user_id:
+          type: integer
+        role:
+          $ref: '#/components/schemas/MemberRole'
+        status:
+          $ref: '#/components/schemas/MemberStatus'
+        joined_at:
+          type: string
+          format: date-time
+        points:
+          type: integer
+        level:
+          type: integer
+        badges:
+          type: array
+          items:
+            type: string
+        last_seen_at:
+          type: string
+          format: date-time
+          nullable: true
+    MembershipResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Membership'
+    MemberListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Membership'
+    MembershipJoinRequest:
+      type: object
+      properties:
+        answers:
+          type: array
+          description: Answers to join questions presented during onboarding.
+          items:
+            type: object
+            required: [question_id, answer]
+            properties:
+              question_id:
+                type: integer
+              answer:
+                type: string
+        referral_code:
+          type: string
+          nullable: true
+    MemberUpdateRequest:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/MemberRole'
+        status:
+          $ref: '#/components/schemas/MemberStatus'
+        note:
+          type: string
+          description: Moderator note explaining the action for audit logging.
+    FeedItem:
+      type: object
+      required: [id, community_id, author_id, type, body, created_at, like_count, comment_count, visibility]
+      properties:
+        id:
+          type: integer
+        community_id:
+          type: integer
+        author_id:
+          type: integer
+        author_name:
+          type: string
+        author_avatar_url:
+          type: string
+          format: uri
+          nullable: true
+        type:
+          type: string
+          enum: [text, image, video, link, poll]
+        body:
+          type: string
+        body_md:
+          type: string
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaAttachment'
+        created_at:
+          type: string
+          format: date-time
+        like_count:
+          type: integer
+        comment_count:
+          type: integer
+        visibility:
+          type: string
+          enum: [community, public, paid]
+        paywall_tier_id:
+          type: integer
+          nullable: true
+        liked:
+          type: boolean
+        pinned:
+          type: boolean
+        locked:
+          type: boolean
+        scheduled_at:
+          type: string
+          format: date-time
+          nullable: true
+    MediaAttachment:
+      type: object
+      required: [kind, url]
+      properties:
+        kind:
+          type: string
+          enum: [image, video, file]
+        url:
+          type: string
+          format: uri
+        width:
+          type: integer
+          nullable: true
+        height:
+          type: integer
+          nullable: true
+        duration_seconds:
+          type: number
+          format: float
+          nullable: true
+        alt_text:
+          type: string
+          nullable: true
+    FeedListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/FeedItem'
+    PostResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/FeedItem'
+    PostCreateRequest:
+      type: object
+      required: [body_md]
+      properties:
+        type:
+          type: string
+          enum: [text, image, video, link, poll]
+          default: text
+        body_md:
+          type: string
+          maxLength: 20000
+        media:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/MediaAttachment'
+        visibility:
+          type: string
+          enum: [community, public, paid]
+          default: community
+        paywall_tier_id:
+          type: integer
+          nullable: true
+        scheduled_at:
+          type: string
+          format: date-time
+          nullable: true
+    PostUpdateRequest:
+      type: object
+      properties:
+        body_md:
+          type: string
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaAttachment'
+        visibility:
+          type: string
+          enum: [community, public, paid]
+        paywall_tier_id:
+          type: integer
+          nullable: true
+        scheduled_at:
+          type: string
+          format: date-time
+          nullable: true
+    PostModerationRequest:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [pin, unpin, lock, unlock, hide, unhide]
+        reason_code:
+          type: string
+          nullable: true
+        evidence_urls:
+          type: array
+          items:
+            type: string
+            format: uri
+    ReactionRequest:
+      type: object
+      required: [reaction]
+      properties:
+        reaction:
+          type: string
+          enum: [like, celebrate, insightful]
+        mode:
+          type: string
+          enum: [toggle, add, remove]
+          default: toggle
+    Comment:
+      type: object
+      required: [id, post_id, author_id, body, created_at]
+      properties:
+        id:
+          type: integer
+        post_id:
+          type: integer
+        author_id:
+          type: integer
+        author_name:
+          type: string
+        body:
+          type: string
+        body_md:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        like_count:
+          type: integer
+        liked:
+          type: boolean
+        parent_id:
+          type: integer
+          nullable: true
+    CommentListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Comment'
+    CommentResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Comment'
+    CommentCreateRequest:
+      type: object
+      required: [body_md]
+      properties:
+        body_md:
+          type: string
+          maxLength: 10000
+        parent_id:
+          type: integer
+          nullable: true
+    CommentUpdateRequest:
+      type: object
+      properties:
+        body_md:
+          type: string
+    LeaderboardEntry:
+      type: object
+      required: [member_id, display_name, points, rank]
+      properties:
+        member_id:
+          type: integer
+        display_name:
+          type: string
+        points:
+          type: integer
+        rank:
+          type: integer
+        delta:
+          type: integer
+          nullable: true
+    LeaderboardResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [entries]
+              properties:
+                entries:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/LeaderboardEntry'
+                viewer_rank:
+                  type: integer
+                  nullable: true
+                viewer_points:
+                  type: integer
+                  nullable: true
+    PointsSummaryResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [total_points, current_level]
+              properties:
+                total_points:
+                  type: integer
+                current_level:
+                  type: integer
+                next_level:
+                  type: integer
+                  nullable: true
+                next_level_points:
+                  type: integer
+                  nullable: true
+                daily_cap_remaining:
+                  type: integer
+                streak_days:
+                  type: integer
+    PointEvent:
+      type: object
+      required: [id, occurred_at, amount, reason]
+      properties:
+        id:
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+        amount:
+          type: integer
+        reason:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+    PointEventListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/PointEvent'
+    LevelDefinition:
+      type: object
+      required: [name, min_points, color]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        min_points:
+          type: integer
+        color:
+          type: string
+        icon:
+          type: string
+          nullable: true
+    LevelListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/LevelDefinition'
+    LevelUpsertRequest:
+      type: object
+      required: [levels]
+      properties:
+        levels:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/LevelDefinition'
+    PaywallTier:
+      type: object
+      required: [id, name, price_currency, price_amount]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        price_currency:
+          type: string
+        price_amount:
+          type: number
+          format: float
+        interval:
+          type: string
+          enum: [monthly, yearly]
+        trial_days:
+          type: integer
+          nullable: true
+        benefits:
+          type: array
+          items:
+            type: string
+        is_default:
+          type: boolean
+    PaywallTierListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/PaywallTier'
+    PaywallTierUpsertRequest:
+      type: object
+      required: [tiers]
+      properties:
+        tiers:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/PaywallTier'
+    SubscriptionCheckoutRequest:
+      type: object
+      required: [tier_id, return_url]
+      properties:
+        tier_id:
+          type: integer
+        quantity:
+          type: integer
+          minimum: 1
+          default: 1
+        coupon_code:
+          type: string
+          nullable: true
+        return_url:
+          type: string
+          format: uri
+        cancel_url:
+          type: string
+          format: uri
+          nullable: true
+    SubscriptionCheckoutResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [checkout_url, session_id]
+              properties:
+                checkout_url:
+                  type: string
+                  format: uri
+                session_id:
+                  type: string
+    SubscriptionStatusResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [active, trialing, past_due, cancelled, none]
+                current_period_end:
+                  type: string
+                  format: date-time
+                  nullable: true
+                tier:
+                  $ref: '#/components/schemas/PaywallTier'
+                  nullable: true
+                entitlements:
+                  type: array
+                  items:
+                    type: string
+    GeoPlace:
+      type: object
+      required: [id, name, latitude, longitude]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        is_private:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+    GeoPlaceListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/GeoPlace'
+    GeoPlaceUpsertRequest:
+      type: object
+      required: [places]
+      properties:
+        places:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/GeoPlace'
+    Notification:
+      type: object
+      required: [id, community_id, event, subject, message, created_at]
+      properties:
+        id:
+          type: string
+        community_id:
+          type: integer
+        event:
+          type: string
+        subject:
+          type: string
+        message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        actor_id:
+          type: integer
+          nullable: true
+        data:
+          type: object
+          additionalProperties: {}
+    NotificationListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Notification'
+    NotificationPreferences:
+      type: object
+      required: [community_id, channel_email, channel_push, channel_in_app, digest_frequency]
+      properties:
+        community_id:
+          type: integer
+        channel_email:
+          type: boolean
+        channel_push:
+          type: boolean
+        channel_in_app:
+          type: boolean
+        digest_frequency:
+          $ref: '#/components/schemas/DigestFrequency'
+        muted_events:
+          type: array
+          items:
+            type: string
+        locale:
+          type: string
+          nullable: true
+    NotificationPreferencesResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/NotificationPreferences'
+    NotificationPreferencesUpdateRequest:
+      type: object
+      properties:
+        channel_email:
+          type: boolean
+        channel_push:
+          type: boolean
+        channel_in_app:
+          type: boolean
+        digest_frequency:
+          $ref: '#/components/schemas/DigestFrequency'
+        muted_events:
+          type: array
+          items:
+            type: string
+        locale:
+          type: string
+    SearchHit:
+      type: object
+      required: [type, id, score]
+      properties:
+        type:
+          type: string
+          enum: [community, post, comment, member]
+        id:
+          type: string
+        score:
+          type: number
+          format: float
+        attributes:
+          type: object
+          description: Highlighted attributes returned by the search engine.
+    SearchResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/SearchHit'
+    StripeWebhookEvent:
+      type: object
+      description: Payload envelope forwarded from Stripe.
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        data:
+          type: object
+          properties:
+            object:
+              type: object
+    Capabilities:
+      type: object
+      additionalProperties:
+        type: boolean

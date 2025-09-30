@@ -1,10 +1,17 @@
 import '../models/community_comment.dart';
 import '../models/community_feed_item.dart';
 import '../models/community_leaderboard_entry.dart';
+import '../models/community_level.dart';
 import '../models/community_member.dart';
 import '../models/community_notification.dart';
 import '../models/community_notification_preferences.dart';
 import '../models/community_summary.dart';
+import '../models/geo_place.dart';
+import '../models/paywall_tier.dart';
+import '../models/point_event.dart';
+import '../models/points_summary.dart';
+import '../models/subscription_checkout.dart';
+import '../models/subscription_status.dart';
 import 'community_api_service.dart';
 import 'paginated_response.dart';
 
@@ -16,6 +23,7 @@ class CommunityRepository {
   final Map<String, String?> _feedCursors = <String, String?>{};
   final Map<int, String?> _notificationCursors = <int, String?>{};
   final Map<String, String?> _commentCursors = <String, String?>{};
+  final Map<int, String?> _pointHistoryCursors = <int, String?>{};
 
   void updateAuthToken(String? token) {
     _api.updateAuthToken(token);
@@ -113,6 +121,52 @@ class CommunityRepository {
     String filter = 'new',
   }) {
     _feedCursors.remove(_feedKey(communityId, filter));
+  }
+
+  Future<PointsSummary> loadPointsSummary(int communityId) {
+    return _api.fetchPointsSummary(communityId);
+  }
+
+  Future<PaginatedResponse<PointEvent>> loadPointHistory(
+    int communityId, {
+    bool resetCursor = false,
+    int pageSize = 20,
+  }) async {
+    if (resetCursor) {
+      _pointHistoryCursors.remove(communityId);
+    }
+
+    final response = await _api.fetchPointHistory(
+      communityId,
+      cursor: resetCursor ? null : _pointHistoryCursors[communityId],
+      pageSize: pageSize,
+    );
+
+    _pointHistoryCursors[communityId] = response.nextCursor;
+    return response;
+  }
+
+  Future<PaginatedResponse<PointEvent>> loadMorePointHistory(
+    int communityId, {
+    int pageSize = 20,
+  }) {
+    if (!hasMorePointHistory(communityId)) {
+      return Future.value(PaginatedResponse<PointEvent>.empty());
+    }
+
+    return loadPointHistory(
+      communityId,
+      pageSize: pageSize,
+    );
+  }
+
+  bool hasMorePointHistory(int communityId) {
+    final cursor = _pointHistoryCursors[communityId];
+    return cursor != null && cursor.isNotEmpty;
+  }
+
+  void resetPointHistoryPaging(int communityId) {
+    _pointHistoryCursors.remove(communityId);
   }
 
   Future<PaginatedResponse<CommunityComment>> loadComments(
@@ -270,11 +324,46 @@ class CommunityRepository {
     return _api.resetNotificationPreferences(communityId);
   }
 
+  Future<List<CommunityLevel>> loadLevels(int communityId) {
+    return _api.fetchLevels(communityId);
+  }
+
+  Future<List<PaywallTier>> loadPaywallTiers(int communityId) {
+    return _api.fetchPaywallTiers(communityId);
+  }
+
+  Future<SubscriptionCheckout> createSubscriptionCheckout(
+    int communityId, {
+    required int tierId,
+    int quantity = 1,
+    String? couponCode,
+    required Uri returnUrl,
+    Uri? cancelUrl,
+  }) {
+    return _api.createSubscriptionCheckout(
+      communityId,
+      tierId: tierId,
+      quantity: quantity,
+      couponCode: couponCode,
+      returnUrl: returnUrl,
+      cancelUrl: cancelUrl,
+    );
+  }
+
+  Future<SubscriptionStatus> loadSubscriptionStatus(int communityId) {
+    return _api.fetchSubscriptionStatus(communityId);
+  }
+
+  Future<List<GeoPlace>> loadGeoPlaces(int communityId) {
+    return _api.fetchGeoPlaces(communityId);
+  }
+
   Future<void> dispose() async {
     await _api.dispose();
     _communityCursors.clear();
     _feedCursors.clear();
     _notificationCursors.clear();
+    _pointHistoryCursors.clear();
   }
 
   String _feedKey(int communityId, String filter) => '$communityId::$filter';

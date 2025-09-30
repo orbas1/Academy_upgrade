@@ -7,10 +7,17 @@ import 'package:http/http.dart' as http;
 import '../models/community_comment.dart';
 import '../models/community_feed_item.dart';
 import '../models/community_leaderboard_entry.dart';
+import '../models/community_level.dart';
 import '../models/community_member.dart';
 import '../models/community_notification.dart';
 import '../models/community_notification_preferences.dart';
 import '../models/community_summary.dart';
+import '../models/geo_place.dart';
+import '../models/paywall_tier.dart';
+import '../models/point_event.dart';
+import '../models/points_summary.dart';
+import '../models/subscription_checkout.dart';
+import '../models/subscription_status.dart';
 import 'paginated_response.dart';
 
 class CommunityApiService {
@@ -435,8 +442,17 @@ class CommunityApiService {
       throw http.ClientException('Unable to update notification preferences', response.request?.url);
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    return CommunityNotificationPreferences.fromJson(body['data'] as Map<String, dynamic>);
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to update notification preferences',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.requireMapData();
+    return CommunityNotificationPreferences.fromJson(data);
   }
 
   Future<void> resetNotificationPreferences(int communityId) async {
@@ -448,6 +464,215 @@ class CommunityApiService {
     if (response.statusCode != 204) {
       throw http.ClientException('Unable to reset notification preferences', response.request?.url);
     }
+  }
+
+  Future<PointsSummary> fetchPointsSummary(int communityId) async {
+    final response = await _client.get(
+      _buildUri('/api/v1/communities/$communityId/points/summary'),
+      headers: _headers(),
+    );
+
+    if (response.statusCode != 200) {
+      throw http.ClientException('Unable to load points summary', response.request?.url);
+    }
+
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to load points summary',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.requireMapData();
+    return PointsSummary.fromJson(data);
+  }
+
+  Future<PaginatedResponse<PointEvent>> fetchPointHistory(
+    int communityId, {
+    String? cursor,
+    int pageSize = 20,
+  }) async {
+    final response = await _client.get(
+      _buildUri(
+        '/api/v1/communities/$communityId/points/history',
+        {
+          'after': cursor,
+          'page_size': pageSize.toString(),
+        },
+      ),
+      headers: _headers(),
+    );
+
+    if (response.statusCode != 200) {
+      throw http.ClientException('Unable to load point history', response.request?.url);
+    }
+
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to load point history',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.data is List
+        ? List<dynamic>.from(envelope.data as List)
+        : const <dynamic>[];
+
+    return PaginatedResponse<PointEvent>(
+      items: data
+          .map((dynamic item) => PointEvent.fromJson(item as Map<String, dynamic>))
+          .toList(growable: false),
+      nextCursor: envelope.nextCursor,
+      hasMore: envelope.hasMore,
+    );
+  }
+
+  Future<List<CommunityLevel>> fetchLevels(int communityId) async {
+    final response = await _client.get(
+      _buildUri('/api/v1/communities/$communityId/levels'),
+      headers: _headers(),
+    );
+
+    if (response.statusCode != 200) {
+      throw http.ClientException('Unable to load levels', response.request?.url);
+    }
+
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to load levels',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.data is List
+        ? List<dynamic>.from(envelope.data as List)
+        : const <dynamic>[];
+
+    return data
+        .map((dynamic item) => CommunityLevel.fromJson(item as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  Future<List<PaywallTier>> fetchPaywallTiers(int communityId) async {
+    final response = await _client.get(
+      _buildUri('/api/v1/communities/$communityId/paywall/tiers'),
+      headers: _headers(),
+    );
+
+    if (response.statusCode != 200) {
+      throw http.ClientException('Unable to load paywall tiers', response.request?.url);
+    }
+
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to load paywall tiers',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.data is List
+        ? List<dynamic>.from(envelope.data as List)
+        : const <dynamic>[];
+
+    return data
+        .map((dynamic item) => PaywallTier.fromJson(item as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  Future<SubscriptionCheckout> createSubscriptionCheckout(
+    int communityId, {
+    required int tierId,
+    int quantity = 1,
+    String? couponCode,
+    required Uri returnUrl,
+    Uri? cancelUrl,
+  }) async {
+    final response = await _client.post(
+      _buildUri('/api/v1/communities/$communityId/subscriptions/checkout'),
+      headers: _headers(extra: const {'Content-Type': 'application/json'}),
+      body: jsonEncode(<String, dynamic>{
+        'tier_id': tierId,
+        'quantity': quantity,
+        if (couponCode != null && couponCode.isNotEmpty) 'coupon_code': couponCode,
+        'return_url': returnUrl.toString(),
+        if (cancelUrl != null) 'cancel_url': cancelUrl.toString(),
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw http.ClientException('Unable to create checkout session', response.request?.url);
+    }
+
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to create checkout session',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.requireMapData();
+    return SubscriptionCheckout.fromJson(data);
+  }
+
+  Future<SubscriptionStatus> fetchSubscriptionStatus(int communityId) async {
+    final response = await _client.get(
+      _buildUri('/api/v1/communities/$communityId/subscriptions'),
+      headers: _headers(),
+    );
+
+    if (response.statusCode != 200) {
+      throw http.ClientException('Unable to load subscription status', response.request?.url);
+    }
+
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to load subscription status',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.requireMapData();
+    return SubscriptionStatus.fromJson(data);
+  }
+
+  Future<List<GeoPlace>> fetchGeoPlaces(int communityId) async {
+    final response = await _client.get(
+      _buildUri('/api/v1/communities/$communityId/geo/places'),
+      headers: _headers(),
+    );
+
+    if (response.statusCode != 200) {
+      throw http.ClientException('Unable to load geo places', response.request?.url);
+    }
+
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to load geo places',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.data is List
+        ? List<dynamic>.from(envelope.data as List)
+        : const <dynamic>[];
+
+    return data
+        .map((dynamic item) => GeoPlace.fromJson(item as Map<String, dynamic>))
+        .toList(growable: false);
   }
 
   Future<void> dispose() async {
