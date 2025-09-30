@@ -10,8 +10,10 @@ use App\Http\Controllers\Api\V1\Admin\CommunityModuleManifestController;
 use App\Http\Controllers\Api\V1\Admin\SecretController as AdminSecretController;
 use App\Http\Controllers\Api\V1\Billing\StripeWebhookController;
 use App\Http\Controllers\Api\V1\Community\SearchAuthorizationController;
+use App\Http\Controllers\Api\V1\Community\CommunityFeedController;
 use App\Http\Controllers\Api\V1\Community\CommunityNotificationPreferenceController;
 use App\Http\Controllers\Api\V1\Community\SearchQueryController;
+use App\Http\Controllers\Api\V1\Profile\AnalyticsConsentController;
 use App\Http\Controllers\Api\V1\Queue\QueueHealthSummaryController;
 
 
@@ -83,7 +85,32 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:240,1');
 
     Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/communities', [\App\Http\Controllers\Api\V1\Community\CommunityController::class, 'index'])
+            ->middleware('throttle:240,1');
+        Route::post('/communities', [\App\Http\Controllers\Api\V1\Community\CommunityController::class, 'store'])
+            ->middleware('throttle:60,1');
+        Route::get('/communities/{community}', [\App\Http\Controllers\Api\V1\Community\CommunityController::class, 'show'])
+            ->middleware('throttle:240,1');
+        Route::put('/communities/{community}', [\App\Http\Controllers\Api\V1\Community\CommunityController::class, 'update'])
+            ->middleware('throttle:120,1');
+        Route::delete('/communities/{community}', [\App\Http\Controllers\Api\V1\Community\CommunityController::class, 'destroy'])
+            ->middleware('throttle:60,1');
+
         Route::prefix('communities/{community}')->group(function () {
+            Route::get('/feed', [CommunityFeedController::class, 'index'])
+                ->middleware('throttle:240,1');
+            Route::get('/feed/pinned', [CommunityFeedController::class, 'pinned'])
+                ->middleware('throttle:240,1');
+            Route::get('/members', [\App\Http\Controllers\Api\V1\Community\CommunityMemberController::class, 'index'])
+                ->middleware('throttle:240,1');
+            Route::put('/members/{member}', [\App\Http\Controllers\Api\V1\Community\CommunityMemberController::class, 'update'])
+                ->middleware('throttle:120,1');
+            Route::get('/geo/places', [\App\Http\Controllers\Api\V1\Community\CommunityGeoController::class, 'index'])
+                ->middleware('throttle:240,1');
+            Route::put('/geo/bounds', [\App\Http\Controllers\Api\V1\Community\CommunityGeoController::class, 'update'])
+                ->middleware('throttle:120,1');
+            Route::delete('/geo/places/{place}', [\App\Http\Controllers\Api\V1\Community\CommunityGeoController::class, 'destroy'])
+                ->middleware('throttle:120,1');
             Route::get('/notification-preferences', [CommunityNotificationPreferenceController::class, 'show'])
                 ->middleware('throttle:240,1');
             Route::put('/notification-preferences', [CommunityNotificationPreferenceController::class, 'update'])
@@ -133,6 +160,9 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/ops/queue-health', QueueHealthSummaryController::class)
             ->middleware('throttle:120,1');
+
+        Route::post('/me/analytics-consent', AnalyticsConsentController::class)
+            ->middleware('throttle:60,1');
 
         Route::get('/admin/secrets/{key}', [AdminSecretController::class, 'show'])
             ->middleware(['throttle:60,1', 'can:secrets.manage']);

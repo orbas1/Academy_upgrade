@@ -36,6 +36,10 @@ class AppConfiguration {
         realtimeAuthEndpoint = _parseOptionalUri(
           const String.fromEnvironment('ACADEMY_REALTIME_AUTH_URL', defaultValue: ''),
         ),
+        analyticsEnabled = const bool.fromEnvironment(
+          'ACADEMY_ENABLE_FIREBASE_ANALYTICS',
+          defaultValue: false,
+        ),
         environment = const String.fromEnvironment('ACADEMY_APP_ENV', defaultValue: 'development');
 
   static final AppConfiguration instance = AppConfiguration._internal();
@@ -50,6 +54,7 @@ class AppConfiguration {
   final String? sentryDsn;
   final Uri? realtimeSocketUrl;
   final Uri? realtimeAuthEndpoint;
+  final bool analyticsEnabled;
   final String environment;
 
   Uri resolveApiPath(String path) {

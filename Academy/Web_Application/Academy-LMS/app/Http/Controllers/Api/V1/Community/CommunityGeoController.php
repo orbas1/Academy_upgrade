@@ -19,25 +19,31 @@ class CommunityGeoController extends CommunityApiController
 
     public function index(Request $request, Community $community): JsonResponse
     {
-        return $this->ok([
+        $perPage = (int) $request->integer('per_page', 25);
+        $paginator = $this->geo->listPlaces($community, $perPage);
+
+        return $this->respondWithPagination($paginator, [
             'community_id' => $community->getKey(),
-            'filters' => $request->all(),
         ]);
     }
 
     public function update(UpdateGeoBoundsRequest $request, Community $community): JsonResponse
     {
+        $polygon = $request->validated()['polygon'];
+        $privacy = $request->validated()['privacy'] ?? null;
+
+        $community = $this->geo->updateBounds($community, $polygon, $privacy);
+
         return $this->ok([
             'community_id' => $community->getKey(),
-            'bounds' => $request->validated(),
+            'settings' => $community->settings,
         ]);
     }
 
     public function destroy(Community $community, GeoPlace $place): JsonResponse
     {
-        return $this->ok([
-            'community_id' => $community->getKey(),
-            'place_id' => $place->getKey(),
-        ], 204);
+        $this->geo->removePlace($community, $place);
+
+        return $this->respondNoContent();
     }
 }

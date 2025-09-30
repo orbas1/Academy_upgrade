@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
+import '../../../services/analytics/mobile_analytics_service.dart';
+
 import 'package:academy_lms_app/services/community_manifest_service.dart';
 
 import '../data/community_cache.dart';
@@ -27,13 +29,15 @@ class CommunityNotifier extends ChangeNotifier {
     OfflineCommunityActionQueue? offlineQueue,
     Connectivity? connectivity,
     CommunityPresenceNotifier? presenceNotifier,
+    MobileAnalyticsService? analytics,
   })  : _repository = repository ?? CommunityRepository(cache: cache),
         _queueHealthRepository =
             queueHealthRepository ?? QueueHealthRepository(),
         _manifestService = manifestService ?? CommunityManifestService(),
         _offlineQueue = offlineQueue ?? OfflineCommunityActionQueue(),
         _connectivity = connectivity ?? Connectivity(),
-        _presenceNotifier = presenceNotifier {
+        _presenceNotifier = presenceNotifier,
+        _analytics = analytics ?? MobileAnalyticsService.instance {
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen((result) {
       if (result != ConnectivityResult.none) {
         unawaited(processOfflineQueue());
@@ -50,6 +54,7 @@ class CommunityNotifier extends ChangeNotifier {
   final Uuid _uuid = const Uuid();
   bool _queueProcessing = false;
   CommunityPresenceNotifier? _presenceNotifier;
+  final MobileAnalyticsService _analytics;
 
   final Map<int, String> _activeFeedFilters = <int, String>{};
   final Map<String, bool> _feedHasMore = <String, bool>{};
@@ -100,6 +105,10 @@ class CommunityNotifier extends ChangeNotifier {
     _repository.updateAuthToken(token);
     _queueHealthRepository.updateAuthToken(token);
     _presenceNotifier?.updateAuthToken(token);
+
+    if (token == null) {
+      unawaited(_analytics.clearUser());
+    }
   }
 
   void updateQueueHealthRepository(QueueHealthRepository repository) {
@@ -306,6 +315,7 @@ class CommunityNotifier extends ChangeNotifier {
     try {
       await _ensureManifest();
       _membership = await _repository.loadMembership(communityId);
+      _syncAnalyticsIdentity(communityId: communityId);
     } finally {
       _setMembershipLoading(false);
       notifyListeners();
@@ -317,6 +327,7 @@ class CommunityNotifier extends ChangeNotifier {
     try {
       await _ensureManifest();
       _membership = await _repository.joinCommunity(communityId);
+      _syncAnalyticsIdentity(communityId: communityId);
       _communities = _communities
           .map(
             (summary) => summary.id == communityId
@@ -341,6 +352,10 @@ class CommunityNotifier extends ChangeNotifier {
       _setMutatingMembership(false);
       notifyListeners();
     }
+
+    _logAnalyticsEvent('community_join', {
+      'community_id': communityId,
+    });
   }
 
   Future<void> leaveCommunity(int communityId) async {
@@ -349,6 +364,7 @@ class CommunityNotifier extends ChangeNotifier {
       await _ensureManifest();
       await _repository.leaveCommunity(communityId);
       _membership = null;
+      unawaited(_analytics.clearUser());
       _purgeFeedState(communityId);
       _communities = _communities
           .map(
@@ -374,6 +390,10 @@ class CommunityNotifier extends ChangeNotifier {
       _setMutatingMembership(false);
       notifyListeners();
     }
+
+    _logAnalyticsEvent('community_leave', {
+      'community_id': communityId,
+    });
   }
 
   Future<void> createPost(
@@ -398,6 +418,13 @@ class CommunityNotifier extends ChangeNotifier {
 
       unawaited(_evaluateQueueHealth());
       unawaited(processOfflineQueue());
+
+      _logAnalyticsEvent('post_create', {
+        'community_id': communityId,
+        'post_id': item.id,
+        'visibility': visibility,
+        if (paywallTierId != null) 'paywall_tier_id': paywallTierId,
+      });
     } catch (err) {
       if (_isConnectivityException(err)) {
         final clientReference = _uuid.v4();
@@ -484,6 +511,14 @@ class CommunityNotifier extends ChangeNotifier {
 
     try {
       await _repository.togglePostReaction(communityId, postId, reaction: reaction);
+      _logAnalyticsEvent(
+        current.isLiked ? 'like_remove' : 'like_add',
+        {
+          'community_id': communityId,
+          'post_id': postId,
+          'reaction': reaction,
+        },
+      );
     } catch (err) {
       _feed = List<CommunityFeedItem>.of(_feed)..[index] = current;
       notifyListeners();
@@ -783,6 +818,54 @@ class CommunityNotifier extends ChangeNotifier {
       debugPrint('Queue health check failed: $err');
       debugPrint('$stack');
     }
+  }
+
+  void _syncAnalyticsIdentity({int? communityId}) {
+    if (!_analytics.isEnabled) {
+      return;
+    }
+
+    final member = _membership;
+    if (member == null || !member.isActive) {
+      unawaited(_analytics.clearUser());
+      return;
+    }
+
+    final properties = <String, String>{
+      'membership_id': member.id.toString(),
+      'role': member.role,
+    };
+
+    if (communityId != null) {
+      properties['community_id'] = communityId.toString();
+    }
+
+    unawaited(
+      _analytics.identifyUser(
+        member.userId.toString(),
+        properties: properties,
+      ),
+    );
+  }
+
+  void _logAnalyticsEvent(String name, Map<String, Object?> parameters) {
+    if (!_analytics.isEnabled) {
+      return;
+    }
+
+    final payload = <String, Object?>{
+      ...parameters,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+
+    final member = _membership;
+    if (member != null) {
+      payload['member_id'] = member.id;
+      payload['user_id'] = member.userId;
+      payload['member_role'] = member.role;
+    }
+
+    unawaited(_analytics.logEvent(name, payload));
   }
 
   Future<void> _ensureManifest() async {

@@ -5,24 +5,26 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Services\Community\CalendarService;
+use App\Services\Community\CommentService;
 use App\Services\Community\ClassroomLinkService;
+use App\Services\Community\EloquentCalendarService;
+use App\Services\Community\EloquentCommentService;
+use App\Services\Community\EloquentFollowService;
+use App\Services\Community\EloquentLeaderboardService;
+use App\Services\Community\EloquentGeoService;
+use App\Services\Community\EloquentLikeService;
+use App\Services\Community\EloquentMembershipService;
+use App\Services\Community\EloquentPointsService;
+use App\Services\Community\EloquentPostService;
+use App\Services\Community\EloquentPaywallService;
+use App\Services\Community\EloquentFeedService;
 use App\Services\Community\FeedService;
 use App\Services\Community\FollowService;
 use App\Services\Community\GeoService;
 use App\Services\Community\LeaderboardService;
 use App\Services\Community\LikeService;
 use App\Services\Community\MembershipService;
-use App\Services\Community\NullCalendarService;
 use App\Services\Community\NullClassroomLinkService;
-use App\Services\Community\NullFeedService;
-use App\Services\Community\NullFollowService;
-use App\Services\Community\NullGeoService;
-use App\Services\Community\NullLeaderboardService;
-use App\Services\Community\NullLikeService;
-use App\Services\Community\NullMembershipService;
-use App\Services\Community\NullPaywallService;
-use App\Services\Community\NullPointsService;
-use App\Services\Community\NullPostService;
 use App\Services\Community\StripeSubscriptionService;
 use App\Services\Community\PaywallService;
 use App\Services\Community\PointsService;
@@ -34,18 +36,19 @@ class CommunityServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(MembershipService::class, NullMembershipService::class);
-        $this->app->bind(FeedService::class, NullFeedService::class);
-        $this->app->bind(PostService::class, NullPostService::class);
-        $this->app->bind(LikeService::class, NullLikeService::class);
-        $this->app->bind(FollowService::class, NullFollowService::class);
-        $this->app->bind(PointsService::class, NullPointsService::class);
-        $this->app->bind(LeaderboardService::class, NullLeaderboardService::class);
-        $this->app->bind(GeoService::class, NullGeoService::class);
+        $this->app->bind(MembershipService::class, EloquentMembershipService::class);
+        $this->app->bind(FeedService::class, EloquentFeedService::class);
+        $this->app->bind(PostService::class, EloquentPostService::class);
+        $this->app->bind(LikeService::class, EloquentLikeService::class);
+        $this->app->bind(FollowService::class, EloquentFollowService::class);
+        $this->app->bind(PointsService::class, EloquentPointsService::class);
+        $this->app->bind(LeaderboardService::class, EloquentLeaderboardService::class);
+        $this->app->bind(GeoService::class, EloquentGeoService::class);
         $this->app->bind(SubscriptionService::class, StripeSubscriptionService::class);
-        $this->app->bind(PaywallService::class, NullPaywallService::class);
-        $this->app->bind(CalendarService::class, NullCalendarService::class);
+        $this->app->bind(PaywallService::class, EloquentPaywallService::class);
+        $this->app->bind(CalendarService::class, EloquentCalendarService::class);
         $this->app->bind(ClassroomLinkService::class, NullClassroomLinkService::class);
+        $this->app->bind(CommentService::class, EloquentCommentService::class);
     }
 
     public function boot(): void
