@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', $appLocale ?? app()->getLocale()) }}" dir="{{ $appLocaleDirection ?? 'ltr' }}">
 
 <head>
 
@@ -52,8 +52,14 @@
     <script type="text/javascript" src="{{ asset('assets/backend/js/jquery-3.7.1.min.js') }}"></script>
 </head>
 
-<body>
-    <main>
+<body class="locale-{{ $appLocale ?? app()->getLocale() }}" data-locale-direction="{{ $appLocaleDirection ?? 'ltr' }}">
+    @php($availableLocales = $supportedLocales ?? config('localization.supported_locales', []))
+    <x-accessibility.skip-link />
+    @if(count($availableLocales) > 1)
+        <x-accessibility.locale-switcher />
+    @endif
+    <x-accessibility.locale-flash />
+    <main id="main-content" role="main" tabindex="-1">
         <!-- Sidebar Navigation -->
         <div class="ol-sidebar">
             @include('instructor.navigation')
@@ -111,6 +117,7 @@
     <script src="{{ asset('assets/backend/js/custom.js') }}"></script>
 
     @vite('resources/js/performance-hints.js')
+    @vite('resources/js/accessibility.js')
 
     @include('instructor.toaster')
     @include('instructor.common_scripts')

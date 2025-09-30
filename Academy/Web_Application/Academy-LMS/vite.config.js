@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => ({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/performance-hints.js',
+                'resources/js/accessibility.js',
                 'resources/js/admin/main.ts',
             ],
             refresh: true,

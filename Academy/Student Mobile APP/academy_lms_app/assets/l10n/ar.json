@@ -1,0 +1,22 @@
+{
+  "appTitle": "تطبيق أكاديمي LMS",
+  "filter.title": "تصفية الدورات",
+  "filter.searchPlaceholder": "بحث",
+  "filter.keywordValidation": "لا يمكن أن تكون الكلمة المفتاحية فارغة",
+  "filter.category": "الفئة",
+  "filter.language": "اللغة",
+  "filter.reset": "إعادة تعيين",
+  "filter.allCategory": "كل الفئات",
+  "filter.allLanguage": "كل اللغات",
+  "filter.apply": "تطبيق عوامل التصفية",
+  "navigation.home": "الرئيسية",
+  "navigation.courses": "الدورات",
+  "navigation.communities": "المجتمعات",
+  "navigation.myCourses": "دوراتي",
+  "navigation.cart": "عربة التسوق",
+  "navigation.account": "الحساب",
+  "language.updateSuccess": "تم تحديث اللغة إلى {language}",
+  "language.name.en": "الإنجليزية",
+  "language.name.es": "الإسبانية",
+  "language.name.ar": "العربية"
+}

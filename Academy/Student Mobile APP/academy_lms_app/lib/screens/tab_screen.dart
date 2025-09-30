@@ -13,6 +13,7 @@ import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:academy_lms_app/features/communities/presentation/community_explorer_screen.dart';
+import '../l10n/app_localizations.dart';
 
 
 class TabsScreen extends StatefulWidget {
@@ -74,6 +75,7 @@ class _TabsScreenState extends State<TabsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: const AppBarOne(logo: 'light_logo.png'),
      
@@ -126,7 +128,7 @@ class _TabsScreenState extends State<TabsScreen> {
                     const ColorFilter.mode(kDefaultColor, BlendMode.srcIn),
               ),
             ),
-            title: 'Home',
+            title: l10n.translate('navigation.home'),
           ),
           TabItem(
             icon: Padding(
@@ -145,7 +147,7 @@ class _TabsScreenState extends State<TabsScreen> {
                     const ColorFilter.mode(kDefaultColor, BlendMode.srcIn),
               ),
             ),
-            title: 'Communities',
+            title: l10n.translate('navigation.communities'),
           ),
           TabItem(
             icon: Padding(
@@ -164,7 +166,7 @@ class _TabsScreenState extends State<TabsScreen> {
                     const ColorFilter.mode(kDefaultColor, BlendMode.srcIn),
               ),
             ),
-            title: 'My Courses',
+            title: l10n.translate('navigation.myCourses'),
           ),
           TabItem(
             icon: Padding(
@@ -183,7 +185,7 @@ class _TabsScreenState extends State<TabsScreen> {
                     const ColorFilter.mode(kDefaultColor, BlendMode.srcIn),
               ),
             ),
-            title: 'My Cart',
+            title: l10n.translate('navigation.cart'),
           ),
           TabItem(
             icon: Padding(
@@ -202,7 +204,7 @@ class _TabsScreenState extends State<TabsScreen> {
                     const ColorFilter.mode(kDefaultColor, BlendMode.srcIn),
               ),
             ),
-            title: 'Account',
+            title: l10n.translate('navigation.account'),
           ),
         ],
         backgroundColor: kWhiteColor,

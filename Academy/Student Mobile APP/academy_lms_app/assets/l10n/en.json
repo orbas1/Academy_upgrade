@@ -1,0 +1,22 @@
+{
+  "appTitle": "Academy LMS App",
+  "filter.title": "Filter Courses",
+  "filter.searchPlaceholder": "Search",
+  "filter.keywordValidation": "Keyword cannot be empty",
+  "filter.category": "Category",
+  "filter.language": "Language",
+  "filter.reset": "Reset",
+  "filter.allCategory": "All Category",
+  "filter.allLanguage": "All Language",
+  "filter.apply": "Apply Filters",
+  "navigation.home": "Home",
+  "navigation.courses": "Courses",
+  "navigation.communities": "Communities",
+  "navigation.myCourses": "My Courses",
+  "navigation.cart": "Cart",
+  "navigation.account": "Account",
+  "language.updateSuccess": "Language updated to {language}",
+  "language.name.en": "English",
+  "language.name.es": "Spanish",
+  "language.name.ar": "Arabic"
+}

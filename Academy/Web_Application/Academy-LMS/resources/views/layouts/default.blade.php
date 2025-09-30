@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', $appLocale ?? app()->getLocale()) }}" dir="{{ $appLocaleDirection ?? 'ltr' }}">
 
 <head>
     @include('layouts.seo')
@@ -48,7 +48,7 @@
     <link rel="stylesheet" href="{{ asset('assets/frontend/default/css/responsive.css') }}">
 
     <!-- Yaireo Tagify -->
-    <link rel="stylesheet" type="text/css" href="{{ asset('assets/global/tagify-master/dist/tagify.css') }}" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="{{ asset('assets/global/tagify-master/dist/tagify.css') }}" />
 
     <!-- Custom Style -->
     <link rel="stylesheet" href="{{ asset('assets/frontend/default/css/custom_style.css') }}">
@@ -57,10 +57,16 @@
     <!-- Jquery Js -->
     <script src="{{ asset('assets/frontend/default/js/jquery-3.7.1.min.js') }}"></script>
     @stack('css')
-
 </head>
 
-<body>
+<body class="locale-{{ $appLocale ?? app()->getLocale() }}" data-locale-direction="{{ $appLocaleDirection ?? 'ltr' }}">
+    @php($availableLocales = $supportedLocales ?? config('localization.supported_locales', []))
+    <x-accessibility.skip-link />
+    @if(count($availableLocales) > 1)
+        <x-accessibility.locale-switcher />
+    @endif
+    <x-accessibility.locale-flash />
+
     @php $current_route_name = Route::currentRouteName(); @endphp
     @php
         if (session('home')) {
@@ -73,15 +79,15 @@
     @if ($home_page->is_permanent == 1)
         @include('components.home_made_by_developer.top_bar')
         @include('components.home_made_by_developer.header')
-        <section>
+        <main id="main-content" role="main" tabindex="-1">
             @yield('content')
-        </section>
+        </main>
         @include('components.home_made_by_developer.footer')
     @else
         @if ($current_route_name == 'home' || $current_route_name == 'admin.page.preview')
-            <section>
+            <main id="main-content" role="main" tabindex="-1">
                 @yield('content')
-            </section>
+            </main>
         @else
             @php $builder_files = $home_page->html ? json_decode($home_page->html, true) : []; @endphp
             @if (in_array('top_bar', $builder_files))
@@ -92,9 +98,9 @@
                 @include('components.home_made_by_builder.header')
             @endif
 
-            <section>
+            <main id="main-content" role="main" tabindex="-1">
                 @yield('content')
-            </section>
+            </main>
 
             @if (in_array('footer', $builder_files))
                 @include('components.home_made_by_builder.footer')
@@ -104,7 +110,6 @@
 
     <!-- Bootstrap Js -->
     <script src="{{ asset('assets/frontend/default/js/bootstrap.bundle.min.js') }}"></script>
-
 
     <!-- nice select js -->
     <script src="{{ asset('assets/frontend/default/js/jquery.nice-select.min.js') }}"></script>
@@ -120,27 +125,23 @@
     <!-- owl carousel js -->
     <script src="{{ asset('assets/frontend/default/js/owl.carousel.min.js') }}"></script>
 
-
     <!-- Player Js -->
     <script src="{{ asset('assets/frontend/default/js/plyr.js') }}"></script>
-
 
     <!-- Yaireo Tagify -->
     <script src="{{ asset('assets/global/tagify-master/dist/tagify.min.js') }}"></script>
 
-
     <!-- Jquery Ui Js -->
     <script src="{{ asset('assets/frontend/default/js/jquery-ui.min.js') }}"></script>
 
-
     <!-- price range Js -->
     <script src="{{ asset('assets/frontend/default/js/price_range_script.js') }}"></script>
-
 
     <!-- Main Js -->
     <script src="{{ asset('assets/frontend/default/js/script.js') }}"></script>
 
     @vite('resources/js/performance-hints.js')
+    @vite('resources/js/accessibility.js')
 
     @if(get_frontend_settings('cookie_status'))
         @include('frontend.default.cookie')

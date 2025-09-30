@@ -12,6 +12,7 @@ import '../constants.dart';
 import '../providers/auth.dart';
 import '../widgets/account_list_tile.dart';
 import '../widgets/custom_text.dart';
+import '../widgets/settings/language_selector.dart';
 import 'account_remove_screen.dart';
 import 'edit_profile.dart';
 import 'my_wishlist.dart';
@@ -128,6 +129,12 @@ class _AccountScreenState extends State<AccountScreen> {
                               colors: kGreyLightColor,
                             ),
                             const SizedBox(height: 15),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 20.0, vertical: 12.0),
+                              child: LanguageSelector(),
+                            ),
+                            const SizedBox(height: 8),
                             SizedBox(
                               height: 65,
                               child: Padding(

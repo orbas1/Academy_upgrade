@@ -1,0 +1,22 @@
+{
+  "appTitle": "Aplicación Academy LMS",
+  "filter.title": "Filtrar cursos",
+  "filter.searchPlaceholder": "Buscar",
+  "filter.keywordValidation": "La palabra clave no puede estar vacía",
+  "filter.category": "Categoría",
+  "filter.language": "Idioma",
+  "filter.reset": "Restablecer",
+  "filter.allCategory": "Todas las categorías",
+  "filter.allLanguage": "Todos los idiomas",
+  "filter.apply": "Aplicar filtros",
+  "navigation.home": "Inicio",
+  "navigation.courses": "Cursos",
+  "navigation.communities": "Comunidades",
+  "navigation.myCourses": "Mis cursos",
+  "navigation.cart": "Carrito",
+  "navigation.account": "Cuenta",
+  "language.updateSuccess": "Idioma actualizado a {language}",
+  "language.name.en": "Inglés",
+  "language.name.es": "Español",
+  "language.name.ar": "Árabe"
+}

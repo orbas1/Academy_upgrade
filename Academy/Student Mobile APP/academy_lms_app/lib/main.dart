@@ -6,6 +6,7 @@ import 'package:academy_lms_app/screens/tab_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'providers/auth.dart';
 import 'providers/categories.dart';
@@ -16,6 +17,7 @@ import 'providers/my_courses.dart';
 import 'providers/notification_preferences.dart';
 import 'providers/search_results.dart';
 import 'providers/search_visibility.dart';
+import 'providers/locale_provider.dart';
 import 'screens/account_remove_screen.dart';
 import 'screens/category_details.dart';
 import 'screens/course_detail.dart';
@@ -26,6 +28,7 @@ import 'services/messaging/push_notification_router.dart';
 import 'features/communities/data/queue_health_repository.dart';
 import 'features/communities/state/community_notifier.dart';
 import 'features/communities/state/community_onboarding_notifier.dart';
+import 'l10n/app_localizations.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 final DeepLinkHandler deepLinkHandler = DeepLinkHandler(navigatorKey: appNavigatorKey);
@@ -87,6 +90,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (ctx) => Languages(),
         ),
+        ChangeNotifierProvider(
+          create: (ctx) => LocaleProvider()..loadLocale(),
+        ),
         ChangeNotifierProxyProvider<Auth, Courses>(
           create: (ctx) => Courses([], [],),
           update: (ctx, auth, prevoiusCourses) => Courses(
@@ -113,31 +119,53 @@ class MyApp extends StatelessWidget {
           create: (ctx) => SearchResultsProvider(),
         ),
       ],
-      child: Consumer<Auth>(
-        builder: (ctx, auth, _) => MaterialApp(
-          title: 'Academy LMS App',
-          theme: ThemeData(
-            fontFamily: 'Poppins',
-            colorScheme: const ColorScheme.light(primary: kWhiteColor),
-            useMaterial3: true,
-          ),
-          debugShowCheckedModeBanner: false,
-          navigatorKey: appNavigatorKey,
-          home: const SplashScreen(),
-          routes: {
-            '/home': (ctx) => const TabsScreen(
-                  pageIndex: 0,
-                ),
-            '/login': (ctx) => const LoginScreen(),
-            CoursesScreen.routeName: (ctx) => const CoursesScreen(),
-            CategoryDetailsScreen.routeName: (ctx) =>
-                const CategoryDetailsScreen(),
-            CourseDetailScreen.routeName: (ctx) => const CourseDetailScreen(),
-            CourseDetailScreen1.routeName: (ctx) => const CourseDetailScreen1(),
-            SubCategoryScreen.routeName: (ctx) => const SubCategoryScreen(),
-            AccountRemoveScreen.routeName: (ctx) => const AccountRemoveScreen(),
-          },
-        ),
+      child: Consumer2<Auth, LocaleProvider>(
+        builder: (ctx, auth, localeProvider, _) {
+          final locale = localeProvider.locale;
+          return MaterialApp(
+            onGenerateTitle: (context) =>
+                AppLocalizations.of(context).translate('appTitle'),
+            theme: ThemeData(
+              fontFamily: 'Poppins',
+              colorScheme: const ColorScheme.light(primary: kWhiteColor),
+              useMaterial3: true,
+            ),
+            locale: locale,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            localeResolutionCallback: (deviceLocale, supportedLocales) {
+              if (deviceLocale == null) {
+                return locale;
+              }
+              return supportedLocales.firstWhere(
+                (supported) =>
+                    supported.languageCode == deviceLocale.languageCode,
+                orElse: () => locale,
+              );
+            },
+            debugShowCheckedModeBanner: false,
+            navigatorKey: appNavigatorKey,
+            home: const SplashScreen(),
+            routes: {
+              '/home': (ctx) => const TabsScreen(
+                    pageIndex: 0,
+                  ),
+              '/login': (ctx) => const LoginScreen(),
+              CoursesScreen.routeName: (ctx) => const CoursesScreen(),
+              CategoryDetailsScreen.routeName: (ctx) =>
+                  const CategoryDetailsScreen(),
+              CourseDetailScreen.routeName: (ctx) => const CourseDetailScreen(),
+              CourseDetailScreen1.routeName: (ctx) => const CourseDetailScreen1(),
+              SubCategoryScreen.routeName: (ctx) => const SubCategoryScreen(),
+              AccountRemoveScreen.routeName: (ctx) => const AccountRemoveScreen(),
+            },
+          );
+        },
       ),
     );
   }

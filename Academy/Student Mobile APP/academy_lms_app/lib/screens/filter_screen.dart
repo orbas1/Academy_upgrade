@@ -11,6 +11,7 @@ import '../providers/categories.dart';
 import '../providers/courses.dart';
 import '../providers/misc_provider.dart';
 import '../widgets/common_functions.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/custom_text.dart';
 import '../widgets/star_display_widget.dart';
 import 'courses_screen.dart';
@@ -197,25 +198,34 @@ void _handleSubmitted(String value) {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final catData = Provider.of<Categories>(context, listen: false).items;
     catData.insert(
         0,
         Category(
             id: 0,
-            title: 'All Category',
+            title: l10n.translate('filter.allCategory'),
             thumbnail: null,
             numberOfCourses: null,
             numberOfSubCategories: null));
     final langData = Provider.of<Languages>(context, listen: false).items;
     langData.insert(
-        0, Language(id: 0, value: 'all', displayedValue: 'All Language'));
+        0,
+        Language(
+            id: 0,
+            value: 'all',
+            displayedValue: l10n.translate('filter.allLanguage')));
     final allCategory =
         Provider.of<Categories>(context, listen: false).allItems;
     allCategory.insert(
-        0, AllCategory(id: 0, title: 'All Category', subCategory: data));
+        0,
+        AllCategory(
+            id: 0,
+            title: l10n.translate('filter.allCategory'),
+            subCategory: data));
 
     return Scaffold(
-      appBar: const AppBarOne(title: 'Filter Courses'),
+      appBar: AppBarOne(title: l10n.translate('filter.title')),
       body: Container(
         height: MediaQuery.of(context).size.height * 1,
         color: kBackGroundColor,
@@ -234,13 +244,13 @@ void _handleSubmitted(String value) {
                         child: TextFormField(
                           style: const TextStyle(fontSize: 14),
                           decoration: getInputDecoration(
-                            'Search',
+                            l10n.translate('filter.searchPlaceholder'),
                           ),
                           controller: _keywordController,
                           keyboardType: TextInputType.text,
                           validator: (value) {
                             if (value!.isEmpty) {
-                              return 'Keyword cannot be empty';
+                              return l10n.translate('filter.keywordValidation');
                             }
                             return null;
                           },
@@ -264,16 +274,16 @@ void _handleSubmitted(String value) {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                const CustomText(
-                                  text: 'Category',
+                                CustomText(
+                                  text: l10n.translate('filter.category'),
                                   fontSize: 18,
                                   fontWeight: FontWeight.w500,
                                 ),
                                 const Spacer(),
                                 InkWell(
                                   onTap: _resetForm,
-                                  child: const CustomText(
-                                    text: 'Reset',
+                                  child: CustomText(
+                                    text: l10n.translate('filter.reset'),
                                     fontSize: 18,
                                     fontWeight: FontWeight.w500,
                                     colors: kDefaultColor,
@@ -501,8 +511,8 @@ void _handleSubmitted(String value) {
                             const SizedBox(
                               height: 10,
                             ),
-                            const CustomText(
-                              text: 'Language',
+                            CustomText(
+                              text: l10n.translate('filter.language'),
                               fontSize: 16,
                               fontWeight: FontWeight.w400,
                             ),

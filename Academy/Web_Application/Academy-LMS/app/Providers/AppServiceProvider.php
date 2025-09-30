@@ -15,6 +15,8 @@ use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 
@@ -80,5 +82,13 @@ class AppServiceProvider extends ServiceProvider
 
         KeysetPaginator::register();
         MySqlPerformanceConfigurator::applyFromConfig();
+
+        $currentLocale = config('app.locale');
+        $supportedLocales = Config::get('localization.supported_locales', []);
+        $direction = $supportedLocales[$currentLocale]['direction'] ?? 'ltr';
+
+        View::share('supportedLocales', $supportedLocales);
+        View::share('appLocale', $currentLocale);
+        View::share('appLocaleDirection', $direction);
     }
 }
