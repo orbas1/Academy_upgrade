@@ -1,0 +1,9 @@
+---
+- name: Configure Academy Nginx Edge Nodes
+  hosts: edge
+  become: true
+  vars:
+    enable_brotli: true
+    modsecurity_crs_version: "4.3.0"
+  roles:
+    - role: nginx

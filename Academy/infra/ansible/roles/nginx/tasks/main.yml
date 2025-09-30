@@ -1,0 +1,101 @@
+---
+- name: Ensure apt cache is updated
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install Nginx and supporting modules
+  ansible.builtin.apt:
+    name:
+      - nginx
+      - libnginx-mod-http-geoip2
+      - libnginx-mod-http-brotli
+      - libnginx-mod-stream
+      - libnginx-mod-http-headers-more-filter
+      - libnginx-mod-http-image-filter
+      - libnginx-mod-http-perl
+      - libnginx-mod-http-xslt-filter
+      - libnginx-mod-http-subs-filter
+      - libnginx-mod-mail
+      - libnginx-mod-stream-geoip2
+      - libnginx-mod-stream-geoip
+      - libnginx-mod-http-lua
+      - libnginx-mod-http-cache-purge
+      - libmodsecurity3
+      - modsecurity-crs
+    state: present
+
+- name: Enable Brotli module if requested
+  ansible.builtin.command: "ln -sf /usr/lib/nginx/modules/ngx_http_brotli_filter_module.so /etc/nginx/modules-enabled/50-mod-http-brotli-filter.conf"
+  args:
+    creates: /etc/nginx/modules-enabled/50-mod-http-brotli-filter.conf
+  when: enable_brotli | bool
+  notify: restart nginx
+
+- name: Ensure ModSecurity CRS directory exists
+  ansible.builtin.file:
+    path: "{{ modsecurity_crs_install_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Install requested OWASP CRS version
+  ansible.builtin.unarchive:
+    src: "https://github.com/coreruleset/coreruleset/archive/refs/tags/v{{ modsecurity_crs_version }}.tar.gz"
+    dest: "{{ modsecurity_crs_install_dir }}"
+    remote_src: true
+    creates: "{{ modsecurity_crs_install_dir }}/coreruleset-{{ modsecurity_crs_version }}"
+
+- name: Symlink CRS include directory
+  ansible.builtin.file:
+    src: "{{ modsecurity_crs_install_dir }}/coreruleset-{{ modsecurity_crs_version }}/rules"
+    dest: /etc/nginx/modsecurity
+    state: link
+    force: true
+  notify: reload nginx
+
+- name: Deploy ModSecurity main configuration
+  ansible.builtin.template:
+    src: modsecurity-main.conf.j2
+    dest: /etc/nginx/modsecurity/main.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload nginx
+
+- name: Copy security headers include
+  ansible.builtin.template:
+    src: security-headers.conf.j2
+    dest: /etc/nginx/snippets/security-headers.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload nginx
+
+- name: Deploy Academy communities vhost
+  ansible.builtin.template:
+    src: academy_communities.conf.j2
+    dest: /etc/nginx/sites-available/academy_communities.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload nginx
+
+- name: Ensure vhost enabled
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/academy_communities.conf
+    dest: /etc/nginx/sites-enabled/academy_communities.conf
+    state: link
+    force: true
+  notify: reload nginx
+
+- name: Disable default site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: reload nginx
+
+- name: Ensure nginx is running
+  ansible.builtin.service:
+    name: nginx
+    enabled: true
+    state: started

@@ -1,0 +1,7 @@
+[Unit]
+Description=Laravel Horizon Supervisor Pools
+Requires=horizon@notifications.service horizon@media.service horizon@webhooks.service horizon@search.service
+After=network.target redis.service php8.3-fpm.service
+
+[Install]
+WantedBy=multi-user.target

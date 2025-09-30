@@ -1,0 +1,20 @@
+---
+nginx_domain: "communities.academy.example"
+nginx_tls_cert_path: "/etc/letsencrypt/live/{{ nginx_domain }}/fullchain.pem"
+nginx_tls_key_path: "/etc/letsencrypt/live/{{ nginx_domain }}/privkey.pem"
+nginx_upstream_socket: "/run/php/php8.3-fpm.sock"
+nginx_upstream_servers: []
+nginx_websocket_host: "127.0.0.1"
+nginx_websocket_port: 6001
+nginx_real_ip_ranges:
+  - 10.0.0.0/16
+  - 192.168.0.0/16
+  - 13.32.0.0/15
+  - 52.46.0.0/18
+nginx_access_log: "/var/log/nginx/communities.access.log"
+nginx_error_log: "/var/log/nginx/communities.error.log"
+modsecurity_crs_version: "4.3.0"
+modsecurity_crs_install_dir: "/usr/share/modsecurity-crs"
+modsecurity_anomaly_threshold: 5
+modsecurity_blocking: true
+enable_brotli: true

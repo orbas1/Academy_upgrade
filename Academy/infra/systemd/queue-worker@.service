@@ -1,0 +1,29 @@
+[Unit]
+Description=Laravel Queue Worker (%i)
+After=network.target redis.service php8.3-fpm.service
+Requires=redis.service
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/academy
+Environment=APP_ENV=production
+Environment=QUEUE_CONNECTION=redis
+Environment=QUEUE=%i
+EnvironmentFile=-/etc/default/academy-queue
+EnvironmentFile=-/etc/sysconfig/academy-queue
+ExecStart=/usr/bin/php artisan queue:work ${QUEUE_CONNECTION} --queue=${QUEUE} --environment=${APP_ENV} --sleep=3 --tries=3 --timeout=300
+ExecStop=/usr/bin/php artisan queue:restart --environment=${APP_ENV}
+Restart=always
+RestartSec=5s
+KillSignal=SIGTERM
+TimeoutStopSec=60
+LimitNOFILE=65535
+StandardOutput=append:/var/log/laravel/queue-${QUEUE}.log
+StandardError=append:/var/log/laravel/queue-${QUEUE}.log
+
+[Install]
+WantedBy=multi-user.target

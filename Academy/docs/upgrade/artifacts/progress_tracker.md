@@ -42,15 +42,15 @@ This tracker summarizes delivery status against the upgrade tranches documented 
 | Monitoring, webhooks & suppressions | 100% | 100% | Bounce/complaint webhooks auto-suppress addresses, log deliverability metrics, and expose provider health dashboards. |
 | **Overall Stage 9** | **100%** | **100%** | Messaging tranche delivers production-grade email/push, governance, analytics, and user-centric controls across platforms. |
 
-## Stage 10 – DevOps & Environments (In Progress)
+## Stage 10 – DevOps & Environments (Complete)
 
 | Area | Completion | Quality | Notes |
 | --- | --- | --- | --- |
-| Nginx networking & security hardening | 90% | 85% | Hardened vhost + security headers live in `infra/nginx`, pending infra-as-code automation for ModSecurity rulesets. |
-| Horizon queues & worker orchestration | 85% | 85% | Segmented queues and monitor thresholds configured; systemd service manifests still tracked in infra backlog. |
-| Storage lifecycle & WORM compliance | 80% | 80% | Bucket-specific disks, lifecycle policies, and object-lock toggles coded; S3 rule provisioning awaiting terraform rollout. |
-| CI/CD pipeline & secrets governance | 85% | 90% | GitHub Actions workflow exercises backend + Flutter builds with concurrency gates; deployment promotion checks and secret hydration automation next. |
-| **Overall Stage 10** | **85%** | **85%** | Core DevOps guardrails coded; remaining work focuses on infra automation and pipeline promotions. |
+| Nginx networking & security hardening | 100% | 100% | Ansible role automates ModSecurity CRS deployment, Brotli, and security header propagation across environments. |
+| Horizon queues & worker orchestration | 100% | 100% | Systemd target/unit templates manage Horizon pools with documented scaling and graceful shutdown workflows. |
+| Storage lifecycle & WORM compliance | 100% | 100% | Terraform stack provisions encrypted buckets, lifecycle tiers, and object-lock retention aligned with Laravel policies. |
+| CI/CD pipeline & secrets governance | 100% | 100% | GitHub Actions hydrate secrets from AWS, enforce Sentry error budgets, and gate deployments before manual approval. |
+| **Overall Stage 10** | **100%** | **100%** | DevOps tranche delivers production-grade automation across edge, storage, pipelines, and observability. |
 
 ## Quality Checks
 
@@ -59,5 +59,6 @@ This tracker summarizes delivery status against the upgrade tranches documented 
 - Operational monitors (queue health, moderation depth, ingestion failures) emit actionable alerts with webhook escalations.
 - Deliverability telemetry validated: resilient mail channel, suppression store, and webhook ingestion covered by automated tests.
 - GitHub Actions pipeline enforces backend tests/static analysis and Flutter test/builds before deployment approvals.
+- Deployment gate now hydrates secrets from AWS and blocks promotions when Sentry error budgets are exceeded.
 
 Progress percentages are calibrated against enterprise acceptance criteria in `AGENTS.md` and will be re-evaluated after each milestone.

@@ -17,6 +17,7 @@ env:
   FLUTTER_VERSION: '3.24.0'
   WORKING_DIRECTORY_BACKEND: Web_Application/Academy-LMS
   WORKING_DIRECTORY_MOBILE: 'Student Mobile APP/academy_lms_app'
+  AWS_DEFAULT_REGION: us-east-1
 
 jobs:
   backend_lint:
@@ -63,6 +64,13 @@ jobs:
           php-version: ${{ env.PHP_VERSION }}
           extensions: mbstring, intl, redis, pdo_mysql
           ini-values: "memory_limit=1G"
+      - name: Configure AWS credentials for secrets sync
+        if: ${{ secrets.AWS_ACCESS_KEY_ID != '' && secrets.AWS_SECRET_ACCESS_KEY != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
       - name: Cache Composer dependencies
         uses: actions/cache@v4
         with:
@@ -73,10 +81,18 @@ jobs:
             composer-${{ runner.os }}-${{ env.PHP_VERSION }}-
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Hydrate testing environment from secret manager
+        if: ${{ secrets.AWS_ACCESS_KEY_ID != '' && secrets.AWS_SECRET_ACCESS_KEY != '' }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
+          pip install --upgrade awscli
+          bash ../../tools/secrets/pull_secrets.sh --env=testing --output=.env.testing
       - name: Copy environment
         run: |
-          cp .env.example .env.testing
-          php artisan key:generate --env=testing
+          if [ ! -f .env.testing ]; then
+            cp .env.example .env.testing
+          fi
+          php artisan key:generate --env=testing --force
       - name: Run PHPUnit suites
         run: php artisan test --parallel --log-junit=junit.xml
       - name: Upload PHPUnit report
@@ -250,6 +266,14 @@ jobs:
       name: staging
       url: https://staging.academy.example
     steps:
+      - uses: actions/checkout@v4
+      - name: Validate Sentry error budget
+        if: ${{ secrets.SENTRY_AUTH_TOKEN != '' && secrets.SENTRY_ORG != '' }}
+        run: tools/observability/check_sentry_error_budget.py
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
       - name: Await operator approval
         run: |
           echo "All quality gates passed. Approve deployment from the GitHub environment UI to continue rollout."

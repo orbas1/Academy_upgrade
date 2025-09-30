@@ -34,6 +34,7 @@ import 'services/observability/mobile_observability_client.dart';
 import 'services/migration/migration_plan_service.dart';
 import 'services/security/auth_session_manager.dart';
 import 'l10n/app_localizations.dart';
+import 'widgets/environment_banner.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 final DeepLinkHandler deepLinkHandler = DeepLinkHandler(navigatorKey: appNavigatorKey);
@@ -154,6 +155,9 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           navigatorKey: appNavigatorKey,
           navigatorObservers: TelemetryService.instance.navigatorObservers,
+          builder: (context, child) => EnvironmentBanner.wrapApp(
+            child ?? const SizedBox.shrink(),
+          ),
           home: const SplashScreen(),
           routes: {
             '/home': (ctx) => const TabsScreen(

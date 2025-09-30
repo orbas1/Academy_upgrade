@@ -1,0 +1,26 @@
+# Managed by Ansible – ModSecurity configuration for Academy edge tier.
+
+SecRuleEngine {{ 'On' if modsecurity_blocking else 'DetectionOnly' }}
+SecRequestBodyAccess On
+SecResponseBodyAccess Off
+SecRequestBodyLimit 10485760
+SecRequestBodyNoFilesLimit 131072
+SecRequestBodyInMemoryLimit 131072
+SecPcreMatchLimit 150000
+SecPcreMatchLimitRecursion 150000
+SecDefaultAction "phase:1,pass"
+SecDefaultAction "phase:2,pass"
+
+# Logging
+SecAuditEngine RelevantOnly
+SecAuditLogParts ABIJDEFHZ
+SecAuditLog /var/log/modsec_audit.log
+SecAuditLogStorageDir /var/log/modsec/audit
+
+# OWASP CRS integration
+IncludeOptional {{ modsecurity_crs_install_dir }}/coreruleset-{{ modsecurity_crs_version }}/crs-setup.conf.example
+IncludeOptional {{ modsecurity_crs_install_dir }}/coreruleset-{{ modsecurity_crs_version }}/rules/*.conf
+
+# Tune anomaly thresholds
+SecAction "id:900110,phase:1,nolog,pass,setvar:tx.inbound_anomaly_score_threshold={{ modsecurity_anomaly_threshold }}"
+SecAction "id:900111,phase:1,nolog,pass,setvar:tx.outbound_anomaly_score_threshold={{ modsecurity_anomaly_threshold }}"

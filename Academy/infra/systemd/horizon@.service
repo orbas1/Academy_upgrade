@@ -1,0 +1,32 @@
+[Unit]
+Description=Laravel Horizon Supervisor (%i)
+PartOf=horizon.target
+After=network.target redis.service php8.3-fpm.service
+Requires=redis.service
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/academy
+Environment=APP_ENV=production
+Environment=HORIZON_TAG=%i
+Environment=HORIZON_MIN_PROCESSES=1
+Environment=HORIZON_MAX_PROCESSES=10
+EnvironmentFile=-/etc/default/academy-horizon
+EnvironmentFile=-/etc/sysconfig/academy-horizon
+ExecStart=/usr/bin/php artisan horizon --environment=${APP_ENV} --supervisor=${HORIZON_TAG}
+ExecStop=/usr/bin/php artisan horizon:terminate --environment=${APP_ENV} --supervisor=${HORIZON_TAG}
+ExecReload=/usr/bin/php artisan horizon:terminate --environment=${APP_ENV} --supervisor=${HORIZON_TAG}
+Restart=always
+RestartSec=5s
+KillSignal=SIGTERM
+TimeoutStopSec=90
+LimitNOFILE=65535
+StandardOutput=append:/var/log/laravel/horizon-${HORIZON_TAG}.log
+StandardError=append:/var/log/laravel/horizon-${HORIZON_TAG}.log
+
+[Install]
+WantedBy=multi-user.target
