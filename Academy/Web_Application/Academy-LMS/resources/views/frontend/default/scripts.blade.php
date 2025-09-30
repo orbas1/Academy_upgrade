@@ -37,7 +37,6 @@
             var onclickFunction = $(this).attr('onclick');
             var onChange = $(this).attr('onchange');
             var tag = $(this).prop("tagName").toLowerCase();
-            console.log(tag);
             if (tag != 'a' && action) {
                 $(location).attr('href', $(this).attr('action'));
                 return false;
