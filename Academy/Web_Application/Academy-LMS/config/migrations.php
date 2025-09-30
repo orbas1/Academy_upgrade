@@ -99,7 +99,7 @@ return [
                             'summary' => 'Rehydrate new projections with historic forum, comment, and reaction data.',
                             'operations' => [
                                 'Run `php artisan community:backfill --chunk=1000 --since="-90 days"` on background worker pool.',
-                                'Stream media metadata into `community_post_metrics` using AWS Data Migration Service (DMS).',
+                                'Stream media metadata into `community_post_metrics` using Cloudflare R2 data migration tooling.',
                             ],
                             'backfill' => [
                                 'Enable retry queue with exponential backoff for DMS failures.',

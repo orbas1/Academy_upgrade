@@ -682,12 +682,18 @@ class SettingController extends Controller
     public function amazom_s3_settings_update(Request $request)
     {
         $data['active'] = $request->active;
-        $data['AWS_ACCESS_KEY_ID'] = $request->AWS_ACCESS_KEY_ID;
-        $data['AWS_SECRET_ACCESS_KEY'] = $request->AWS_SECRET_ACCESS_KEY;
-        $data['AWS_DEFAULT_REGION'] = $request->AWS_DEFAULT_REGION;
-        $data['AWS_BUCKET'] = $request->AWS_BUCKET;
+        $data['CLOUDFLARE_R2_ACCESS_KEY_ID'] = $request->input('CLOUDFLARE_R2_ACCESS_KEY_ID', $request->AWS_ACCESS_KEY_ID);
+        $data['CLOUDFLARE_R2_SECRET_ACCESS_KEY'] = $request->input('CLOUDFLARE_R2_SECRET_ACCESS_KEY', $request->AWS_SECRET_ACCESS_KEY);
+        $data['CLOUDFLARE_R2_DEFAULT_REGION'] = $request->input('CLOUDFLARE_R2_DEFAULT_REGION', $request->AWS_DEFAULT_REGION);
+        $data['CLOUDFLARE_R2_BUCKET'] = $request->input('CLOUDFLARE_R2_BUCKET', $request->AWS_BUCKET);
+
+        // Maintain backwards compatibility with legacy AWS keys stored in existing payloads
+        $data['AWS_ACCESS_KEY_ID'] = $data['CLOUDFLARE_R2_ACCESS_KEY_ID'];
+        $data['AWS_SECRET_ACCESS_KEY'] = $data['CLOUDFLARE_R2_SECRET_ACCESS_KEY'];
+        $data['AWS_DEFAULT_REGION'] = $data['CLOUDFLARE_R2_DEFAULT_REGION'];
+        $data['AWS_BUCKET'] = $data['CLOUDFLARE_R2_BUCKET'];
         Setting::where('type', 'amazon_s3')->update(['description' => json_encode($data)]);
-        Session::flash('success', get_phrase('Amazon s3 settings updated successfully'));
+        Session::flash('success', get_phrase('Cloudflare R2 settings updated successfully'));
         return redirect()->back();
     }
 

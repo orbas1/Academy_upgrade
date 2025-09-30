@@ -54,7 +54,7 @@ class SecretsServiceProvider extends ServiceProvider implements DeferrableProvid
             $config = array_merge($this->driverConfig('aws'), $parameters);
             $client = $config['client'] ?? new SecretsManagerClient([
                 'version' => 'latest',
-                'region' => $config['region'] ?? env('AWS_DEFAULT_REGION', 'us-east-1'),
+                'region' => $config['region'] ?? env('CLOUDFLARE_R2_DEFAULT_REGION', env('AWS_DEFAULT_REGION', 'us-east-1')),
                 'credentials' => $config['credentials'] ?? null,
                 'endpoint' => $config['endpoint'] ?? null,
             ]);

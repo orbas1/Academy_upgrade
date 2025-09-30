@@ -2611,7 +2611,7 @@ INSERT INTO `settings` (`id`, `type`, `description`, `created_at`, `updated_at`)
 (74, 'open_ai_secret_key', 'sk-JPYxxxxxxxxxxxxxxxxxxx', '2024-03-12 09:11:12', '2024-08-27 05:25:46'),
 (75, 'timezone', 'Asia/Dhaka', '2024-07-01 02:06:24', '2024-07-01 08:06:24'),
 (76, 'device_limitation', '10', '2023-10-29 05:36:40', '2024-09-24 05:51:14'),
-(77, 'amazon_s3', '{\"active\":null,\"AWS_ACCESS_KEY_ID\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"AWS_SECRET_ACCESS_KEY\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"AWS_DEFAULT_REGION\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"AWS_BUCKET\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}', '2025-07-23 14:03:52', '2025-07-23 14:03:52');
+(77, 'amazon_s3', '{\"active\":null,\"CLOUDFLARE_R2_ACCESS_KEY_ID\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"CLOUDFLARE_R2_SECRET_ACCESS_KEY\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"CLOUDFLARE_R2_DEFAULT_REGION\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"CLOUDFLARE_R2_BUCKET\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"AWS_ACCESS_KEY_ID\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"AWS_SECRET_ACCESS_KEY\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"AWS_DEFAULT_REGION\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"AWS_BUCKET\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}', '2025-07-23 14:03:52', '2025-07-23 14:03:52');
 
 -- --------------------------------------------------------
 

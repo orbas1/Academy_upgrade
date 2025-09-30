@@ -13,7 +13,7 @@ provider "aws" {
 }
 
 variable "region" {
-  description = "AWS region to deploy storage resources into"
+  description = "Cloudflare R2 region (or nearest AWS-compatible region) to deploy storage resources into"
   type        = string
   default     = "us-east-1"
 }

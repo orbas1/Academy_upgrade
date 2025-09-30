@@ -42,11 +42,11 @@ class CloudWatchLoggerFactory
     {
         $client = $config['client'] ?? [];
         $client['version'] = $client['version'] ?? 'latest';
-        $client['region'] = $client['region'] ?? env('AWS_DEFAULT_REGION', 'us-east-1');
+        $client['region'] = $client['region'] ?? env('CLOUDFLARE_R2_DEFAULT_REGION', env('AWS_DEFAULT_REGION', 'us-east-1'));
 
         if (! Arr::exists($client, 'credentials')) {
-            $key = env('AWS_ACCESS_KEY_ID');
-            $secret = env('AWS_SECRET_ACCESS_KEY');
+            $key = env('CLOUDFLARE_R2_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID'));
+            $secret = env('CLOUDFLARE_R2_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY'));
 
             if ($key && $secret) {
                 $client['credentials'] = [
