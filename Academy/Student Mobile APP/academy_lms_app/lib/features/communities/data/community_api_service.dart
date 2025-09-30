@@ -4,6 +4,7 @@ import 'package:academy_lms_app/constants.dart' as constants;
 import 'package:academy_lms_app/services/api_envelope.dart';
 import 'package:academy_lms_app/services/observability/http_client_factory.dart';
 import 'package:academy_lms_app/services/security/auth_session_manager.dart';
+import 'package:academy_lms_app/services/security/client_identity.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/community_comment.dart';
@@ -23,17 +24,27 @@ import '../models/subscription_status.dart';
 import 'paginated_response.dart';
 
 class CommunityApiService {
-  CommunityApiService({http.Client? client, String? authToken, AuthSessionManager? sessionManager})
+  CommunityApiService({
+    http.Client? client,
+    String? authToken,
+    AuthSessionManager? sessionManager,
+    Future<String?> Function({bool forceRefresh})? tokenProvider,
+    Map<String, String> Function()? identityHeadersBuilder,
+  })
       : _client = client != null
             ? HttpClientFactory.create(inner: client)
             : HttpClientFactory.create(),
         _authToken = authToken,
-        _sessionManager = sessionManager ?? AuthSessionManager.instance;
+        _tokenProvider = tokenProvider ??
+            ({bool forceRefresh = false}) =>
+                (sessionManager ?? AuthSessionManager.instance).getValidAccessToken(forceRefresh: forceRefresh),
+        _identityHeadersBuilder = identityHeadersBuilder ?? ClientIdentity.headers;
 
   final http.Client _client;
   String? _authToken;
   String? _baseUrlOverride;
-  final AuthSessionManager _sessionManager;
+  final Future<String?> Function({bool forceRefresh}) _tokenProvider;
+  final Map<String, String> Function() _identityHeadersBuilder;
 
   void updateAuthToken(String? token) {
     if (token == null || token.isEmpty) {
@@ -807,9 +818,11 @@ class CommunityApiService {
   Future<Map<String, String>> _headers({Map<String, String>? extra, bool forceRefresh = false}) async {
     final headers = <String, String>{'Accept': 'application/json'};
 
+    headers.addAll(_identityHeadersBuilder());
+
     String? bearer;
     try {
-      bearer = await _sessionManager.getValidAccessToken(forceRefresh: forceRefresh);
+      bearer = await _tokenProvider(forceRefresh: forceRefresh);
     } catch (_) {
       bearer = null;
     }

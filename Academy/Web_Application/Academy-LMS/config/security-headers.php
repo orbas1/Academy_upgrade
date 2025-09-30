@@ -1,28 +1,100 @@
 <?php
 
+use App\Support\Security\SecurityHeaderValueBuilder as Headers;
+
+$scriptSources = Headers::mergeSources([
+    "'self'",
+    "'unsafe-inline'",
+    "'unsafe-eval'",
+    'cdn.*',
+], env('SECURITY_HEADERS_SCRIPT_SRC', ''));
+
+$styleSources = Headers::mergeSources([
+    "'self'",
+    "'unsafe-inline'",
+    'fonts.googleapis.com',
+], env('SECURITY_HEADERS_STYLE_SRC', ''));
+
+$fontSources = Headers::mergeSources([
+    "'self'",
+    'fonts.gstatic.com',
+], env('SECURITY_HEADERS_FONT_SRC', ''));
+
+$imgSources = Headers::mergeSources([
+    "'self'",
+    'data:',
+    'https:',
+], env('SECURITY_HEADERS_IMG_SRC', ''));
+
+$mediaSources = Headers::mergeSources([
+    'https:',
+], env('SECURITY_HEADERS_MEDIA_SRC', ''));
+
+$connectSources = Headers::mergeSources([
+    "'self'",
+    'https:',
+    'wss:',
+], env('SECURITY_HEADERS_CONNECT_SRC', ''));
+
+$mobileConnectSources = Headers::mergeSources($connectSources, env('SECURITY_HEADERS_MOBILE_CONNECT_SRC', ''));
+
+$mobileImageSources = Headers::mergeSources($imgSources, ['blob:']);
+$mobileMediaSources = Headers::mergeSources($mediaSources, ['blob:']);
+
+$defaultPermissions = Headers::permissionsPolicy([
+    'geolocation' => ['self'],
+    'camera' => null,
+    'microphone' => null,
+]);
+
+$mobilePermissions = Headers::permissionsPolicy([
+    'geolocation' => Headers::mergeSources(['self'], env('SECURITY_HEADERS_MOBILE_GEO_ORIGINS', 'academyapp://callback https://academy.local')),
+    'camera' => null,
+    'microphone' => null,
+]);
+
+$defaultCsp = Headers::contentSecurityPolicy([
+    'default-src' => ["'self'"],
+    'img-src' => $imgSources,
+    'media-src' => $mediaSources,
+    'script-src' => $scriptSources,
+    'style-src' => $styleSources,
+    'font-src' => $fontSources,
+    'connect-src' => $connectSources,
+    'frame-ancestors' => ["'none'"],
+    'base-uri' => ["'self'"],
+]);
+
+$apiCsp = Headers::contentSecurityPolicy([
+    'default-src' => ["'none'"],
+    'img-src' => Headers::mergeSources([
+        "'self'",
+        'data:',
+    ], env('SECURITY_HEADERS_API_IMG_SRC', '')),
+    'script-src' => ["'none'"],
+    'style-src' => ["'none'"],
+    'font-src' => ["'none'"],
+    'media-src' => ["'none'"],
+    'connect-src' => $connectSources,
+    'frame-ancestors' => ["'none'"],
+    'base-uri' => ["'none'"],
+]);
+
+$mobileApiCsp = Headers::contentSecurityPolicy([
+    'default-src' => ["'none'"],
+    'img-src' => $mobileImageSources,
+    'media-src' => $mobileMediaSources,
+    'script-src' => ["'none'"],
+    'style-src' => ["'none'"],
+    'font-src' => ["'none'"],
+    'connect-src' => $mobileConnectSources,
+    'frame-ancestors' => ["'none'"],
+    'base-uri' => ["'none'"],
+]);
+
 return [
-    /*
-    |--------------------------------------------------------------------------
-    | Security Headers Toggle
-    |--------------------------------------------------------------------------
-    |
-    | This flag allows operations teams to disable the middleware quickly if a
-    | misconfiguration is detected during rollout. It should remain enabled in
-    | all environments once verification has passed.
-    |
-    */
     'enabled' => env('SECURITY_HEADERS_ENABLED', true),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Exclusions
-    |--------------------------------------------------------------------------
-    |
-    | Define request path patterns or HTTP verbs that should bypass automatic
-    | header injection. This is useful for health checks or third-party call
-    | backs where upstream providers enforce their own policies.
-    |
-    */
     'exclusions' => [
         'paths' => [
             // 'status/health',
@@ -32,42 +104,54 @@ return [
         ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Default Headers
-    |--------------------------------------------------------------------------
-    |
-    | These headers are applied to every response unless a specific profile is
-    | provided. Values align with the platform upgrade blueprint and can be
-    | overridden per environment via config caching.
-    |
-    */
     'headers' => [
-        'Strict-Transport-Security' => 'max-age=63072000; includeSubDomains; preload',
-        'Content-Security-Policy'   => "default-src 'self'; img-src 'self' data: https:; media-src https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.*; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src 'self' fonts.gstatic.com; connect-src 'self' https: wss:; frame-ancestors 'none'; base-uri 'self'",
-        'Referrer-Policy'           => 'same-origin',
+        'Strict-Transport-Security' => Headers::strictTransportSecurity(63072000, true, true),
+        'Content-Security-Policy' => $defaultCsp,
+        'Referrer-Policy' => 'same-origin',
         'Cross-Origin-Opener-Policy' => 'same-origin',
         'Cross-Origin-Embedder-Policy' => 'require-corp',
         'Cross-Origin-Resource-Policy' => 'same-site',
-        'X-Frame-Options'           => 'DENY',
-        'X-Content-Type-Options'    => 'nosniff',
-        'Permissions-Policy'        => 'geolocation=(self), camera=(), microphone=()'
+        'X-Frame-Options' => 'DENY',
+        'X-Content-Type-Options' => 'nosniff',
+        'Permissions-Policy' => $defaultPermissions,
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Profiles
-    |--------------------------------------------------------------------------
-    |
-    | Profiles extend or override the defaults for contexts such as embedded
-    | payment flows. Apply them with the `security.headers:{profile}` middleware
-    | alias on routes that require tailored policies.
-    |
-    */
     'profiles' => [
-        // 'stripe-checkout' => [
-        //     'Content-Security-Policy' => "default-src 'self' https://js.stripe.com; frame-ancestors 'self' https://js.stripe.com; frame-src 'self' https://js.stripe.com; script-src 'self' https://js.stripe.com 'unsafe-inline'; connect-src 'self' https://api.stripe.com https://js.stripe.com",
-        //     'X-Frame-Options'         => null,
-        // ],
+        'web-app' => [],
+        'api' => [
+            'Content-Security-Policy' => $apiCsp,
+            'Referrer-Policy' => 'no-referrer',
+            'Cross-Origin-Resource-Policy' => 'cross-origin',
+            'Permissions-Policy' => Headers::permissionsPolicy([
+                'geolocation' => null,
+                'camera' => null,
+                'microphone' => null,
+            ]),
+        ],
+        'mobile-api' => [
+            'Content-Security-Policy' => $mobileApiCsp,
+            'Referrer-Policy' => 'no-referrer',
+            'Cross-Origin-Resource-Policy' => 'cross-origin',
+            'Permissions-Policy' => $mobilePermissions,
+        ],
+    ],
+
+    'auto_profiles' => [
+        'headers' => [
+            'X-Academy-Client' => [
+                'mobile-app*' => 'mobile-api',
+                'web-app*' => 'api',
+            ],
+        ],
+        'paths' => [
+            'api/*' => 'api',
+            'broadcasting/auth' => 'api',
+        ],
+        'accepts' => [
+            'application/json' => 'api',
+            'application/vnd.academy.v1+json' => 'api',
+        ],
+        'ajax' => 'api',
+        'expects_json' => 'api',
     ],
 ];

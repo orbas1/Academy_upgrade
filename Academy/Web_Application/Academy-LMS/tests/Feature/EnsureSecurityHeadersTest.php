@@ -58,4 +58,32 @@ class EnsureSecurityHeadersTest extends TestCase
         $this->assertFalse($response->headers->has('Strict-Transport-Security'));
         $this->assertFalse($response->headers->has('Content-Security-Policy'));
     }
+
+    public function test_api_profile_is_detected_for_json_requests(): void
+    {
+        $middleware = new EnsureSecurityHeaders();
+        $request = Request::create('/api/v1/communities', 'GET', server: [
+            'HTTP_ACCEPT' => 'application/json',
+        ]);
+
+        $response = $middleware->handle($request, fn () => response()->json(['ok' => true]));
+
+        $this->assertSame(config('security-headers.profiles.api.Content-Security-Policy'), $response->headers->get('Content-Security-Policy'));
+        $this->assertSame('cross-origin', $response->headers->get('Cross-Origin-Resource-Policy'));
+        $this->assertSame('no-referrer', $response->headers->get('Referrer-Policy'));
+    }
+
+    public function test_mobile_profile_is_selected_when_client_header_present(): void
+    {
+        $middleware = new EnsureSecurityHeaders();
+        $request = Request::create('/api/v1/communities/feed', 'GET', server: [
+            'HTTP_X_ACADEMY_CLIENT' => 'mobile-app/android; version=1.2.3; env=staging',
+        ]);
+
+        $response = $middleware->handle($request, fn () => response()->json(['ok' => true]));
+
+        $this->assertSame(config('security-headers.profiles.mobile-api.Content-Security-Policy'), $response->headers->get('Content-Security-Policy'));
+        $this->assertSame(config('security-headers.profiles.mobile-api.Permissions-Policy'), $response->headers->get('Permissions-Policy'));
+        $this->assertSame('cross-origin', $response->headers->get('Cross-Origin-Resource-Policy'));
+    }
 }

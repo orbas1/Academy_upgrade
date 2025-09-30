@@ -24,7 +24,9 @@ class EnsureSecurityHeaders
             return $response;
         }
 
-        $headers = $this->headersForProfile($profile);
+        $effectiveProfile = $profile ?? $this->autoDetectedProfile($request);
+
+        $headers = $this->headersForProfile($effectiveProfile);
 
         foreach ($headers as $header => $value) {
             if ($value === null) {
@@ -33,12 +35,12 @@ class EnsureSecurityHeaders
                 continue;
             }
 
-            if ($profile === null && $this->headerWasRemoved($request, $header)) {
+            if ($profile === null && $effectiveProfile === null && $this->headerWasRemoved($request, $header)) {
                 $response->headers->remove($header);
                 continue;
             }
 
-            if ($profile === null && $response->headers->has($header)) {
+            if ($profile === null && $effectiveProfile === null && $response->headers->has($header)) {
                 continue;
             }
 
@@ -91,6 +93,95 @@ class EnsureSecurityHeaders
         }
 
         return array_merge($headers, $profiles[$profile]);
+    }
+
+    /**
+     * Determine an automatic profile for the incoming request when none is specified.
+     */
+    protected function autoDetectedProfile(Request $request): ?string
+    {
+        $auto = config('security-headers.auto_profiles', []);
+
+        $headerMappings = $auto['headers'] ?? [];
+        foreach ($headerMappings as $header => $candidates) {
+            $value = $request->headers->get($header);
+
+            if ($value === null) {
+                continue;
+            }
+
+            foreach ($this->normalizeMapping($candidates) as $pattern => $profile) {
+                if ($pattern === '*' || $this->valueMatches($value, $pattern)) {
+                    return $profile;
+                }
+            }
+        }
+
+        $pathMappings = $auto['paths'] ?? [];
+        foreach ($this->normalizeMapping($pathMappings) as $pattern => $profile) {
+            if ($request->is($pattern)) {
+                return $profile;
+            }
+        }
+
+        if (!empty($auto['ajax']) && $request->ajax()) {
+            return is_string($auto['ajax']) ? $auto['ajax'] : null;
+        }
+
+        $acceptMappings = $auto['accepts'] ?? [];
+        if (!empty($acceptMappings)) {
+            $acceptHeader = $request->headers->get('Accept', '');
+            $candidates = array_map('trim', array_filter(explode(',', $acceptHeader)));
+
+            foreach ($candidates as $candidate) {
+                foreach ($this->normalizeMapping($acceptMappings) as $pattern => $profile) {
+                    if ($this->valueMatches($candidate, $pattern)) {
+                        return $profile;
+                    }
+                }
+            }
+        }
+
+        if (!empty($auto['expects_json']) && $request->expectsJson()) {
+            return is_string($auto['expects_json']) ? $auto['expects_json'] : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Normalize mapping configuration into pattern => profile pairs.
+     */
+    protected function normalizeMapping(array|string $mapping): array
+    {
+        if (is_string($mapping)) {
+            return [$mapping => $mapping];
+        }
+
+        $normalized = [];
+
+        foreach ($mapping as $pattern => $profile) {
+            if (is_int($pattern)) {
+                $normalized[$profile] = $profile;
+                continue;
+            }
+
+            $normalized[$pattern] = $profile;
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Determine if a value matches a configured pattern.
+     */
+    protected function valueMatches(string $value, string $pattern): bool
+    {
+        if ($pattern === '*') {
+            return true;
+        }
+
+        return fnmatch($pattern, $value, FNM_CASEFOLD);
     }
 
     /**
