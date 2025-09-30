@@ -270,6 +270,34 @@ class CommunityRepository {
     return _api.togglePostReaction(communityId, postId, reaction: reaction);
   }
 
+  Future<void> reportPost(
+    int communityId,
+    int postId, {
+    required String reason,
+    List<String> evidenceUrls = const <String>[],
+  }) {
+    return _api.flagPost(
+      communityId,
+      postId,
+      reason: reason,
+      evidenceUrls: evidenceUrls,
+    );
+  }
+
+  Future<void> moderatePost(
+    int communityId,
+    int postId, {
+    required String action,
+    String? note,
+  }) {
+    return _api.moderatePost(
+      communityId,
+      postId,
+      action: action,
+      note: note,
+    );
+  }
+
   Future<List<CommunityLeaderboardEntry>> loadLeaderboard(int communityId, {String period = 'weekly'}) {
     return _api.fetchLeaderboard(communityId, period: period);
   }

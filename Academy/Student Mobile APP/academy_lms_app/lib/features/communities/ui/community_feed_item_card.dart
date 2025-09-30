@@ -4,6 +4,8 @@ import 'package:academy_lms_app/features/communities/ui/community_feed_reaction_
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+enum CommunityFeedItemAction { report, hide }
+
 class CommunityFeedItemCard extends StatelessWidget {
   const CommunityFeedItemCard({
     super.key,
@@ -11,12 +13,16 @@ class CommunityFeedItemCard extends StatelessWidget {
     required this.onToggleReaction,
     required this.onShowComments,
     required this.onShowReactions,
+    required this.onAction,
+    this.canModerate = false,
   });
 
   final CommunityFeedItem item;
   final ValueChanged<String?> onToggleReaction;
   final VoidCallback onShowComments;
   final VoidCallback onShowReactions;
+  final ValueChanged<CommunityFeedItemAction> onAction;
+  final bool canModerate;
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +64,36 @@ class CommunityFeedItemCard extends StatelessWidget {
                   ),
                 ),
                 _VisibilityBadge(visibility: item.visibility),
+                PopupMenuButton<CommunityFeedItemAction>(
+                  icon: const Icon(Icons.more_vert),
+                  tooltip: 'Post actions',
+                  onSelected: onAction,
+                  itemBuilder: (context) {
+                    return <PopupMenuEntry<CommunityFeedItemAction>>[
+                      PopupMenuItem<CommunityFeedItemAction>(
+                        value: CommunityFeedItemAction.report,
+                        child: Row(
+                          children: const [
+                            Icon(Icons.flag_outlined, size: 18),
+                            SizedBox(width: 8),
+                            Text('Report'),
+                          ],
+                        ),
+                      ),
+                      if (canModerate)
+                        PopupMenuItem<CommunityFeedItemAction>(
+                          value: CommunityFeedItemAction.hide,
+                          child: Row(
+                            children: const [
+                              Icon(Icons.hide_source_outlined, size: 18),
+                              SizedBox(width: 8),
+                              Text('Hide from feed'),
+                            ],
+                          ),
+                        ),
+                    ];
+                  },
+                ),
               ],
             ),
             const SizedBox(height: 12),
