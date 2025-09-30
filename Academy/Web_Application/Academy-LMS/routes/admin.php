@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\BootcampLiveClassController;
 use App\Http\Controllers\Admin\BootcampModuleController;
 use App\Http\Controllers\Admin\BootcampResourceController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\CommunitySpaController;
 use App\Http\Controllers\Admin\EbookCategoryController;
 use App\Http\Controllers\Admin\EbookController;
 use App\Http\Controllers\Admin\MessageController;
@@ -49,6 +50,8 @@ use Illuminate\Support\Facades\Route;
  */
 
 Route::name('admin.')->prefix('admin')->middleware(['admin', 'admin.ip', 'audit.log'])->group(function () {
+
+    Route::get('communities/app', CommunitySpaController::class)->name('communities.app');
 
     //dashboard
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');

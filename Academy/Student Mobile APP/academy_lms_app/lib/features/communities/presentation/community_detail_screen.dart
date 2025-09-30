@@ -6,8 +6,9 @@ import 'package:academy_lms_app/features/communities/models/community_leaderboar
 import 'package:academy_lms_app/features/communities/models/community_summary.dart';
 import 'package:academy_lms_app/features/communities/state/community_comments_notifier.dart';
 import 'package:academy_lms_app/features/communities/state/community_notifier.dart';
+import 'package:academy_lms_app/features/communities/ui/community_composer_sheet.dart';
+import 'package:academy_lms_app/features/communities/ui/community_feed_item_card.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class CommunityDetailScreen extends StatefulWidget {
@@ -151,122 +152,28 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
     BuildContext context,
     CommunityNotifier notifier,
   ) async {
-    final controller = TextEditingController();
-    final visibilities = <String>['community', 'public', 'paid'];
-    String selectedVisibility = 'community';
-    bool isSubmitting = false;
+    final result = await showCommunityComposerSheet(context);
+    if (result == null) {
+      return;
+    }
 
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Share an update',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: selectedVisibility,
-                    decoration: const InputDecoration(
-                      labelText: 'Visibility',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: visibilities
-                        .map(
-                          (visibility) => DropdownMenuItem<String>(
-                            value: visibility,
-                            child: Text(visibility.toUpperCase()),
-                          ),
-                        )
-                        .toList(growable: false),
-                    onChanged: isSubmitting
-                        ? null
-                        : (value) {
-                            if (value == null) {
-                              return;
-                            }
-                            setState(() {
-                              selectedVisibility = value;
-                            });
-                          },
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: controller,
-                    maxLines: 6,
-                    textInputAction: TextInputAction.newline,
-                    decoration: const InputDecoration(
-                      labelText: 'What is happening?',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: FilledButton.icon(
-                      onPressed: isSubmitting
-                          ? null
-                          : () async {
-                              final text = controller.text.trim();
-                              if (text.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Write something before posting.'),
-                                  ),
-                                );
-                                return;
-                              }
-                              setState(() => isSubmitting = true);
-                              try {
-                                await notifier.createPost(
-                                  widget.summary.id,
-                                  bodyMarkdown: text,
-                                  visibility: selectedVisibility,
-                                );
-                                if (context.mounted) {
-                                  Navigator.of(context).pop(true);
-                                }
-                              } catch (error) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(error.toString())),
-                                  );
-                                }
-                              } finally {
-                                setState(() => isSubmitting = false);
-                              }
-                            },
-                      icon: const Icon(Icons.send),
-                      label: const Text('Publish'),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      },
-    );
-
-    if (result == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Post published to the community feed.'),
-        ),
+    try {
+      await notifier.createPost(
+        widget.summary.id,
+        bodyMarkdown: result.body,
+        visibility: result.visibility,
       );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Post published to the community feed.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to publish: $error')),
+        );
+      }
     }
   }
 }
@@ -463,10 +370,15 @@ class _FeedTab extends StatelessWidget {
 
               final item = feed[index];
 
-              return _CommunityPostTile(
+              return CommunityFeedItemCard(
                 item: item,
-                onToggleReaction: () => notifier.togglePostReaction(communityId, item.id),
+                onToggleReaction: (reaction) => notifier.togglePostReaction(
+                  communityId,
+                  item.id,
+                  reaction: reaction ?? 'like',
+                ),
                 onShowComments: () => _showComments(context, notifier, item),
+                onShowReactions: () => _showReactions(context, item),
               );
             },
           ),
@@ -495,118 +407,22 @@ class _FeedTab extends StatelessWidget {
       },
     );
   }
-}
 
-class _CommunityPostTile extends StatelessWidget {
-  const _CommunityPostTile({
-    required this.item,
-    required this.onToggleReaction,
-    required this.onShowComments,
-  });
-
-  final CommunityFeedItem item;
-  final VoidCallback onToggleReaction;
-  final VoidCallback onShowComments;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final formatter = DateFormat.yMMMd().add_jm();
-
-    return Card(
-      elevation: 1,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: constants.kDefaultColor.withOpacity(0.12),
-                  child: Text(item.authorName.isNotEmpty ? item.authorName[0].toUpperCase() : '?'),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.authorName,
-                        style: theme.textTheme.titleSmall,
-                      ),
-                      Text(
-                        formatter.format(item.createdAt),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: constants.kGreyLightColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                _VisibilityBadge(visibility: item.visibility),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              item.body.isEmpty ? 'Attachment-only post' : item.body,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                IconButton(
-                  icon: Icon(
-                    item.isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: item.isLiked ? constants.kDefaultColor : constants.kGreyLightColor,
-                  ),
-                  onPressed: onToggleReaction,
-                ),
-                Text('${item.likeCount}'),
-                const SizedBox(width: 12),
-                IconButton(
-                  icon: const Icon(Icons.comment_outlined, color: constants.kGreyLightColor),
-                  onPressed: onShowComments,
-                ),
-                Text('${item.commentCount}'),
-              ],
+  void _showReactions(BuildContext context, CommunityFeedItem item) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Reactions'),
+          content: Text('${item.likeCount} members reacted to this post.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _VisibilityBadge extends StatelessWidget {
-  const _VisibilityBadge({required this.visibility});
-
-  final String visibility;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = visibility == 'public'
-        ? constants.kDefaultColor
-        : visibility == 'paid'
-            ? const Color(0xFFE5A663)
-            : constants.kGreyLightColor;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(32),
-      ),
-      child: Text(
-        visibility.toUpperCase(),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-              color: color,
-            ),
-      ),
+        );
+      },
     );
   }
 }

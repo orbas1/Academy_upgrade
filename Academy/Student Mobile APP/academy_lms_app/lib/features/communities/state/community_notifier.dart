@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import 'package:academy_lms_app/services/community_manifest_service.dart';
+
 import '../data/community_repository.dart';
 import '../data/queue_health_repository.dart';
 import '../models/community_feed_item.dart';
@@ -13,12 +15,15 @@ class CommunityNotifier extends ChangeNotifier {
   CommunityNotifier({
     CommunityRepository? repository,
     QueueHealthRepository? queueHealthRepository,
+    CommunityManifestService? manifestService,
   })  : _repository = repository ?? CommunityRepository(),
         _queueHealthRepository =
-            queueHealthRepository ?? QueueHealthRepository();
+            queueHealthRepository ?? QueueHealthRepository(),
+        _manifestService = manifestService ?? CommunityManifestService();
 
   final CommunityRepository _repository;
   QueueHealthRepository _queueHealthRepository;
+  final CommunityManifestService _manifestService;
 
   final Map<int, String> _activeFeedFilters = <int, String>{};
   final Map<String, bool> _feedHasMore = <String, bool>{};
@@ -37,6 +42,7 @@ class CommunityNotifier extends ChangeNotifier {
   String? _error;
   CommunityMember? _membership;
   String? _queueWarning;
+  bool _manifestApplied = false;
 
   List<CommunitySummary> get communities => _communities;
   List<CommunityFeedItem> get feed => _feed;
@@ -73,6 +79,7 @@ class CommunityNotifier extends ChangeNotifier {
   Future<void> refreshCommunities({String filter = 'all', int pageSize = 20}) async {
     _setLoading(true);
     try {
+      await _ensureManifest();
       _currentCommunitiesFilter = filter;
       final response = await _repository.loadCommunities(
         filter: filter,
@@ -100,6 +107,7 @@ class CommunityNotifier extends ChangeNotifier {
     notifyListeners();
 
     try {
+      await _ensureManifest();
       final response = await _repository.loadMoreCommunities(
         filter: _currentCommunitiesFilter,
         pageSize: pageSize,
@@ -124,6 +132,7 @@ class CommunityNotifier extends ChangeNotifier {
   }) async {
     _setLoading(true);
     try {
+      await _ensureManifest();
       final response = await _repository.loadFeed(
         communityId,
         filter: filter,
@@ -158,6 +167,7 @@ class CommunityNotifier extends ChangeNotifier {
     notifyListeners();
 
     try {
+      await _ensureManifest();
       final response = await _repository.loadMoreFeed(
         communityId,
         filter: filter,
@@ -197,6 +207,7 @@ class CommunityNotifier extends ChangeNotifier {
   Future<void> refreshMembership(int communityId) async {
     _setMembershipLoading(true);
     try {
+      await _ensureManifest();
       _membership = await _repository.loadMembership(communityId);
     } finally {
       _setMembershipLoading(false);
@@ -207,6 +218,7 @@ class CommunityNotifier extends ChangeNotifier {
   Future<void> joinCommunity(int communityId) async {
     _setMutatingMembership(true);
     try {
+      await _ensureManifest();
       _membership = await _repository.joinCommunity(communityId);
       _communities = _communities
           .map(
@@ -232,6 +244,7 @@ class CommunityNotifier extends ChangeNotifier {
   Future<void> leaveCommunity(int communityId) async {
     _setMutatingMembership(true);
     try {
+      await _ensureManifest();
       await _repository.leaveCommunity(communityId);
       _membership = null;
       _purgeFeedState(communityId);
@@ -262,6 +275,7 @@ class CommunityNotifier extends ChangeNotifier {
     String visibility = 'community',
     int? paywallTierId,
   }) async {
+    await _ensureManifest();
     final item = await _repository.createPost(
       communityId,
       bodyMarkdown: bodyMarkdown,
@@ -276,6 +290,7 @@ class CommunityNotifier extends ChangeNotifier {
   }
 
   Future<void> togglePostReaction(int communityId, int postId, {String reaction = 'like'}) async {
+    await _ensureManifest();
     await _repository.togglePostReaction(communityId, postId, reaction: reaction);
     _feed = _feed
         .map(
@@ -304,6 +319,7 @@ class CommunityNotifier extends ChangeNotifier {
     notifyListeners();
 
     try {
+      await _ensureManifest();
       _leaderboard = await _repository.loadLeaderboard(communityId, period: period);
       _error = null;
     } catch (err) {
@@ -354,6 +370,21 @@ class CommunityNotifier extends ChangeNotifier {
       }
     } catch (err, stack) {
       debugPrint('Queue health check failed: $err');
+      debugPrint('$stack');
+    }
+  }
+
+  Future<void> _ensureManifest() async {
+    if (_manifestApplied) {
+      return;
+    }
+
+    try {
+      final manifest = await _manifestService.fetch();
+      _repository.applyManifest(manifest);
+      _manifestApplied = true;
+    } catch (err, stack) {
+      debugPrint('Unable to load community manifest: $err');
       debugPrint('$stack');
     }
   }
