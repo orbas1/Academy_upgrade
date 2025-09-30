@@ -18,6 +18,7 @@ class CommunityFeedItem {
     this.isFailed = false,
     this.clientReference,
     this.failureReason,
+    this.shareUrl,
   });
 
   factory CommunityFeedItem.fromJson(Map<String, dynamic> json) {
@@ -37,6 +38,7 @@ class CommunityFeedItem {
       isFailed: json['is_failed'] as bool? ?? false,
       clientReference: json['client_reference'] as String?,
       failureReason: json['failure_reason'] as String?,
+      shareUrl: json['share_url'] as String? ?? json['permalink'] as String?,
     );
   }
 
@@ -55,6 +57,7 @@ class CommunityFeedItem {
   final bool isFailed;
   final String? clientReference;
   final String? failureReason;
+  final String? shareUrl;
 
   CommunityFeedItem copyWith({
     int? id,
@@ -72,6 +75,7 @@ class CommunityFeedItem {
     bool? isFailed,
     String? clientReference,
     String? failureReason,
+    String? shareUrl,
   }) {
     return CommunityFeedItem(
       id: id ?? this.id,
@@ -89,6 +93,7 @@ class CommunityFeedItem {
       isFailed: isFailed ?? this.isFailed,
       clientReference: clientReference ?? this.clientReference,
       failureReason: failureReason ?? this.failureReason,
+      shareUrl: shareUrl ?? this.shareUrl,
     );
   }
 
@@ -109,6 +114,7 @@ class CommunityFeedItem {
       'is_failed': isFailed,
       'client_reference': clientReference,
       'failure_reason': failureReason,
+      'share_url': shareUrl,
     };
   }
 }

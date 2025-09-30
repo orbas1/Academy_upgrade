@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class CommunityFeedReactionBar extends StatelessWidget {
   const CommunityFeedReactionBar({
@@ -42,7 +43,12 @@ class CommunityFeedReactionBar extends StatelessWidget {
             selected: isActive,
             onSelected: onReactionSelected == null
                 ? null
-                : (selected) => onReactionSelected!(selected ? reaction : null),
+                : (selected) {
+                    if (selected) {
+                      HapticFeedback.selectionClick();
+                    }
+                    onReactionSelected!(selected ? reaction : null);
+                  },
             selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
             checkmarkColor: Theme.of(context).colorScheme.primary,
           );

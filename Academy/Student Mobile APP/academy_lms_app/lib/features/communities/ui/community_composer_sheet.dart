@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../state/community_presence_notifier.dart';
+
 import '../models/paywall_tier.dart';
 
 class CommunityComposerResult {
@@ -16,8 +18,10 @@ class CommunityComposerResult {
 
 Future<CommunityComposerResult?> showCommunityComposerSheet(
   BuildContext context, {
+  required int communityId,
   List<PaywallTier> paywallTiers = const <PaywallTier>[],
   bool canPostPublic = true,
+  CommunityPresenceNotifier? presenceNotifier,
 }) {
   final controller = TextEditingController();
   String visibility = 'community';
@@ -108,6 +112,9 @@ Future<CommunityComposerResult?> showCommunityComposerSheet(
                     labelText: 'What is happening?',
                     border: OutlineInputBorder(),
                   ),
+                  onChanged: (_) {
+                    presenceNotifier?.markTyping(communityId);
+                  },
                 ),
                 const SizedBox(height: 20),
                 Align(

@@ -20,7 +20,17 @@ class AppConfiguration {
         ),
         oauthClientId = const String.fromEnvironment('ACADEMY_OAUTH_CLIENT_ID', defaultValue: ''),
         oauthClientSecret = const String.fromEnvironment('ACADEMY_OAUTH_CLIENT_SECRET', defaultValue: ''),
-        oauthScopes = const String.fromEnvironment('ACADEMY_OAUTH_SCOPES', defaultValue: '');
+        oauthScopes = const String.fromEnvironment('ACADEMY_OAUTH_SCOPES', defaultValue: ''),
+        sentryDsn = _emptyToNull(
+          const String.fromEnvironment('ACADEMY_SENTRY_DSN', defaultValue: ''),
+        ),
+        realtimeSocketUrl = _parseOptionalUri(
+          const String.fromEnvironment('ACADEMY_REALTIME_SOCKET_URL', defaultValue: ''),
+        ),
+        realtimeAuthEndpoint = _parseOptionalUri(
+          const String.fromEnvironment('ACADEMY_REALTIME_AUTH_URL', defaultValue: ''),
+        ),
+        environment = const String.fromEnvironment('ACADEMY_APP_ENV', defaultValue: 'development');
 
   static final AppConfiguration instance = AppConfiguration._internal();
 
@@ -30,6 +40,10 @@ class AppConfiguration {
   final String? oauthClientId;
   final String? oauthClientSecret;
   final String? oauthScopes;
+  final String? sentryDsn;
+  final Uri? realtimeSocketUrl;
+  final Uri? realtimeAuthEndpoint;
+  final String environment;
 
   Uri resolveApiPath(String path) {
     if (path.startsWith('http://') || path.startsWith('https://')) {
@@ -43,5 +57,18 @@ class AppConfiguration {
 
   void updateCommunityManifestUrl(Uri endpoint) {
     communityManifestUrl = endpoint;
+  }
+
+  static String? _emptyToNull(String value) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  static Uri? _parseOptionalUri(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+    return Uri.parse(trimmed);
   }
 }

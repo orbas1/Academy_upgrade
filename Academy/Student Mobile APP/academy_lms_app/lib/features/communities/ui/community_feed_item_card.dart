@@ -1,8 +1,11 @@
 import 'package:academy_lms_app/config/design_tokens.dart';
 import 'package:academy_lms_app/features/communities/models/community_feed_item.dart';
 import 'package:academy_lms_app/features/communities/ui/community_feed_reaction_bar.dart';
+import 'package:academy_lms_app/services/telemetry/telemetry_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 
 enum CommunityFeedItemAction { report, hide }
 
@@ -129,6 +132,16 @@ class CommunityFeedItemCard extends StatelessWidget {
                   onPressed: item.isPending ? null : onShowReactions,
                   child: Text('${item.likeCount} total reactions'),
                 ),
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Share',
+                  onPressed: item.isPending
+                      ? null
+                      : () {
+                          _handleShare(item);
+                        },
+                  icon: const Icon(Icons.ios_share_outlined),
+                ),
               ],
             ),
           ],
@@ -136,6 +149,27 @@ class CommunityFeedItemCard extends StatelessWidget {
       ),
     );
   }
+}
+
+void _handleShare(CommunityFeedItem item) {
+  final url = item.shareUrl;
+  final content = url?.isNotEmpty == true
+      ? url!
+      : (item.bodyMarkdown.isNotEmpty ? item.bodyMarkdown : item.body);
+  HapticFeedback.mediumImpact();
+  Share.share(
+    content,
+    subject: 'Check out ${item.authorName}\'s post',
+  );
+  TelemetryService.instance.addBreadcrumb(
+    message: 'share_post',
+    category: 'engagement',
+    data: <String, Object?>{
+      'post_id': item.id,
+      'author': item.authorName,
+      'has_share_url': url != null,
+    },
+  );
 }
 
 class _VisibilityBadge extends StatelessWidget {
