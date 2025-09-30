@@ -15,6 +15,8 @@ import '../widgets/custom_text.dart';
 import 'account_remove_screen.dart';
 import 'edit_profile.dart';
 import 'my_wishlist.dart';
+import 'operations/migration_runbook_screen.dart';
+import 'security/device_security_screen.dart';
 import 'update_password.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -183,6 +185,70 @@ class _AccountScreenState extends State<AccountScreen> {
                                           builder: (context) =>
                                               const MyWishlistScreen(),
                                         ));
+                                  },
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20.0),
+                              child: Divider(
+                                thickness: 1,
+                                color: kGreyLightColor.withOpacity(0.3),
+                                height: 5,
+                              ),
+                            ),
+                            SizedBox(
+                              height: 65,
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.only(left: 10, right: 10),
+                                child: GestureDetector(
+                                  child: const AccountListTile(
+                                    titleText: 'Migration Runbook',
+                                    icon: 'assets/icons/document.svg',
+                                    actionType: 'migration_runbook',
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const MigrationRunbookScreen(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20.0),
+                              child: Divider(
+                                thickness: 1,
+                                color: kGreyLightColor.withOpacity(0.3),
+                                height: 5,
+                              ),
+                            ),
+                            SizedBox(
+                              height: 65,
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.only(left: 10, right: 10),
+                                child: GestureDetector(
+                                  child: const AccountListTile(
+                                    titleText: 'Device Security',
+                                    icon: 'assets/icons/key.svg',
+                                    actionType: 'security',
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const DeviceSecurityScreen(),
+                                      ),
+                                    );
                                   },
                                 ),
                               ),

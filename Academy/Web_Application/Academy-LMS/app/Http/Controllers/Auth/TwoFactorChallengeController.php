@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Providers\RouteServiceProvider;
 use App\Services\Security\DeviceTrustService;
 use App\Support\Security\TwoFactorAuthenticator;
+use App\Support\Security\DeviceMetadata;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -52,8 +53,20 @@ class TwoFactorChallengeController extends Controller
         }
 
         $rememberLogin = (bool) $request->session()->pull('login.two_factor.remember', false);
-        $deviceToken = $request->session()->pull('login.two_factor.device_token');
-        $ipAddress = $request->session()->pull('login.two_factor.ip', $request->getClientIp());
+        $metadataPayload = $request->session()->pull('login.two_factor.metadata', []);
+        $metadata = is_array($metadataPayload) && $metadataPayload
+            ? DeviceMetadata::fromArray($metadataPayload)
+            : DeviceMetadata::fromRequest($request);
+        $metadata = new DeviceMetadata(
+            ipAddress: $metadata->ipAddress ?: $request->getClientIp(),
+            deviceToken: $metadata->deviceToken,
+            sessionId: $request->session()->getId(),
+            deviceName: $metadata->deviceName,
+            platform: $metadata->platform,
+            appVersion: $metadata->appVersion,
+            rememberDevice: $request->boolean('remember_device', $metadata->rememberDevice),
+            headers: $metadata->headers,
+        );
 
         $code = trim($request->input('code'));
 
@@ -69,13 +82,7 @@ class TwoFactorChallengeController extends Controller
         $request->session()->regenerate();
 
         try {
-            $this->deviceTrust->recordLogin(
-                $user,
-                $deviceToken,
-                $ipAddress,
-                $request->session()->getId(),
-                $request->boolean('remember_device')
-            );
+            $this->deviceTrust->recordLogin($user, $metadata);
         } catch (TooManyDevicesException $exception) {
             Auth::guard('web')->logout();
             $request->session()->invalidate();

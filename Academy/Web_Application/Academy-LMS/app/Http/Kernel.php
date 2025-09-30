@@ -81,5 +81,7 @@ class Kernel extends HttpKernel
         'admin.ip'                 => \App\Http\Middleware\AdminIpAllowlist::class,
         'audit.log'                => \App\Http\Middleware\RecordAdminAction::class,
         'observability.token'      => \App\Http\Middleware\RequireObservabilityToken::class,
+        'role'                     => \App\Http\Middleware\EnsureRole::class,
+        'device.activity'          => \App\Http\Middleware\UpdateDeviceSessionActivity::class,
     ];
 }

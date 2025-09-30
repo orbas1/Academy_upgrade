@@ -71,6 +71,7 @@ dependencies:
   web_socket_channel: ^3.0.3
   firebase_core: ^2.27.2
   firebase_analytics: ^10.8.0
+  device_info_plus: ^10.1.0
 
 dev_dependencies:
   flutter_test:

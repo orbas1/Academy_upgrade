@@ -27,4 +27,11 @@ return [
             'quarantine_path' => env('UPLOAD_QUARANTINE_PATH', storage_path('app/quarantine')),
         ],
     ],
+    'device_trust' => [
+        'ttl_days' => env('DEVICE_TRUST_TTL_DAYS', 60),
+        'max_devices' => env('DEVICE_TRUST_MAX_DEVICES', 5),
+    ],
+    'sessions' => [
+        'max_parallel_tokens' => env('SESSION_MAX_PARALLEL_TOKENS', 10),
+    ],
 ];

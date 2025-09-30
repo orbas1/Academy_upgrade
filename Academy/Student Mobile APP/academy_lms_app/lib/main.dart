@@ -32,6 +32,7 @@ import 'features/communities/di/providers.dart';
 import 'services/analytics/mobile_analytics_service.dart';
 import 'services/observability/mobile_observability_client.dart';
 import 'services/migration/migration_plan_service.dart';
+import 'services/migration/migration_runbook_service.dart';
 import 'services/security/auth_session_manager.dart';
 import 'l10n/app_localizations.dart';
 
@@ -59,11 +60,16 @@ Future<void> main() async {
   );
 
   final migrationService = MigrationPlanService(sessionManager: sessionManager);
+  final migrationRunbookService =
+      MigrationRunbookService(sessionManager: sessionManager);
   final session = await sessionManager.loadSession();
   try {
-    await migrationService.synchronize(bearerToken: session?.accessToken);
+    await Future.wait([
+      migrationService.synchronize(bearerToken: session?.accessToken),
+      migrationRunbookService.synchronize(bearerToken: session?.accessToken),
+    ]);
   } catch (error, stackTrace) {
-    debugPrint('Failed to prime migration plan cache: $error');
+    debugPrint('Failed to prime migration caches: $error');
     debugPrint('$stackTrace');
   }
 

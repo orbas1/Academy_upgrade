@@ -5,13 +5,18 @@ namespace App\Services\Security;
 use App\Exceptions\Security\TooManyDevicesException;
 use App\Models\DeviceIp;
 use App\Models\User;
+use App\Support\Security\DeviceMetadata;
+use Illuminate\Contracts\Config\Repository;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
 
 class DeviceTrustService
 {
-    public function __construct(private readonly int $trustTtlDays)
-    {
+    public function __construct(
+        private readonly Repository $config,
+        private readonly SessionTokenService $tokens
+    ) {
     }
 
     public function deviceIsTrusted(User $user, ?string $deviceToken): bool
@@ -28,29 +33,22 @@ class DeviceTrustService
             return false;
         }
 
-        return $record->trusted_at->greaterThan(now()->subDays(max($this->trustTtlDays, 0)));
+        return $record->trusted_at->greaterThan(now()->subDays(max($this->trustTtlDays(), 0)));
     }
 
-    public function recordLogin(User $user, ?string $deviceToken, string $ipAddress, ?string $sessionId, bool $markTrusted = false): void
+    public function recordLogin(User $user, DeviceMetadata $metadata): DeviceIp
     {
-        $limitSetting = (int) (get_settings('device_limitation') ?? 1);
-        $enforceLimit = $user->role !== 'admin' && $limitSetting !== 0;
-
-        $deviceToken = $deviceToken ?: $this->fallbackToken($user, $ipAddress);
-
+        $deviceToken = $metadata->deviceToken ?: $this->fallbackToken($user, $metadata->ipAddress);
+        /** @var Collection<int, DeviceIp> $devices */
         $devices = DeviceIp::where('user_id', $user->id)->get();
         $current = $devices->firstWhere('user_agent', $deviceToken);
 
         if ($current) {
-            $this->touchDevice($current, $ipAddress, $sessionId, $markTrusted);
-
-            return;
+            return $this->touchDevice($current, $metadata);
         }
 
-        if (! $enforceLimit || $devices->count() < max($limitSetting, 1)) {
-            $this->createDevice($user, $deviceToken, $ipAddress, $sessionId, $markTrusted);
-
-            return;
+        if ($this->canRegisterNewDevice($user, $devices)) {
+            return $this->createDevice($user, $deviceToken, $metadata);
         }
 
         $replacement = DeviceIp::where('user_id', $user->id)->orderBy('updated_at')->first();
@@ -76,7 +74,12 @@ class DeviceTrustService
             }
         }
 
-        $device->delete();
+        $this->tokens->revokeDevice($device);
+
+        $device->forceFill([
+            'session_id' => null,
+            'revoked_at' => now(),
+        ])->save();
     }
 
     public function toggleTrust(DeviceIp $device, bool $trusted): void
@@ -86,35 +89,69 @@ class DeviceTrustService
         ])->save();
     }
 
-    private function touchDevice(DeviceIp $device, string $ipAddress, ?string $sessionId, bool $markTrusted): void
+    private function touchDevice(DeviceIp $device, DeviceMetadata $metadata): DeviceIp
     {
         $device->forceFill([
-            'ip_address' => $ipAddress,
-            'session_id' => $sessionId,
+            'ip_address' => $metadata->ipAddress,
+            'session_id' => $metadata->sessionId,
             'last_seen_at' => now(),
+            'device_name' => $metadata->deviceName ?: $device->device_name,
+            'platform' => $metadata->platform ?: $device->platform,
+            'app_version' => $metadata->appVersion ?: $device->app_version,
+            'last_headers' => array_filter($metadata->headers),
+            'revoked_at' => null,
         ]);
 
-        if ($markTrusted) {
+        if ($metadata->rememberDevice) {
             $device->trusted_at = now();
         }
 
         $device->save();
+
+        return $device;
     }
 
-    private function createDevice(User $user, string $deviceToken, string $ipAddress, ?string $sessionId, bool $markTrusted): void
+    private function createDevice(User $user, string $deviceToken, DeviceMetadata $metadata): DeviceIp
     {
-        DeviceIp::create([
+        return DeviceIp::create([
             'user_id' => $user->id,
             'user_agent' => $deviceToken,
-            'ip_address' => $ipAddress,
-            'session_id' => $sessionId,
+            'ip_address' => $metadata->ipAddress,
+            'session_id' => $metadata->sessionId,
             'last_seen_at' => now(),
-            'trusted_at' => $markTrusted ? now() : null,
+            'trusted_at' => $metadata->rememberDevice ? now() : null,
+            'device_name' => $metadata->deviceName,
+            'platform' => $metadata->platform,
+            'app_version' => $metadata->appVersion,
+            'last_headers' => array_filter($metadata->headers),
         ]);
     }
 
     private function fallbackToken(User $user, string $ipAddress): string
     {
         return 'fallback:'.sha1($user->id.'|'.$ipAddress);
+    }
+
+    private function canRegisterNewDevice(User $user, Collection $devices): bool
+    {
+        if ($user->role === 'admin') {
+            return true;
+        }
+
+        $limitSetting = (int) (get_settings('device_limitation') ?? 1);
+        $configuredLimit = max((int) $this->config->get('security.device_trust.max_devices', 5), 1);
+
+        if ($limitSetting === 0) {
+            return true;
+        }
+
+        $maxDevices = max($configuredLimit, $limitSetting);
+
+        return $devices->count() < $maxDevices;
+    }
+
+    private function trustTtlDays(): int
+    {
+        return (int) $this->config->get('security.device_trust.ttl_days', 60);
     }
 }

@@ -27,13 +27,16 @@ use DB;
 use Illuminate\Support\Facades\Log;
 use App\Support\Security\TwoFactorAuthenticator;
 use App\Services\Security\DeviceTrustService;
+use App\Services\Security\SessionTokenService;
+use App\Support\Security\DeviceMetadata;
 use Illuminate\Support\Facades\Cache;
 
 class ApiController extends Controller
 {
     public function __construct(
         private readonly TwoFactorAuthenticator $twoFactor,
-        private readonly DeviceTrustService $deviceTrust
+        private readonly DeviceTrustService $deviceTrust,
+        private readonly SessionTokenService $sessionTokens
     ) {
     }
 
@@ -63,14 +66,15 @@ class ApiController extends Controller
             }
         } else if ($user->role == 'student') {
 
-            $deviceToken = $fields['device_token'] ?? $request->header('X-Device-Id');
+            $metadata = DeviceMetadata::fromRequest($request, [
+                'device_token' => $fields['device_token'] ?? null,
+            ]);
 
-            if ($user->hasTwoFactorEnabled() && ! $this->deviceTrust->deviceIsTrusted($user, $deviceToken)) {
+            if ($user->hasTwoFactorEnabled() && ! $this->deviceTrust->deviceIsTrusted($user, $metadata->deviceToken)) {
                 $challenge = Str::random(64);
                 Cache::put($this->apiChallengeCacheKey($challenge), [
                     'user_id' => $user->id,
-                    'device_token' => $deviceToken,
-                    'ip' => $request->ip(),
+                    'metadata' => $metadata->toArray(),
                 ], now()->addMinutes(10));
 
                 return response([
@@ -81,14 +85,14 @@ class ApiController extends Controller
             }
 
             try {
-                $this->deviceTrust->recordLogin($user, $deviceToken, $request->ip(), null);
+                $device = $this->deviceTrust->recordLogin($user, $metadata);
             } catch (TooManyDevicesException $exception) {
                 return response([
                     'message' => $exception->getMessage(),
                 ], 423);
             }
 
-            $token = $user->createToken('auth-token')->plainTextToken;
+            $token = $this->sessionTokens->createTokenForDevice($user, $device)->plainTextToken;
 
             $user->photo = get_photo('user_image', $user->photo);
 
@@ -96,6 +100,8 @@ class ApiController extends Controller
                 'message' => 'Login successful',
                 'user' => $user,
                 'token' => $token,
+                'access_token' => $token,
+                'token_type' => 'Bearer',
             ];
 
             return response($response, 201);
@@ -144,27 +150,38 @@ class ApiController extends Controller
             ], 422);
         }
 
+        $metadata = isset($payload['metadata'])
+            ? DeviceMetadata::fromArray($payload['metadata'])
+            : DeviceMetadata::fromRequest($request);
+
+        $metadata = new DeviceMetadata(
+            ipAddress: $metadata->ipAddress,
+            deviceToken: $metadata->deviceToken,
+            sessionId: $metadata->sessionId,
+            deviceName: $metadata->deviceName,
+            platform: $metadata->platform,
+            appVersion: $metadata->appVersion,
+            rememberDevice: $request->boolean('remember_device', $metadata->rememberDevice),
+            headers: $metadata->headers
+        );
+
         try {
-            $this->deviceTrust->recordLogin(
-                $user,
-                $payload['device_token'] ?? null,
-                $payload['ip'] ?? $request->ip(),
-                null,
-                $request->boolean('remember_device')
-            );
+            $device = $this->deviceTrust->recordLogin($user, $metadata);
         } catch (TooManyDevicesException $exception) {
             return response([
                 'message' => $exception->getMessage(),
             ], 423);
         }
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+        $token = $this->sessionTokens->createTokenForDevice($user, $device)->plainTextToken;
         $user->photo = get_photo('user_image', $user->photo);
 
         return response([
             'message' => 'Login successful',
             'user' => $user,
             'token' => $token,
+            'access_token' => $token,
+            'token_type' => 'Bearer',
         ], 201);
     }
 
@@ -340,7 +357,21 @@ class ApiController extends Controller
     //student logout function
     public function logout(Request $request)
     {
-        auth()->user()->tokens()->delete;
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'Already logged out.',
+            ], 200);
+        }
+
+        $token = $user->currentAccessToken();
+
+        if ($token) {
+            $this->sessionTokens->revokeToken($token);
+        } else {
+            $user->tokens()->each(fn ($personalToken) => $this->sessionTokens->revokeToken($personalToken));
+        }
 
         return response()->json([
             'message' => 'Logged out successfully.',
