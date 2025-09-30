@@ -97,7 +97,7 @@ return [
 
         'slack' => [
             'driver' => 'slack',
-            'url' => env('LOG_SLACK_WEBHOOK_URL'),
+            'url' => env('LOG_SLACK_WEBHOOK_URL', null),
             'username' => 'Laravel Log',
             'emoji' => ':boom:',
             'level' => env('LOG_LEVEL', 'critical'),
@@ -109,9 +109,9 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
             'handler' => env('LOG_PAPERTRAIL_HANDLER', SyslogUdpHandler::class),
             'handler_with' => [
-                'host' => env('PAPERTRAIL_URL'),
-                'port' => env('PAPERTRAIL_PORT'),
-                'connectionString' => 'tls://'.env('PAPERTRAIL_URL').':'.env('PAPERTRAIL_PORT'),
+                'host' => env('PAPERTRAIL_URL', ''),
+                'port' => env('PAPERTRAIL_PORT', 0),
+                'connectionString' => 'tls://'.env('PAPERTRAIL_URL', '').':'.env('PAPERTRAIL_PORT', 0),
             ],
             'processors' => [PsrLogMessageProcessor::class],
         ],
@@ -120,7 +120,7 @@ return [
             'driver' => 'monolog',
             'level' => env('LOG_LEVEL', 'debug'),
             'handler' => StreamHandler::class,
-            'formatter' => env('LOG_STDERR_FORMATTER'),
+            'formatter' => env('LOG_STDERR_FORMATTER', null),
             'with' => [
                 'stream' => 'php://stderr',
             ],
@@ -160,12 +160,12 @@ return [
             'client' => array_filter([
                 'region' => env('OBS_CLOUDWATCH_REGION', env('CLOUDFLARE_R2_DEFAULT_REGION', env('AWS_DEFAULT_REGION', 'us-east-1'))),
                 'version' => 'latest',
-                'credentials' => env('OBS_CLOUDWATCH_KEY') && env('OBS_CLOUDWATCH_SECRET') ? [
-                    'key' => env('OBS_CLOUDWATCH_KEY'),
-                    'secret' => env('OBS_CLOUDWATCH_SECRET'),
+                'credentials' => ($cloudWatchKey = env('OBS_CLOUDWATCH_KEY', null)) && ($cloudWatchSecret = env('OBS_CLOUDWATCH_SECRET', null)) ? [
+                    'key' => $cloudWatchKey,
+                    'secret' => $cloudWatchSecret,
                 ] : null,
             ]),
-            'cache' => env('OBS_CLOUDWATCH_CACHE_STORE'),
+            'cache' => env('OBS_CLOUDWATCH_CACHE_STORE', null),
         ],
     ],
 

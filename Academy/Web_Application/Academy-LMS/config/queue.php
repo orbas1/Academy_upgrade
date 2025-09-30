@@ -72,11 +72,11 @@ return [
 
         'sqs' => [
             'driver' => 'sqs',
-            'key' => env('CLOUDFLARE_R2_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID')),
-            'secret' => env('CLOUDFLARE_R2_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY')),
+            'key' => env('CLOUDFLARE_R2_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID', null)),
+            'secret' => env('CLOUDFLARE_R2_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY', null)),
             'prefix' => env('CLOUDFLARE_R2_SQS_PREFIX', env('SQS_PREFIX', 'https://api.cloudflare.com/client/v4/accounts/your-account-id')), 
             'queue' => env('SQS_QUEUE', 'default'),
-            'suffix' => env('SQS_SUFFIX'),
+            'suffix' => env('SQS_SUFFIX', null),
             'region' => env('CLOUDFLARE_R2_DEFAULT_REGION', env('AWS_DEFAULT_REGION', 'us-east-1')),
             'after_commit' => false,
         ],
@@ -86,7 +86,7 @@ return [
             'connection' => env('QUEUE_REDIS_CONNECTION', 'horizon'),
             'queue' => env('QUEUE_DEFAULT', 'default'),
             'retry_after' => (int) env('QUEUE_RETRY_AFTER', 120),
-            'block_for' => env('QUEUE_BLOCK_FOR') !== null
+            'block_for' => env('QUEUE_BLOCK_FOR', null) !== null
                 ? (int) env('QUEUE_BLOCK_FOR', 5)
                 : null,
             'after_commit' => false,

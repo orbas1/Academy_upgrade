@@ -19,7 +19,7 @@ return [
         |------------------------------------------------------------------
         */
         'host' => env('MEILISEARCH_HOST', 'http://meilisearch:7700'),
-        'key' => env('MEILISEARCH_KEY'),
+        'key' => env('MEILISEARCH_KEY', null),
         'timeout' => (int) env('MEILISEARCH_TIMEOUT', 10),
 
         /*
@@ -238,7 +238,7 @@ return [
     ],
 
     'visibility' => [
-        'token_secret' => env('SEARCH_VISIBILITY_TOKEN_SECRET', env('APP_KEY')),
+        'token_secret' => env('SEARCH_VISIBILITY_TOKEN_SECRET', env('APP_KEY', 'base64:placeholder-app-key-not-set')),
         'ttl' => (int) env('SEARCH_VISIBILITY_TOKEN_TTL', 900),
         'index_filters' => [
             'posts' => "visibility IN ['public', 'community', 'paid']",

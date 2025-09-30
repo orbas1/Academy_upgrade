@@ -4,10 +4,10 @@ use Illuminate\Support\Str;
 
 $redisConnection = static function (int $database) {
     return [
-        'url' => env('REDIS_URL'),
+        'url' => env('REDIS_URL', null),
         'host' => env('REDIS_HOST', '127.0.0.1'),
-        'username' => env('REDIS_USERNAME'),
-        'password' => env('REDIS_PASSWORD'),
+        'username' => env('REDIS_USERNAME', null),
+        'password' => env('REDIS_PASSWORD', null),
         'port' => (int) env('REDIS_PORT', 6379),
         'database' => $database,
         'read_timeout' => env('REDIS_READ_TIMEOUT', 60),
@@ -23,7 +23,7 @@ return [
 
         'sqlite' => [
             'driver' => 'sqlite',
-            'url' => env('DATABASE_URL'),
+            'url' => env('DATABASE_URL', null),
             'database' => env('DB_DATABASE', database_path('database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
@@ -31,7 +31,7 @@ return [
 
         'mysql' => [
             'driver' => 'mysql',
-            'url' => env('DATABASE_URL'),
+            'url' => env('DATABASE_URL', null),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
             'database' => env('DB_DATABASE', 'forge'),
@@ -45,13 +45,13 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA', null),
             ]) : [],
         ],
 
         'pgsql' => [
             'driver' => 'pgsql',
-            'url' => env('DATABASE_URL'),
+            'url' => env('DATABASE_URL', null),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', 'forge'),
@@ -66,7 +66,7 @@ return [
 
         'sqlsrv' => [
             'driver' => 'sqlsrv',
-            'url' => env('DATABASE_URL'),
+            'url' => env('DATABASE_URL', null),
             'host' => env('DB_HOST', 'localhost'),
             'port' => env('DB_PORT', '1433'),
             'database' => env('DB_DATABASE', 'forge'),

@@ -56,10 +56,10 @@ return [
 
         'memcached' => [
             'driver' => 'memcached',
-            'persistent_id' => env('MEMCACHED_PERSISTENT_ID'),
+            'persistent_id' => env('MEMCACHED_PERSISTENT_ID', null),
             'sasl' => [
-                env('MEMCACHED_USERNAME'),
-                env('MEMCACHED_PASSWORD'),
+                env('MEMCACHED_USERNAME', null),
+                env('MEMCACHED_PASSWORD', null),
             ],
             'options' => [
                 // Memcached::OPT_CONNECT_TIMEOUT => 2000,
@@ -81,11 +81,11 @@ return [
 
         'dynamodb' => [
             'driver' => 'dynamodb',
-            'key' => env('CLOUDFLARE_R2_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID')),
-            'secret' => env('CLOUDFLARE_R2_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY')),
+            'key' => env('CLOUDFLARE_R2_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID', null)),
+            'secret' => env('CLOUDFLARE_R2_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY', null)),
             'region' => env('CLOUDFLARE_R2_DEFAULT_REGION', env('AWS_DEFAULT_REGION', 'us-east-1')),
             'table' => env('DYNAMODB_CACHE_TABLE', 'cache'),
-            'endpoint' => env('CLOUDFLARE_R2_DYNAMODB_ENDPOINT', env('DYNAMODB_ENDPOINT')),
+            'endpoint' => env('CLOUDFLARE_R2_DYNAMODB_ENDPOINT', env('DYNAMODB_ENDPOINT', null)),
         ],
 
         'octane' => [

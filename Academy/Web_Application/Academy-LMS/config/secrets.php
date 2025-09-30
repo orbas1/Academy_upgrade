@@ -13,13 +13,13 @@ return [
         'enabled' => env('SECRET_ROTATION_ENABLED', false),
         'cron' => env('SECRET_ROTATION_CRON', '0 3 * * *'),
         'keys' => array_filter(array_map('trim', explode(',', env('SECRET_ROTATION_KEYS', '')))),
-        'driver' => env('SECRET_ROTATION_DRIVER'),
+        'driver' => env('SECRET_ROTATION_DRIVER', null),
     ],
 
     'drivers' => [
         'env' => [
             'class' => App\Support\Secrets\Drivers\EnvSecretDriver::class,
-            'prefix' => env('SECRET_ENV_PREFIX'),
+            'prefix' => env('SECRET_ENV_PREFIX', ''),
         ],
         'aws' => [
             'class' => App\Support\Secrets\Drivers\AwsSecretsManagerDriver::class,
@@ -27,10 +27,10 @@ return [
         ],
         'vault' => [
             'class' => App\Support\Secrets\Drivers\HashicorpVaultDriver::class,
-            'base_uri' => env('VAULT_ADDR'),
-            'token' => env('VAULT_TOKEN'),
+            'base_uri' => env('VAULT_ADDR', null),
+            'token' => env('VAULT_TOKEN', null),
             'mount' => env('VAULT_KV_MOUNT', 'secret'),
-            'namespace' => env('VAULT_NAMESPACE'),
+            'namespace' => env('VAULT_NAMESPACE', null),
         ],
     ],
 ];

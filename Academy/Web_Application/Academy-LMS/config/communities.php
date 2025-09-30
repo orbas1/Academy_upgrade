@@ -25,7 +25,7 @@ return [
         'health' => [
             'queue_threshold' => env('COMMUNITIES_QUEUE_THRESHOLD', 25),
             'error_rate_threshold' => env('COMMUNITIES_ERROR_RATE_THRESHOLD', 0.05),
-            'notification_webhook' => env('COMMUNITIES_ALERT_WEBHOOK'),
+            'notification_webhook' => env('COMMUNITIES_ALERT_WEBHOOK', null),
         ],
     ],
     'leaderboards' => [

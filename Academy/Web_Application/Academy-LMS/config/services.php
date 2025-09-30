@@ -15,24 +15,24 @@ return [
     */
 
     'mailgun' => [
-        'domain' => env('MAILGUN_DOMAIN'),
-        'secret' => env('MAILGUN_SECRET'),
+        'domain' => env('MAILGUN_DOMAIN', null),
+        'secret' => env('MAILGUN_SECRET', null),
         'endpoint' => env('MAILGUN_ENDPOINT', 'api.mailgun.net'),
         'scheme' => 'https',
     ],
 
     'postmark' => [
-        'token' => env('POSTMARK_TOKEN'),
+        'token' => env('POSTMARK_TOKEN', null),
     ],
 
     'ses' => [
-        'key' => env('CLOUDFLARE_R2_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID')),
-        'secret' => env('CLOUDFLARE_R2_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY')),
+        'key' => env('CLOUDFLARE_R2_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID', null)),
+        'secret' => env('CLOUDFLARE_R2_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY', null)),
         'region' => env('CLOUDFLARE_R2_DEFAULT_REGION', env('AWS_DEFAULT_REGION', 'us-east-1')),
     ],
 
     'slack' => [
-        'horizon_webhook' => env('SLACK_HORIZON_WEBHOOK'),
+        'horizon_webhook' => env('SLACK_HORIZON_WEBHOOK', null),
     ],
 
 ];

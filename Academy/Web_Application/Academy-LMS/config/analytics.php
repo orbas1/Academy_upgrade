@@ -2,10 +2,10 @@
 
 return [
     'enabled' => env('ANALYTICS_ENABLED', true),
-    'hash_key' => env('ANALYTICS_HASH_KEY', env('APP_KEY')),
+    'hash_key' => env('ANALYTICS_HASH_KEY', env('APP_KEY', 'base64:placeholder-app-key-not-set')),
     'retention_days' => (int) env('ANALYTICS_RETENTION_DAYS', 395),
     'segment' => [
-        'write_key' => env('SEGMENT_WRITE_KEY'),
+        'write_key' => env('SEGMENT_WRITE_KEY', null),
         'endpoint' => env('SEGMENT_ENDPOINT', 'https://api.segment.io/v1/track'),
         'timeout' => (float) env('SEGMENT_TIMEOUT', 2.0),
     ],
