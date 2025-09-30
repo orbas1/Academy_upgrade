@@ -80,5 +80,6 @@ class Kernel extends HttpKernel
         'security.headers'     => \App\Http\Middleware\EnsureSecurityHeaders::class,
         'admin.ip'                 => \App\Http\Middleware\AdminIpAllowlist::class,
         'audit.log'                => \App\Http\Middleware\RecordAdminAction::class,
+        'observability.token'      => \App\Http\Middleware\RequireObservabilityToken::class,
     ];
 }

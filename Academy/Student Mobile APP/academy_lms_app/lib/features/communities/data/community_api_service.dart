@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:academy_lms_app/constants.dart' as constants;
 import 'package:academy_lms_app/services/api_envelope.dart';
+import 'package:academy_lms_app/services/observability/http_client_factory.dart';
 import 'package:academy_lms_app/services/security/auth_session_manager.dart';
 import 'package:http/http.dart' as http;
 
@@ -23,7 +24,9 @@ import 'paginated_response.dart';
 
 class CommunityApiService {
   CommunityApiService({http.Client? client, String? authToken, AuthSessionManager? sessionManager})
-      : _client = client ?? http.Client(),
+      : _client = client != null
+            ? HttpClientFactory.create(inner: client)
+            : HttpClientFactory.create(),
         _authToken = authToken,
         _sessionManager = sessionManager ?? AuthSessionManager.instance;
 

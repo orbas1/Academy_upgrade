@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/app_configuration.dart';
 import 'realtime/realtime_presence_service.dart';
+import 'observability/http_client_factory.dart';
 
 class CommunityModuleNavigationItem {
   CommunityModuleNavigationItem({
@@ -138,7 +139,10 @@ class CommunityRealtimeConfig {
 }
 
 class CommunityManifestService {
-  CommunityManifestService({http.Client? client}) : _client = client ?? http.Client();
+  CommunityManifestService({http.Client? client})
+      : _client = client != null
+            ? HttpClientFactory.create(inner: client)
+            : HttpClientFactory.create();
 
   final http.Client _client;
 

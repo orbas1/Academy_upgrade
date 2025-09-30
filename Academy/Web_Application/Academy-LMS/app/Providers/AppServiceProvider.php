@@ -11,6 +11,7 @@ use App\Support\Database\KeysetPaginator;
 use App\Support\Database\MySqlPerformanceConfigurator;
 use App\Support\Http\ApiResponseBuilder;
 use App\Support\Localization\LocaleManager;
+use App\Support\Migrations\MigrationPlanner;
 use App\Support\Security\TwoFactorAuthenticator;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
@@ -63,6 +64,12 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(QueueThresholdEvaluator::class, function ($app) {
             return new QueueThresholdEvaluator($app->make(ConfigRepository::class));
+        });
+
+        $this->app->singleton(MigrationPlanner::class, function ($app) {
+            $config = $app->make(ConfigRepository::class)->get('migrations', []);
+
+            return new MigrationPlanner(is_array($config) ? $config : []);
         });
 
         $this->app->scoped(ApiResponseBuilder::class, function ($app) {

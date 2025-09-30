@@ -13,8 +13,11 @@ use App\Http\Controllers\Api\V1\Community\SearchAuthorizationController;
 use App\Http\Controllers\Api\V1\Community\CommunityFeedController;
 use App\Http\Controllers\Api\V1\Community\CommunityNotificationPreferenceController;
 use App\Http\Controllers\Api\V1\Community\SearchQueryController;
+use App\Http\Controllers\Api\V1\Ops\MigrationPlanController;
 use App\Http\Controllers\Api\V1\Profile\AnalyticsConsentController;
 use App\Http\Controllers\Api\V1\Queue\QueueHealthSummaryController;
+use App\Http\Controllers\Monitoring\MetricsController;
+use App\Http\Controllers\Api\Observability\MobileMetricController;
 
 
 /*
@@ -39,6 +42,14 @@ Route::post('/login', [ApiController::class, 'login']);
 Route::post('/two-factor/verify', [ApiController::class, 'verifyTwoFactor']);
 Route::post('/signup', [ApiController::class, 'signup']);
 Route::post('/forgot_password', [ApiController::class, 'forgot_password']);
+
+Route::middleware('observability.token')
+    ->get('/internal/metrics', MetricsController::class)
+    ->name('observability.metrics');
+
+Route::middleware(['auth:sanctum'])
+    ->post('/observability/mobile-metrics', [MobileMetricController::class, 'store'])
+    ->name('observability.mobile-metrics');
 
 Route::group(['middleware', ['auth:sanctum']], function () {
     Route::get('/top_courses', [ApiController::class, 'top_courses']);
@@ -160,6 +171,11 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/ops/queue-health', QueueHealthSummaryController::class)
             ->middleware('throttle:120,1');
+
+        Route::get('/ops/migration-plan', [MigrationPlanController::class, 'index'])
+            ->middleware('throttle:60,1');
+        Route::get('/ops/migration-plan/{planKey}', [MigrationPlanController::class, 'show'])
+            ->middleware('throttle:60,1');
 
         Route::post('/me/analytics-consent', AnalyticsConsentController::class)
             ->middleware('throttle:60,1');

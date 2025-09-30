@@ -3,11 +3,14 @@ import 'dart:convert';
 import 'package:academy_lms_app/constants.dart' as constants;
 import 'package:academy_lms_app/features/search/models/search_visibility_token.dart';
 import 'package:academy_lms_app/services/api_envelope.dart';
+import 'package:academy_lms_app/services/observability/http_client_factory.dart';
 import 'package:http/http.dart' as http;
 
 class SearchVisibilityApi {
   SearchVisibilityApi({http.Client? client})
-      : _client = client ?? http.Client();
+      : _client = client != null
+            ? HttpClientFactory.create(inner: client)
+            : HttpClientFactory.create();
 
   final http.Client _client;
 

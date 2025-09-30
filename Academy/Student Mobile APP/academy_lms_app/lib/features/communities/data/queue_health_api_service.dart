@@ -2,13 +2,16 @@ import 'dart:convert';
 
 import 'package:academy_lms_app/constants.dart' as constants;
 import 'package:http/http.dart' as http;
+import 'package:academy_lms_app/services/observability/http_client_factory.dart';
 import 'package:academy_lms_app/services/security/auth_session_manager.dart';
 
 import '../models/queue_health_metric.dart';
 
 class QueueHealthApiService {
   QueueHealthApiService({http.Client? client, String? authToken, AuthSessionManager? sessionManager})
-      : _client = client ?? http.Client(),
+      : _client = client != null
+            ? HttpClientFactory.create(inner: client)
+            : HttpClientFactory.create(),
         _authToken = authToken,
         _sessionManager = sessionManager ?? AuthSessionManager.instance;
 

@@ -30,6 +30,9 @@ import 'services/telemetry/telemetry_service.dart';
 import 'features/communities/data/community_cache.dart';
 import 'features/communities/di/providers.dart';
 import 'services/analytics/mobile_analytics_service.dart';
+import 'services/observability/mobile_observability_client.dart';
+import 'services/migration/migration_plan_service.dart';
+import 'services/security/auth_session_manager.dart';
 import 'l10n/app_localizations.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
@@ -47,6 +50,22 @@ Future<void> main() async {
   final configuration = AppConfiguration.instance;
   final telemetry = TelemetryService.instance;
   telemetry.environment = configuration.environment;
+
+  final sessionManager = AuthSessionManager.instance;
+  final observabilityClient = MobileObservabilityClient.instance;
+  observabilityClient.configure(
+    configuration: configuration,
+    sessionManager: sessionManager,
+  );
+
+  final migrationService = MigrationPlanService(sessionManager: sessionManager);
+  final session = await sessionManager.loadSession();
+  try {
+    await migrationService.synchronize(bearerToken: session?.accessToken);
+  } catch (error, stackTrace) {
+    debugPrint('Failed to prime migration plan cache: $error');
+    debugPrint('$stackTrace');
+  }
 
   await MobileAnalyticsService.instance.ensureInitialised();
 
