@@ -21,7 +21,22 @@ class ObservabilityServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->scoped(CorrelationIdStore::class, static fn () => new CorrelationIdStore());
+        $this->app->scoped(CorrelationIdStore::class, function ($app) {
+            $log = $app['log'];
+
+            $updateContext = function (?string $correlationId) use ($log): void {
+                $log->shareContext(array_filter([
+                    'application' => config('app.name'),
+                    'environment' => config('app.env'),
+                    'correlation_id' => $correlationId,
+                ]));
+            };
+
+            $store = new CorrelationIdStore($updateContext);
+            $updateContext($store->get());
+
+            return $store;
+        });
 
         $this->app->singleton(StatsdClient::class, function ($app) {
             $config = $app['config']->get('observability.metrics');
@@ -71,15 +86,12 @@ class ObservabilityServiceProvider extends ServiceProvider
     {
         $config = $this->app['config']->get('observability.logging', []);
         if (($config['share_context'] ?? true) === true) {
-            $this->app['log']->shareContext(function () {
-                $store = $this->app->make(CorrelationIdStore::class);
-
-                return array_filter([
-                    'application' => config('app.name'),
-                    'environment' => config('app.env'),
-                    'correlation_id' => $store->get(),
-                ]);
-            });
+            $store = $this->app->make(CorrelationIdStore::class);
+            $this->app['log']->shareContext(array_filter([
+                'application' => config('app.name'),
+                'environment' => config('app.env'),
+                'correlation_id' => $store->get(),
+            ]));
         }
 
         $manager = $this->app->make(ObservabilityManager::class);

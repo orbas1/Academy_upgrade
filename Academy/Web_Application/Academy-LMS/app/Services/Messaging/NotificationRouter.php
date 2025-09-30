@@ -6,6 +6,7 @@ namespace App\Services\Messaging;
 
 use App\Models\User;
 use App\Notifications\Channels\PushNotificationChannel;
+use App\Notifications\Channels\ResilientMailChannel;
 use App\Notifications\Community\CommunityDigestNotification;
 use App\Notifications\Community\CommunityEventNotification;
 use App\Support\Notifications\NotificationPreferenceResolver;
@@ -84,7 +85,7 @@ class NotificationRouter
         }
 
         if ($preference->wantsEmailFor($eventKey)) {
-            $channels[] = 'mail';
+            $channels[] = ResilientMailChannel::class;
         }
 
         $isDigestEvent = str_starts_with($eventKey, 'digest.');
@@ -97,7 +98,7 @@ class NotificationRouter
             $preferredFrequency = $preference->digest_frequency;
 
             if ($preferredFrequency === 'off' || substr($eventKey, strlen('digest.')) !== $preferredFrequency) {
-                $channels = array_filter($channels, static fn ($channel) => ! in_array($channel, ['mail', PushNotificationChannel::class], true));
+                $channels = array_filter($channels, static fn ($channel) => ! in_array($channel, [ResilientMailChannel::class, PushNotificationChannel::class], true));
             }
         }
 

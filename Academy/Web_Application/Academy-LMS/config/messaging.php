@@ -6,6 +6,26 @@ return [
             'address' => env('MAIL_FROM_ADDRESS', 'notifications@example.com'),
             'name' => env('MAIL_FROM_NAME', 'Academy Communities'),
         ],
+        'providers' => [
+            'ses' => [
+                'mailer' => env('MAIL_PRIMARY_MAILER', 'ses'),
+                'priority' => 10,
+                'failures_to_trip' => 3,
+                'cooldown_seconds' => 120,
+            ],
+            'resend' => [
+                'mailer' => env('MAIL_FALLBACK_MAILER', 'resend'),
+                'priority' => 20,
+                'failures_to_trip' => 2,
+                'cooldown_seconds' => 300,
+            ],
+            'smtp' => [
+                'mailer' => env('MAIL_FAILSAFE_MAILER', 'smtp'),
+                'priority' => 30,
+                'failures_to_trip' => 1,
+                'cooldown_seconds' => 600,
+            ],
+        ],
         'templates' => [
             'community.generic' => [
                 'view' => 'emails.communities.event',

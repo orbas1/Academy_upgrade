@@ -32,10 +32,21 @@ This tracker summarizes delivery status against the upgrade tranches documented 
 | Permissions & governance | 100% | 100% | Signed visibility tokens, paywall-aware filters, and saved-search audit APIs enforce privacy and export controls. |
 | **Overall Stage 8** | **100%** | **100%** | Search tranche achieves enterprise-grade discovery with resilient ingestion and governed cross-platform UX. |
 
+## Stage 9 – Email & Push Messaging (Complete)
+
+| Area | Completion | Quality | Notes |
+| --- | --- | --- | --- |
+| Templates & localization | 100% | 100% | MJML/Blade templates render localized community events, digests, and transactional notices with themable assets. |
+| Delivery pipeline & providers | 100% | 100% | Resilient mail channel orchestrates SES→Resend→SMTP fallback with circuit breakers and provider health telemetry. |
+| Digests & preference center | 100% | 100% | Daily/weekly digests, per-community notification controls, and mobile/web preference UIs ship with density controls. |
+| Monitoring, webhooks & suppressions | 100% | 100% | Bounce/complaint webhooks auto-suppress addresses, log deliverability metrics, and expose provider health dashboards. |
+| **Overall Stage 9** | **100%** | **100%** | Messaging tranche delivers production-grade email/push, governance, analytics, and user-centric controls across platforms. |
+
 ## Quality Checks
 
 - Feature, unit, and API tests validate admin automations, search ingestion, and visibility contracts across web and mobile.
 - Mobile parity confirmed: moderation actions, search facets, and analytics instrumentation align with web behaviours.
 - Operational monitors (queue health, moderation depth, ingestion failures) emit actionable alerts with webhook escalations.
+- Deliverability telemetry validated: resilient mail channel, suppression store, and webhook ingestion covered by automated tests.
 
 Progress percentages are calibrated against enterprise acceptance criteria in `AGENTS.md` and will be re-evaluated after each milestone.
