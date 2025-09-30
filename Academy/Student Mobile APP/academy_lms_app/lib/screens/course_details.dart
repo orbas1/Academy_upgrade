@@ -11,6 +11,8 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../services/security/secure_credential_store.dart';
 // import 'package:url_launcher/url_launcher.dart';
 
 import '../constants.dart';
@@ -53,7 +55,7 @@ class _CourseDetailScreen1State extends State<CourseDetailScreen1>
     String url = "$baseUrl/api/free_course_enroll/$course_id";
     var navigator = Navigator.of(context);
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-    token = sharedPreferences.getString("access_token");
+    token = await SecureCredentialStore.instance.readAccessToken();
     var response = await http.get(Uri.parse(url), headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -94,7 +96,7 @@ class _CourseDetailScreen1State extends State<CourseDetailScreen1>
     if (_isInit) {
       final prefs = await SharedPreferences.getInstance();
       setState(() {
-        token = (prefs.getString('access_token') ?? '');
+        token = await SecureCredentialStore.instance.readAccessToken();
       });
       setState(() {
         _isLoading = true;

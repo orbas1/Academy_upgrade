@@ -2,7 +2,8 @@ import 'dart:convert';
 
 import 'package:academy_lms_app/constants.dart' as constants;
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../services/security/secure_credential_store.dart';
 
 class StorageRestoreResult {
   StorageRestoreResult({
@@ -38,8 +39,7 @@ class StorageRecoveryService {
 
   Future<StorageRestoreResult> requestRestore(String objectKey,
       {String profile = 'media'}) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access_token');
+    final token = await SecureCredentialStore.instance.readAccessToken();
 
     if (token == null || token.isEmpty) {
       throw StateError('Authentication token missing; user must re-authenticate.');

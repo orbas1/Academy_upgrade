@@ -8,6 +8,8 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/security/secure_credential_store.dart';
+
 import '../constants.dart';
 import '../providers/auth.dart';
 import '../widgets/common_functions.dart';
@@ -27,7 +29,7 @@ class _AccountRemoveScreenState extends State<AccountRemoveScreen> {
 
   accountDelete() async {
     final prefs = await SharedPreferences.getInstance();
-    final authToken = (prefs.getString('access_token') ?? '');
+    final authToken = await SecureCredentialStore.instance.requireAccessToken();
 
     var url = "$baseUrl/api/account_disable";
 

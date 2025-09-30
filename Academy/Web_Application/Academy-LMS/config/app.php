@@ -209,6 +209,7 @@ return [
         App\Providers\HorizonServiceProvider::class,
         App\Providers\CommunityServiceProvider::class,
         App\Providers\SearchServiceProvider::class,
+        App\Providers\SecretsServiceProvider::class,
 
         /*
          * Our own service provider

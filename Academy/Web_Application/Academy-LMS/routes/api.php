@@ -7,6 +7,7 @@ use App\Http\Controllers\ApiController;
 use App\Http\Controllers\Api\V1\Admin\AdminSavedSearchController;
 use App\Http\Controllers\Api\V1\Admin\AdminSearchController;
 use App\Http\Controllers\Api\V1\Admin\CommunityModuleManifestController;
+use App\Http\Controllers\Api\V1\Admin\SecretController as AdminSecretController;
 use App\Http\Controllers\Api\V1\Billing\StripeWebhookController;
 use App\Http\Controllers\Api\V1\Community\SearchAuthorizationController;
 use App\Http\Controllers\Api\V1\Community\CommunityNotificationPreferenceController;
@@ -106,6 +107,11 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/ops/queue-health', QueueHealthSummaryController::class)
             ->middleware('throttle:120,1');
+
+        Route::get('/admin/secrets/{key}', [AdminSecretController::class, 'show'])
+            ->middleware(['throttle:60,1', 'can:secrets.manage']);
+        Route::post('/admin/secrets/{key}/rotate', [AdminSecretController::class, 'rotate'])
+            ->middleware(['throttle:30,1', 'can:secrets.manage']);
     });
 });
 

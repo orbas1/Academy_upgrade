@@ -5,7 +5,7 @@ import 'package:academy_lms_app/screens/forget_password_notice.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/security/secure_credential_store.dart';
 
 class ForgetPasswordScreen extends StatefulWidget {
   const ForgetPasswordScreen({super.key});
@@ -20,8 +20,6 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
 
   bool _isLoading = false;
   final _emailController = TextEditingController();
-  SharedPreferences? sharedPreferences;
-
   // Future<void> sendemail(
   //   String email,
   // ) async {
@@ -74,8 +72,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
     setState(() {
       _isLoading = true;
     });
-    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-    dynamic tokens = sharedPreferences.getString("access_token");
+    final tokens = await SecureCredentialStore.instance.readAccessToken();
 
     var urls = "$baseUrl/api/forgot_password";
     try {
@@ -84,7 +81,8 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': 'Bearer $tokens',
+          if (tokens != null && tokens.isNotEmpty)
+            'Authorization': 'Bearer $tokens',
         },
         body: json.encode({
           'email': email,

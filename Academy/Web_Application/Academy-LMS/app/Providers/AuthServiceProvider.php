@@ -105,5 +105,9 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('search.saved', function (User $user) use ($matrix) {
             return $matrix->allows($user, 'search.saved');
         });
+
+        Gate::define('secrets.manage', function (User $user) use ($matrix) {
+            return $matrix->allows($user, 'secrets.manage');
+        });
     }
 }

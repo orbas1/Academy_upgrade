@@ -14,6 +14,8 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../services/security/secure_credential_store.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../constants.dart';
@@ -56,7 +58,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
     String url = "$baseUrl/api/free_course_enroll/$course_id";
     var navigator = Navigator.of(context);
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-    token = sharedPreferences.getString("access_token");
+    token = await SecureCredentialStore.instance.readAccessToken();
     var response = await http.get(Uri.parse(url), headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -97,7 +99,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
     if (_isInit) {
       final prefs = await SharedPreferences.getInstance();
       setState(() {
-        token = (prefs.getString('access_token') ?? '');
+        token = await SecureCredentialStore.instance.readAccessToken();
       });
       setState(() {
         _isLoading = true;
@@ -211,12 +213,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 10),
                                     onPressed: () async {
-                                      final prefs =
-                                          await SharedPreferences.getInstance();
-                                      final authToken =
-                                          (prefs.getString('access_token') ??
-                                              '');
-                                      if (authToken.isNotEmpty) {
+                                      final authToken = await SecureCredentialStore
+                                          .instance
+                                          .readAccessToken();
+                                      if (authToken != null &&
+                                          authToken.isNotEmpty) {
+                                        final prefs =
+                                            await SharedPreferences.getInstance();
                                         if (loadedCourseDetails.isPaid == 1) {
                                           // if (msg1 ==
                                           //     'please tap again to Buy Now') {
@@ -312,11 +315,11 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                                     const EdgeInsets.symmetric(horizontal: 10),
                                 onPressed: () async {
                                   // await getEnroll(loadedCourse.id.toString());
-                                  final prefs =
-                                      await SharedPreferences.getInstance();
-                                  final authToken =
-                                      (prefs.getString('access_token') ?? '');
-                                  if (authToken.isNotEmpty) {
+                                  final authToken = await SecureCredentialStore
+                                      .instance
+                                      .readAccessToken();
+                                  if (authToken != null &&
+                                      authToken.isNotEmpty) {
                                     Navigator.of(context).pushReplacement(
                                       MaterialPageRoute(
                                           builder: (context) => TabsScreen(
@@ -352,12 +355,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 10),
                                   onPressed: () async {
-                                    final prefs =
-                                        await SharedPreferences.getInstance();
                                     final authToken =
-                                        (prefs.getString('access_token') ?? '');
+                                        await SecureCredentialStore.instance
+                                            .readAccessToken();
 
-                                    if (authToken.isNotEmpty) {
+                                    if (authToken != null &&
+                                        authToken.isNotEmpty) {
                                       if (loadedCourseDetails.isPaid == 1) {
                                         // Call the provider method to toggle the cart state
                                         Provider.of<Courses>(context,
@@ -416,12 +419,11 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                                         horizontal: 10),
                                     onPressed: () async {
                                       // await getEnroll(loadedCourse.id.toString());
-                                      final prefs =
-                                          await SharedPreferences.getInstance();
-                                      final authToken =
-                                          (prefs.getString('access_token') ??
-                                              '');
-                                      if (authToken.isNotEmpty) {
+                                      final authToken = await SecureCredentialStore
+                                          .instance
+                                          .readAccessToken();
+                                      if (authToken != null &&
+                                          authToken.isNotEmpty) {
                                         if (loadedCourseDetails.isPaid == 0) {
                                           await getEnroll(loadedCourseDetails
                                               .courseId
