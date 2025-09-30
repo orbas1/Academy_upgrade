@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\Logging\CloudWatchLoggerFactory;
+use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -54,7 +56,12 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
+            'channels' => array_values(array_filter([
+                'structured',
+                env('LOG_CHANNEL_USE_DAILY', true) ? 'daily' : null,
+                env('LOG_CHANNEL_USE_STDERR', true) ? 'stderr' : null,
+                env('OBS_USE_CLOUDWATCH', false) ? 'cloudwatch' : null,
+            ])),
             'ignore_exceptions' => false,
         ],
 
@@ -63,6 +70,21 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
+        ],
+
+        'structured' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'info'),
+            'handler' => StreamHandler::class,
+            'with' => [
+                'stream' => storage_path('logs/structured.log'),
+            ],
+            'formatter' => JsonFormatter::class,
+            'formatter_with' => [
+                'batchMode' => JsonFormatter::BATCH_MODE_NEWLINES,
+                'appendNewline' => true,
+            ],
+            'processors' => [PsrLogMessageProcessor::class],
         ],
 
         'daily' => [
@@ -125,6 +147,25 @@ return [
 
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
+        ],
+
+        'cloudwatch' => [
+            'driver' => 'custom',
+            'via' => CloudWatchLoggerFactory::class,
+            'name' => env('APP_ENV', 'production').'-cloudwatch',
+            'level' => env('OBS_CLOUDWATCH_LEVEL', env('LOG_LEVEL', 'info')),
+            'group' => env('OBS_CLOUDWATCH_GROUP', env('APP_ENV', 'production').'/academy'),
+            'stream' => env('OBS_CLOUDWATCH_STREAM', env('APP_NAME', 'academy').'-'.(gethostname() ?: 'web')),
+            'retention_days' => (int) env('OBS_CLOUDWATCH_RETENTION_DAYS', 30),
+            'client' => array_filter([
+                'region' => env('OBS_CLOUDWATCH_REGION', env('AWS_DEFAULT_REGION', 'us-east-1')),
+                'version' => 'latest',
+                'credentials' => env('OBS_CLOUDWATCH_KEY') && env('OBS_CLOUDWATCH_SECRET') ? [
+                    'key' => env('OBS_CLOUDWATCH_KEY'),
+                    'secret' => env('OBS_CLOUDWATCH_SECRET'),
+                ] : null,
+            ]),
+            'cache' => env('OBS_CLOUDWATCH_CACHE_STORE'),
         ],
     ],
 

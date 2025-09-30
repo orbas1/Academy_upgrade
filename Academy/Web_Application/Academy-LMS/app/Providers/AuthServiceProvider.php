@@ -110,6 +110,10 @@ class AuthServiceProvider extends ServiceProvider
             return $matrix->allows($user, 'secrets.manage');
         });
 
+        Gate::define('migration.plan.view', function (User $user) use ($matrix) {
+            return $matrix->allows($user, 'migration.plan.view');
+        });
+
         Gate::define('communities.manage', function (User $user) use ($matrix) {
             return $matrix->allows($user, 'community.moderate')
                 || $matrix->allows($user, 'paywall.manage')

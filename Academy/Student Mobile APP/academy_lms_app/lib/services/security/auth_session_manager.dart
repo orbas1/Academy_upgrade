@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../config/app_configuration.dart';
+import '../observability/http_client_factory.dart';
 import 'auth_session.dart';
 import 'secure_credential_store.dart';
 
@@ -13,7 +14,9 @@ class AuthSessionManager extends ChangeNotifier {
     http.Client? client,
     SecureCredentialStore? credentialStore,
     AppConfiguration? configuration,
-  })  : _client = client ?? http.Client(),
+  })  : _client = client != null
+            ? HttpClientFactory.create(inner: client)
+            : HttpClientFactory.create(),
         _store = credentialStore ?? SecureCredentialStore.instance,
         _configuration = configuration ?? AppConfiguration.instance;
 

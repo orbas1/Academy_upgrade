@@ -43,6 +43,7 @@ return [
             'search.audit',
             'search.saved',
             'secrets.manage',
+            'migration.plan.view',
         ],
         'admin' => ['*'],
     ],

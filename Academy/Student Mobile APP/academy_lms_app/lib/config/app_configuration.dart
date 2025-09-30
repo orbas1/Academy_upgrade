@@ -15,7 +15,8 @@ class AppConfiguration {
         communityManifestUrl = Uri.parse(
           const String.fromEnvironment(
             'ACADEMY_COMMUNITY_MANIFEST_URL',
-            defaultValue: 'https://academy.local/api/v1/admin/communities/modules',
+            defaultValue:
+                'https://academy.local/api/v1/admin/communities/modules',
           ),
         ),
         oauthTokenEndpoint = Uri.parse(
@@ -24,9 +25,13 @@ class AppConfiguration {
             defaultValue: 'https://academy.local/oauth/token',
           ),
         ),
-        oauthClientId = const String.fromEnvironment('ACADEMY_OAUTH_CLIENT_ID', defaultValue: ''),
-        oauthClientSecret = const String.fromEnvironment('ACADEMY_OAUTH_CLIENT_SECRET', defaultValue: ''),
-        oauthScopes = const String.fromEnvironment('ACADEMY_OAUTH_SCOPES', defaultValue: ''),
+        oauthClientId =
+            const String.fromEnvironment('ACADEMY_OAUTH_CLIENT_ID', defaultValue: ''),
+        oauthClientSecret = const String.fromEnvironment(
+            'ACADEMY_OAUTH_CLIENT_SECRET',
+            defaultValue: ''),
+        oauthScopes =
+            const String.fromEnvironment('ACADEMY_OAUTH_SCOPES', defaultValue: ''),
         sentryDsn = _emptyToNull(
           const String.fromEnvironment('ACADEMY_SENTRY_DSN', defaultValue: ''),
         ),
@@ -40,7 +45,20 @@ class AppConfiguration {
           'ACADEMY_ENABLE_FIREBASE_ANALYTICS',
           defaultValue: false,
         ),
-        environment = const String.fromEnvironment('ACADEMY_APP_ENV', defaultValue: 'development');
+        environment =
+            const String.fromEnvironment('ACADEMY_APP_ENV', defaultValue: 'development'),
+        observabilityIngestUrl = Uri.parse(
+          const String.fromEnvironment(
+            'ACADEMY_OBSERVABILITY_ENDPOINT',
+            defaultValue: 'https://academy.local/api/observability/mobile-metrics',
+          ),
+        ),
+        observabilityApiKey = _emptyToNull(
+          const String.fromEnvironment(
+            'ACADEMY_OBSERVABILITY_API_KEY',
+            defaultValue: '',
+          ),
+        );
 
   static final AppConfiguration instance = AppConfiguration._internal();
 
@@ -56,6 +74,8 @@ class AppConfiguration {
   final Uri? realtimeAuthEndpoint;
   final bool analyticsEnabled;
   final String environment;
+  final Uri observabilityIngestUrl;
+  final String? observabilityApiKey;
 
   Uri resolveApiPath(String path) {
     if (path.startsWith('http://') || path.startsWith('https://')) {
@@ -63,7 +83,9 @@ class AppConfiguration {
     }
 
     final normalized = path.startsWith('/') ? path.substring(1) : path;
-    final basePath = apiBaseUrl.path.endsWith('/') ? apiBaseUrl.path.substring(0, apiBaseUrl.path.length - 1) : apiBaseUrl.path;
+    final basePath = apiBaseUrl.path.endsWith('/')
+        ? apiBaseUrl.path.substring(0, apiBaseUrl.path.length - 1)
+        : apiBaseUrl.path;
     return apiBaseUrl.replace(path: '$basePath/$normalized');
   }
 
@@ -71,18 +93,6 @@ class AppConfiguration {
     communityManifestUrl = endpoint;
   }
 
-
-  static String? _emptyToNull(String value) {
-    final trimmed = value.trim();
-    return trimmed.isEmpty ? null : trimmed;
-  }
-
-  static Uri? _parseOptionalUri(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) {
-      return null;
-    }
-    return Uri.parse(trimmed);
   Uri buildRealtimePresenceUri({required String communityId, String? token}) {
     final queryParameters = <String, String>{
       'community_id': communityId,
@@ -95,5 +105,18 @@ class AppConfiguration {
         ...queryParameters,
       },
     );
+  }
+
+  static String? _emptyToNull(String value) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  static Uri? _parseOptionalUri(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+    return Uri.parse(trimmed);
   }
 }

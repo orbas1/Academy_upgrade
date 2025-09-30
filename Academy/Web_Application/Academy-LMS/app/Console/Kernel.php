@@ -37,6 +37,13 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->runInBackground();
 
+        $schedule->command('observability:monitor-health')
+            ->everyFiveMinutes()
+            ->environments(['staging', 'production'])
+            ->onOneServer()
+            ->withoutOverlapping()
+            ->runInBackground();
+
         if (config('secrets.rotation.enabled')) {
             $schedule->command('secrets:rotate')
                 ->cron(config('secrets.rotation.cron', '0 3 * * *'))

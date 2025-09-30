@@ -4,6 +4,7 @@ import 'package:academy_lms_app/constants.dart' as constants;
 import 'package:http/http.dart' as http;
 
 import '../../../services/security/auth_session_manager.dart';
+import '../../../services/observability/http_client_factory.dart';
 
 class StorageRestoreResult {
   StorageRestoreResult({
@@ -18,7 +19,10 @@ class StorageRestoreResult {
 }
 
 class StorageRecoveryService {
-  StorageRecoveryService({http.Client? client}) : _client = client ?? http.Client();
+  StorageRecoveryService({http.Client? client})
+      : _client = client != null
+            ? HttpClientFactory.create(inner: client)
+            : HttpClientFactory.create();
 
   final http.Client _client;
 
