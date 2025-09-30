@@ -307,32 +307,63 @@ $(document).ready(function(){
   })
 
 
-// Accordion Menu 
-if (screen.width < 992) {
-    function accordion() {
-        var Accordion = function (el, multiple) {
-            this.el = el || {};
-            this.multiple = multiple || false;
-            var links = this.el.find('.menu-item-has-children > a');
-            links.on('click', { el: this.el, multiple: this.multiple }, this.dropdown)
-        }
+// Accordion Menu
+function initAccordionMenu() {
+    var $accordionMenu = $('.accordion-menu');
 
-        Accordion.prototype.dropdown = function (e) {
-            var $el = e.data.el,
-                $this = $(this),
-                $next = $this.next();
-
-            $next.slideToggle();
-            $this.parent().toggleClass('active-submenu');
-
-            if (!e.data.multiple) {
-                $el.find('.menu-dropdown').not($next).slideUp().parent().removeClass('active-submenu');
-                $el.find('.menu-dropdown').not($next).slideUp();
-            };
-        }
-        var accordion = new Accordion($('.accordion-menu'), false);
+    if (!$accordionMenu.length || $accordionMenu.data('accordion-initialized')) {
+        return;
     }
-    accordion();
+
+    var Accordion = function (el, multiple) {
+        this.el = el || {};
+        this.multiple = multiple || false;
+        var links = this.el.find('.menu-item-has-children > a');
+        links.on('click', { el: this.el, multiple: this.multiple }, this.dropdown);
+    };
+
+    Accordion.prototype.dropdown = function (e) {
+        var $el = e.data.el,
+            $this = $(this),
+            $next = $this.next();
+
+        $next.slideToggle();
+        $this.parent().toggleClass('active-submenu');
+
+        if (!e.data.multiple) {
+            $el.find('.menu-dropdown').not($next).slideUp().parent().removeClass('active-submenu');
+            $el.find('.menu-dropdown').not($next).slideUp();
+        }
+    };
+
+    new Accordion($accordionMenu, false);
+    $accordionMenu.data('accordion-initialized', true);
+}
+
+var mobileMenuQuery = typeof window.matchMedia === 'function'
+    ? window.matchMedia('(max-width: 991px)')
+    : null;
+
+function handleAccordionInit(event) {
+    if (event.matches) {
+        initAccordionMenu();
+    }
+}
+
+if (mobileMenuQuery) {
+    handleAccordionInit(mobileMenuQuery);
+    if (typeof mobileMenuQuery.addEventListener === 'function') {
+        mobileMenuQuery.addEventListener('change', handleAccordionInit);
+    } else if (typeof mobileMenuQuery.addListener === 'function') {
+        mobileMenuQuery.addListener(handleAccordionInit);
+    }
+} else if ($(window).width() <= 991) {
+    initAccordionMenu();
+    $(window).on('resize', function () {
+        if ($(window).width() <= 991) {
+            initAccordionMenu();
+        }
+    });
 }
 // Accordion Menu
 
