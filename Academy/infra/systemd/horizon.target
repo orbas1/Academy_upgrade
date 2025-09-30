@@ -1,0 +1,8 @@
+[Unit]
+Description=Academy Horizon Supervisors
+Documentation=https://laravel.com/docs/horizon
+After=network.target redis.service
+Requires=redis.service
+
+[Install]
+WantedBy=multi-user.target

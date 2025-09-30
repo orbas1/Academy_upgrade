@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:academy_lms_app/constants.dart' as constants;
+import 'package:academy_lms_app/config/app_configuration.dart';
 import 'package:http/http.dart' as http;
 import 'package:academy_lms_app/services/observability/http_client_factory.dart';
 import 'package:academy_lms_app/services/security/auth_session_manager.dart';
@@ -13,11 +13,13 @@ class QueueHealthApiService {
             ? HttpClientFactory.create(inner: client)
             : HttpClientFactory.create(),
         _authToken = authToken,
-        _sessionManager = sessionManager ?? AuthSessionManager.instance;
+        _sessionManager = sessionManager ?? AuthSessionManager.instance,
+        _configuration = AppConfiguration.instance;
 
   final http.Client _client;
   String? _authToken;
   final AuthSessionManager _sessionManager;
+  final AppConfiguration _configuration;
 
   void updateAuthToken(String? token) {
     if (token == null || token.isEmpty) {
@@ -57,13 +59,14 @@ class QueueHealthApiService {
       });
     }
 
-    final normalizedBase = constants.baseUrl.endsWith('/')
-        ? constants.baseUrl.substring(0, constants.baseUrl.length - 1)
-        : constants.baseUrl;
+    final base = _configuration.resolveApiPath(path);
 
-    return Uri.parse('$normalizedBase$path').replace(
-      queryParameters: cleanQuery.isEmpty ? null : cleanQuery,
-    );
+    final mergedQuery = {
+      ...base.queryParameters,
+      ...cleanQuery,
+    }..removeWhere((key, value) => value == null || value.isEmpty);
+
+    return base.replace(queryParameters: mergedQuery.isEmpty ? null : mergedQuery);
   }
 
   Future<Map<String, String>> _headers({bool forceRefresh = false}) async {
