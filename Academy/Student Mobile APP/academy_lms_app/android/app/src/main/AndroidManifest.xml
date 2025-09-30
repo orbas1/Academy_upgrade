@@ -12,7 +12,7 @@
     </queries>
 
     <application
-        android:label="academy_lms_app"
+        android:label="@string/app_name"
         android:name="${applicationName}"
         android:usesCleartextTraffic="true"
         tools:replace="android:usesCleartextTraffic"

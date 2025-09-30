@@ -1,0 +1,255 @@
+name: Academy CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+concurrency:
+  group: academy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PHP_VERSION: '8.3'
+  NODE_VERSION: '20'
+  FLUTTER_VERSION: '3.24.0'
+  WORKING_DIRECTORY_BACKEND: Web_Application/Academy-LMS
+  WORKING_DIRECTORY_MOBILE: 'Student Mobile APP/academy_lms_app'
+
+jobs:
+  backend_lint:
+    name: Backend Lint & Static Style
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY_BACKEND }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, redis, pdo_mysql
+          coverage: none
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ env.PHP_VERSION }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-${{ env.PHP_VERSION }}-
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Run Pint
+        run: vendor/bin/pint --test
+      - name: Validate Composer config
+        run: composer validate --strict
+
+  backend_tests:
+    name: Backend Unit & Feature Tests
+    runs-on: ubuntu-latest
+    needs: backend_lint
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY_BACKEND }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, redis, pdo_mysql
+          ini-values: "memory_limit=1G"
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ env.PHP_VERSION }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-${{ env.PHP_VERSION }}-
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Copy environment
+        run: |
+          cp .env.example .env.testing
+          php artisan key:generate --env=testing
+      - name: Run PHPUnit suites
+        run: php artisan test --parallel --log-junit=junit.xml
+      - name: Upload PHPUnit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-junit
+          path: ${{ env.WORKING_DIRECTORY_BACKEND }}/junit.xml
+      - name: PHPStan Static Analysis
+        run: vendor/bin/phpstan analyse --memory-limit=1G
+      - name: Larastan Domain Analysis
+        run: vendor/bin/larastan analyse --level=6 app database routes
+
+  frontend_build:
+    name: Frontend Build Verification
+    runs-on: ubuntu-latest
+    needs: backend_tests
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY_BACKEND }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.WORKING_DIRECTORY_BACKEND }}/package-lock.json
+      - name: Install Node dependencies
+        run: npm ci
+      - name: Build Vite assets
+        run: npm run build -- --mode=production
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: ${{ env.WORKING_DIRECTORY_BACKEND }}/public/build
+
+  security_scans:
+    name: Dependency Security Scans
+    runs-on: ubuntu-latest
+    needs: backend_tests
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY_BACKEND }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl
+      - name: Composer Audit
+        run: composer audit --locked --ansi
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.WORKING_DIRECTORY_BACKEND }}/package-lock.json
+      - name: Install dependencies for audit
+        run: npm ci --prefer-offline
+      - name: npm Audit
+        run: npm audit --audit-level=critical
+
+  infra_scan:
+    name: Infrastructure Policy Scan
+    runs-on: ubuntu-latest
+    needs: backend_tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy config scan
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: config
+          format: sarif
+          output: trivy.sarif
+          scan-ref: infra
+      - name: Upload Trivy Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-infra-report
+          path: trivy.sarif
+
+  flutter_tests:
+    name: Flutter Analyze & Tests
+    runs-on: ubuntu-latest
+    needs: frontend_build
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY_MOBILE }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - name: Flutter pub get
+        run: flutter pub get
+      - name: Flutter format check
+        run: flutter format --set-exit-if-changed lib test
+      - name: Flutter analyze
+        run: flutter analyze
+      - name: Prepare test report directory
+        run: mkdir -p build
+      - name: Flutter tests
+        run: flutter test --machine > build/test_output.json
+      - name: Upload Flutter test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-test-report
+          path: ${{ env.WORKING_DIRECTORY_MOBILE }}/build/test_output.json
+
+  flutter_android:
+    name: Flutter Android Bundle
+    runs-on: ubuntu-latest
+    needs: flutter_tests
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY_MOBILE }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - name: Flutter pub get
+        run: flutter pub get
+      - name: Build staging appbundle
+        run: flutter build appbundle --flavor staging --target lib/main.dart --dart-define=ACADEMY_APP_ENV=staging --dart-define=ACADEMY_API_BASE_URL=https://staging.api.academy.example --dart-define=ACADEMY_COMMUNITY_MANIFEST_URL=https://staging.api.academy.example/v1/admin/communities/modules
+      - name: Upload Android bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-android-staging
+          path: ${{ env.WORKING_DIRECTORY_MOBILE }}/build/app/outputs/bundle/stagingRelease/*.aab
+
+  flutter_ios:
+    name: Flutter iOS IPA
+    runs-on: macos-latest
+    needs: flutter_tests
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY_MOBILE }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - name: Flutter pub get
+        run: flutter pub get
+      - name: Build iOS IPA (no codesign)
+        run: flutter build ipa --export-options-plist ios/ExportOptions.plist --no-codesign --dart-define=ACADEMY_APP_ENV=staging --dart-define=ACADEMY_API_BASE_URL=https://staging.api.academy.example --dart-define=ACADEMY_COMMUNITY_MANIFEST_URL=https://staging.api.academy.example/v1/admin/communities/modules
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-ios-staging
+          path: ${{ env.WORKING_DIRECTORY_MOBILE }}/build/ios/ipa/*.ipa
+
+  deploy_gate:
+    name: Deployment Gate Approval
+    runs-on: ubuntu-latest
+    needs:
+      - flutter_android
+      - flutter_ios
+      - security_scans
+      - infra_scan
+    environment:
+      name: staging
+      url: https://staging.academy.example
+    steps:
+      - name: Await operator approval
+        run: |
+          echo "All quality gates passed. Approve deployment from the GitHub environment UI to continue rollout."
