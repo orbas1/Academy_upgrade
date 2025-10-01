@@ -55,4 +55,24 @@ else
   log "trivy not found on PATH; skipping container/filesystem vulnerability scan"
 fi
 
+ZAP_TARGET="${ZAP_BASELINE_TARGET:-}"
+if [[ -z "${ZAP_TARGET}" ]]; then
+  log "ZAP_BASELINE_TARGET not set; skipping OWASP ZAP baseline scan"
+elif ! command -v docker >/dev/null 2>&1; then
+  log "docker not found on PATH; unable to run OWASP ZAP baseline scan"
+else
+  ZAP_OUTPUT_DIR="$(mktemp -d)"
+  log "Running OWASP ZAP baseline scan against ${ZAP_TARGET}"
+  if ZAP_OUTPUT_DIR="${ZAP_OUTPUT_DIR}" "${SCRIPT_DIR}/zap/run_baseline.sh" "${ZAP_TARGET}"; then
+    log "OWASP ZAP baseline scan complete"
+    if [[ -f "${ZAP_OUTPUT_DIR}/zap-summary.md" ]]; then
+      log "OWASP ZAP findings summary"
+      sed 's/^/  /' "${ZAP_OUTPUT_DIR}/zap-summary.md"
+    fi
+  else
+    log "OWASP ZAP baseline scan encountered an error"
+  fi
+  log "ZAP artifacts available at ${ZAP_OUTPUT_DIR}"
+fi
+
 log "Security scan completed"

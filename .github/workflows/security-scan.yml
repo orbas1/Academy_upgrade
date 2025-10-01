@@ -104,3 +104,37 @@ jobs:
         run: |
           chmod +x Academy/tools/security/security_scan.sh
           Academy/tools/security/security_scan.sh
+
+  owasp-zap:
+    name: OWASP ZAP Baseline DAST
+    runs-on: ubuntu-latest
+    if: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && secrets.ZAP_BASELINE_TARGET != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pull OWASP ZAP baseline container
+        run: docker pull ghcr.io/zaproxy/zaproxy:stable
+      - name: Execute OWASP ZAP baseline scan
+        env:
+          ZAP_BASELINE_TARGET: ${{ secrets.ZAP_BASELINE_TARGET }}
+          ZAP_AUTH_HEADER: ${{ secrets.ZAP_AUTH_HEADER }}
+          ZAP_AUTH_HEADER_VALUE: ${{ secrets.ZAP_AUTH_HEADER_VALUE }}
+          ZAP_AUTH_HEADER_SITE: ${{ secrets.ZAP_AUTH_HEADER_SITE }}
+          ZAP_MAX_DURATION: 10
+          ZAP_TIMEOUT: 120
+        run: |
+          chmod +x Academy/tools/security/zap/run_baseline.sh
+          mkdir -p zap-artifacts
+          ZAP_OUTPUT_DIR="$PWD/zap-artifacts" Academy/tools/security/zap/run_baseline.sh "$ZAP_BASELINE_TARGET"
+      - name: Summarise OWASP ZAP results
+        run: |
+          python3 Academy/tools/security/zap/summarize_zap.py \
+            --input "zap-artifacts/zap-report.json" \
+            --output "zap-artifacts/zap-summary.json" \
+            --markdown "zap-artifacts/zap-summary.md"
+      - name: Upload ZAP artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-baseline-report
+          path: zap-artifacts
+          retention-days: 45
+
