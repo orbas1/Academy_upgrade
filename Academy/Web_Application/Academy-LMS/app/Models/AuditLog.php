@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedAttribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -22,7 +23,9 @@ class AuditLog extends Model
     ];
 
     protected $casts = [
-        'metadata' => 'array',
+        'ip_address' => EncryptedAttribute::class,
+        'user_agent' => EncryptedAttribute::class,
+        'metadata' => EncryptedAttribute::class,
         'performed_at' => 'datetime',
     ];
 

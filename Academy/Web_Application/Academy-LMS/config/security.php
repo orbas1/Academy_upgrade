@@ -34,4 +34,21 @@ return [
     'sessions' => [
         'max_parallel_tokens' => env('SESSION_MAX_PARALLEL_TOKENS', 10),
     ],
+
+    'data_protection' => [
+        'prune_schedule' => env('DATA_PROTECTION_PRUNE_SCHEDULE', '03:15'),
+        'audit_logs' => [
+            'retention_days' => (int) env('DATA_PROTECTION_AUDIT_LOG_RETENTION_DAYS', 3650),
+        ],
+        'device_sessions' => [
+            'retention_days' => (int) env('DATA_PROTECTION_DEVICE_SESSION_RETENTION_DAYS', 180),
+        ],
+        'personal_access_tokens' => [
+            'retention_days' => (int) env('DATA_PROTECTION_TOKEN_RETENTION_DAYS', 90),
+        ],
+        'backup' => [
+            'enabled' => (bool) env('DATA_PROTECTION_BACKUP_ENABLED', false),
+            'profile' => env('DATA_PROTECTION_BACKUP_PROFILE', 'media'),
+        ],
+    ],
 ];

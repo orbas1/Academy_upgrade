@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedAttribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -20,5 +21,11 @@ class OfflinePayment extends Model
         'bank_no',
         'doc',
         'status',
+    ];
+
+    protected $casts = [
+        'items' => EncryptedAttribute::class,
+        'phone_no' => EncryptedAttribute::class,
+        'bank_no' => EncryptedAttribute::class,
     ];
 }

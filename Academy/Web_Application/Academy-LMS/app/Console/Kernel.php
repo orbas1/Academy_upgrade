@@ -103,6 +103,13 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->runInBackground();
 
+        $schedule->command('compliance:prune-personal-data')
+            ->dailyAt(config('security.data_protection.prune_schedule', '03:15'))
+            ->environments(['staging', 'production'])
+            ->onOneServer()
+            ->withoutOverlapping()
+            ->runInBackground();
+
         foreach (config('storage_lifecycle.profiles', []) as $profile => $settings) {
             $backup = $settings['backup'] ?? null;
             if (! is_array($backup) || empty($backup['enabled'])) {

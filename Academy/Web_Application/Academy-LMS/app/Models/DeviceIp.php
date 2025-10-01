@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedAttribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -26,10 +27,16 @@ class DeviceIp extends Model
     ];
 
     protected $casts = [
+        'ip_address' => EncryptedAttribute::class,
+        'session_id' => EncryptedAttribute::class,
+        'device_name' => EncryptedAttribute::class,
+        'platform' => EncryptedAttribute::class,
+        'app_version' => EncryptedAttribute::class,
+        'label' => EncryptedAttribute::class,
         'trusted_at' => 'datetime',
         'revoked_at' => 'datetime',
         'last_seen_at' => 'datetime',
-        'last_headers' => 'array',
+        'last_headers' => EncryptedAttribute::class,
     ];
 
     public function tokens(): HasMany
