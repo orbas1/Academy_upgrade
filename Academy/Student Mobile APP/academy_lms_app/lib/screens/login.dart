@@ -11,6 +11,7 @@ import 'package:academy_lms_app/screens/tab_screen.dart';
 import 'package:academy_lms_app/services/security/auth_session.dart';
 import 'package:academy_lms_app/services/security/auth_session_manager.dart';
 import 'package:academy_lms_app/services/security/device_identity_provider.dart';
+import 'package:academy_lms_app/services/security/data_protection_service.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
@@ -336,9 +337,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
     sharedPreferences ??= await SharedPreferences.getInstance();
 
-    sharedPreferences!.setString('user', jsonEncode(user));
-    sharedPreferences!.setString('email', _emailController.text.trim());
-    sharedPreferences!.setString('password', _passwordController.text);
+    final storedUser =
+        await sharedPreferences!.setString('user', jsonEncode(user));
+    final storedEmail = await sharedPreferences!
+        .setString('email', _emailController.text.trim());
+
+    final trackedKeys = <String>[];
+    if (storedUser) {
+      trackedKeys.add('user');
+    }
+    if (storedEmail) {
+      trackedKeys.add('email');
+    }
+    if (trackedKeys.isNotEmpty) {
+      await DataProtectionService.instance
+          .registerPersonalDataKeys(trackedKeys);
+    }
 
     token = await AuthSessionManager.instance.getValidAccessToken();
     await Provider.of<Auth>(context, listen: false).synchronizeToken();

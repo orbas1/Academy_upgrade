@@ -2,6 +2,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/security/auth_session_manager.dart';
+import '../services/security/data_protection_service.dart';
 import '../services/security/secure_credential_store.dart';
 
 class SharedPreferenceHelper {
@@ -36,7 +37,12 @@ class SharedPreferenceHelper {
 
   Future<bool> setUserImage(String image) async {
     final pref = await SharedPreferences.getInstance();
-    return pref.setString(userPref.Image.toString(), image);
+    final stored = await pref.setString(userPref.Image.toString(), image);
+    if (stored) {
+      await DataProtectionService.instance
+          .registerPersonalDataKey(userPref.Image.toString());
+    }
+    return stored;
   }
 
   Future<String?> getUserImage() async {

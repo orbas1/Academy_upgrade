@@ -8,19 +8,24 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/security/auth_session_manager.dart';
-import '../services/security/secure_credential_store.dart';
+import '../services/security/data_protection_service.dart';
 import '../services/security/device_identity_provider.dart';
 import '../constants.dart';
 import '../models/user.dart';
 
 class Auth with ChangeNotifier {
-  Auth({AuthSessionManager? sessionManager})
-      : _sessionManager = sessionManager ?? AuthSessionManager.instance {
+  Auth({
+    AuthSessionManager? sessionManager,
+    DataProtectionService? dataProtectionService,
+  })  : _sessionManager = sessionManager ?? AuthSessionManager.instance,
+        _dataProtection =
+            dataProtectionService ?? DataProtectionService.instance {
     _token = _sessionManager.currentSession?.accessToken;
     _sessionManager.addListener(_handleSessionChanged);
   }
 
   final AuthSessionManager _sessionManager;
+  final DataProtectionService _dataProtection;
   String? _token;
   String? _userId;
   // ignore: prefer_final_fields
@@ -55,7 +60,6 @@ class Auth with ChangeNotifier {
     _token = null;
     notifyListeners();
 
-    final prefs = await SharedPreferences.getInstance();
     final identity = await DeviceIdentityProvider.instance.getIdentity();
     final accessToken = await _sessionManager.getValidAccessToken();
 
@@ -75,11 +79,7 @@ class Auth with ChangeNotifier {
     }
 
     await _sessionManager.clearSession();
-    await SecureCredentialStore.instance.clearAll();
-
-    prefs.remove('user_name');
-    prefs.remove('user_photo');
-    prefs.remove('school_name');
+    await _dataProtection.wipeLocalFootprint();
   }
 
   Future<void> updateUserPassword(String currentPassword, String newPassword,
@@ -154,7 +154,10 @@ class Auth with ChangeNotifier {
     }
 
     // Update shared preferences
-    await prefs.setString("user", jsonEncode(responseData["user"]));
+    final stored = await prefs.setString("user", jsonEncode(responseData["user"]));
+    if (stored) {
+      await _dataProtection.registerPersonalDataKey('user');
+    }
 
     // Notify listeners
     notifyListeners();

@@ -34,6 +34,7 @@ import 'services/observability/mobile_observability_client.dart';
 import 'services/migration/migration_plan_service.dart';
 import 'services/migration/migration_runbook_service.dart';
 import 'services/security/auth_session_manager.dart';
+import 'services/security/data_protection_service.dart';
 import 'l10n/app_localizations.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
@@ -53,6 +54,7 @@ Future<void> main() async {
   telemetry.environment = configuration.environment;
 
   final sessionManager = AuthSessionManager.instance;
+  await DataProtectionService.instance.enforcePolicies();
   final observabilityClient = MobileObservabilityClient.instance;
   observabilityClient.configure(
     configuration: configuration,
