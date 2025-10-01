@@ -19,9 +19,18 @@ env:
   WORKING_DIRECTORY_MOBILE: 'Student Mobile APP/academy_lms_app'
 
 jobs:
+  policy_guard:
+    name: Branch Policy Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enforce branch policy
+        run: php $GITHUB_WORKSPACE/tools/ci/enforce_branch_policy.php
+
   backend_lint:
     name: Backend Lint & Static Style
     runs-on: ubuntu-latest
+    needs: policy_guard
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIRECTORY_BACKEND }}
@@ -62,6 +71,7 @@ jobs:
         with:
           php-version: ${{ env.PHP_VERSION }}
           extensions: mbstring, intl, redis, pdo_mysql
+          coverage: xdebug
           ini-values: "memory_limit=1G"
       - name: Cache Composer dependencies
         uses: actions/cache@v4
@@ -77,13 +87,21 @@ jobs:
         run: |
           cp .env.example .env.testing
           php artisan key:generate --env=testing
-      - name: Run PHPUnit suites
-        run: php artisan test --parallel --log-junit=junit.xml
+      - name: Run PHPUnit suites with coverage
+        run: |
+          mkdir -p build/coverage
+          php artisan test --log-junit=junit.xml --coverage-clover=build/coverage/clover.xml --coverage-text=build/coverage/phpunit-coverage.txt
+          php $GITHUB_WORKSPACE/tools/ci/enforce_php_coverage.php build/coverage/clover.xml 75 build/coverage/summary.json
       - name: Upload PHPUnit report
         uses: actions/upload-artifact@v4
         with:
           name: backend-junit
           path: ${{ env.WORKING_DIRECTORY_BACKEND }}/junit.xml
+      - name: Upload backend coverage summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-summary
+          path: ${{ env.WORKING_DIRECTORY_BACKEND }}/build/coverage/summary.json
       - name: PHPStan Static Analysis
         run: vendor/bin/phpstan analyse --memory-limit=1G
       - name: Larastan Domain Analysis
@@ -230,13 +248,20 @@ jobs:
         run: flutter analyze
       - name: Prepare test report directory
         run: mkdir -p build
-      - name: Flutter tests
-        run: flutter test --machine > build/test_output.json
+      - name: Flutter tests with coverage
+        run: |
+          flutter test --machine --coverage > build/test_output.json
+          python $GITHUB_WORKSPACE/tools/ci/enforce_lcov_coverage.py coverage/lcov.info 80 coverage/summary.json
       - name: Upload Flutter test report
         uses: actions/upload-artifact@v4
         with:
           name: flutter-test-report
           path: ${{ env.WORKING_DIRECTORY_MOBILE }}/build/test_output.json
+      - name: Upload Flutter coverage summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-coverage-summary
+          path: ${{ env.WORKING_DIRECTORY_MOBILE }}/coverage/summary.json
 
   flutter_android:
     name: Flutter Android Bundle
@@ -286,6 +311,207 @@ jobs:
           name: flutter-ios-staging
           path: ${{ env.WORKING_DIRECTORY_MOBILE }}/build/ios/ipa/*.ipa
 
+  quality_gates:
+    name: Quality Gates Summary
+    runs-on: ubuntu-latest
+    needs:
+      - backend_tests
+      - flutter_tests
+      - security_scans
+      - infra_scan
+    if: ${{ always() }}
+    steps:
+      - name: Download backend coverage summary
+        if: ${{ needs.backend_tests.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage-summary
+          path: coverage/backend
+      - name: Download Flutter coverage summary
+        if: ${{ needs.flutter_tests.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: flutter-coverage-summary
+          path: coverage/flutter
+      - name: Compose quality gate summary
+        id: compose
+        uses: actions/github-script@v7
+        env:
+          BACKEND_STATUS: ${{ needs.backend_tests.result }}
+          FLUTTER_STATUS: ${{ needs.flutter_tests.result }}
+          SECURITY_STATUS: ${{ needs.security_scans.result }}
+          INFRA_STATUS: ${{ needs.infra_scan.result }}
+        with:
+          script: |
+            const core = require('@actions/core');
+            const fs = require('fs');
+            const path = require('path');
+
+            function readSummary(location) {
+              if (!location || !fs.existsSync(location)) {
+                return null;
+              }
+              return JSON.parse(fs.readFileSync(location, 'utf8'));
+            }
+
+            const parseNumber = (value) => {
+              if (value === null || value === undefined || value === '') {
+                return null;
+              }
+              const parsed = Number(value);
+              return Number.isFinite(parsed) ? parsed : null;
+            };
+
+            const backendSummary = readSummary(path.join('coverage', 'backend', 'summary.json'));
+            const flutterSummary = readSummary(path.join('coverage', 'flutter', 'summary.json'));
+
+            const backendCoverage = parseNumber(backendSummary?.coverage?.line ?? null);
+            const backendThreshold = parseNumber(backendSummary?.thresholds?.line ?? null);
+            const flutterCoverage = parseNumber(flutterSummary?.coverage?.line ?? null);
+            const flutterThreshold = parseNumber(flutterSummary?.thresholds?.line ?? null);
+
+            const result = {
+              backend: {
+                status: process.env.BACKEND_STATUS,
+                coverage: backendCoverage,
+                threshold: backendThreshold,
+              },
+              flutter: {
+                status: process.env.FLUTTER_STATUS,
+                coverage: flutterCoverage,
+                threshold: flutterThreshold,
+              },
+              security: { status: process.env.SECURITY_STATUS },
+              infrastructure: { status: process.env.INFRA_STATUS },
+            };
+
+            fs.mkdirSync('coverage', { recursive: true });
+            fs.writeFileSync('coverage/quality-gates-summary.json', JSON.stringify(result, null, 2));
+
+            if (result.backend.coverage !== null) {
+              core.setOutput('backendCoverage', result.backend.coverage.toFixed(2));
+            }
+            if (result.backend.threshold !== null) {
+              core.setOutput('backendThreshold', result.backend.threshold.toFixed(2));
+            }
+            if (result.flutter.coverage !== null) {
+              core.setOutput('flutterCoverage', result.flutter.coverage.toFixed(2));
+            }
+            if (result.flutter.threshold !== null) {
+              core.setOutput('flutterThreshold', result.flutter.threshold.toFixed(2));
+            }
+            core.setOutput('backendStatus', result.backend.status);
+            core.setOutput('flutterStatus', result.flutter.status);
+            core.setOutput('securityStatus', result.security.status);
+            core.setOutput('infraStatus', result.infrastructure.status);
+      - name: Upload quality gates summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-gates-summary
+          path: coverage/quality-gates-summary.json
+      - name: Publish pull request quality comment
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const core = require('@actions/core');
+            const github = require('@actions/github');
+            const context = github.context;
+            const fs = require('fs');
+            const summary = JSON.parse(fs.readFileSync('coverage/quality-gates-summary.json', 'utf8'));
+            const statusIcon = (status) => {
+              if (status === 'success') return '✅';
+              if (status === 'skipped') return '⚪️';
+              if (status === 'cancelled') return '⚪️';
+              return '❌';
+            };
+
+            function line(label, segment) {
+              const coverage = segment.coverage !== null && segment.threshold !== null
+                ? ` — ${segment.coverage.toFixed(2)}% (min ${segment.threshold.toFixed(2)}%)`
+                : '';
+              return `${statusIcon(segment.status)} **${label}**${coverage}`;
+            }
+
+            const body = `<!-- quality-gates -->\n### Quality Gates\n${line('Backend', summary.backend)}\n${line('Flutter', summary.flutter)}\n${statusIcon(summary.security.status)} **Security scans**\n${statusIcon(summary.infrastructure.status)} **Infrastructure scans**`;
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.rest.issues.listComments({ owner, repo, issue_number, per_page: 100 });
+            const existing = comments.data.find((comment) => comment.body && comment.body.startsWith('<!-- quality-gates -->'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+      - name: Slack notification
+        if: ${{ always() }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          BACKEND_STATUS: ${{ steps.compose.outputs.backendStatus }}
+          FLUTTER_STATUS: ${{ steps.compose.outputs.flutterStatus }}
+          SECURITY_STATUS: ${{ steps.compose.outputs.securityStatus }}
+          INFRA_STATUS: ${{ steps.compose.outputs.infraStatus }}
+          BACKEND_COVERAGE: ${{ steps.compose.outputs.backendCoverage }}
+          BACKEND_THRESHOLD: ${{ steps.compose.outputs.backendThreshold }}
+          FLUTTER_COVERAGE: ${{ steps.compose.outputs.flutterCoverage }}
+          FLUTTER_THRESHOLD: ${{ steps.compose.outputs.flutterThreshold }}
+        run: |
+          python - <<'PY'
+import json
+import os
+import sys
+
+webhook = os.environ.get('SLACK_WEBHOOK_URL')
+if not webhook:
+    print('Slack webhook not configured; skipping notification.')
+    sys.exit(0)
+
+def status_icon(value: str) -> str:
+    return {
+        'success': '✅',
+        'skipped': '⚪️',
+        'cancelled': '⚪️',
+        'failure': '❌'
+    }.get(value, '❌')
+
+summary_lines = []
+backend_status = os.environ.get('BACKEND_STATUS', 'failure')
+backend_cov = os.environ.get('BACKEND_COVERAGE')
+backend_thr = os.environ.get('BACKEND_THRESHOLD', 'n/a')
+if backend_cov:
+    summary_lines.append(f"Backend {backend_cov}% (min {backend_thr}%) {status_icon(backend_status)}")
+else:
+    summary_lines.append(f"Backend {status_icon(backend_status)}")
+
+flutter_status = os.environ.get('FLUTTER_STATUS', 'failure')
+flutter_cov = os.environ.get('FLUTTER_COVERAGE')
+flutter_thr = os.environ.get('FLUTTER_THRESHOLD', 'n/a')
+if flutter_cov:
+    summary_lines.append(f"Flutter {flutter_cov}% (min {flutter_thr}%) {status_icon(flutter_status)}")
+else:
+    summary_lines.append(f"Flutter {status_icon(flutter_status)}")
+
+summary_lines.append(f"Security scans {status_icon(os.environ.get('SECURITY_STATUS', 'failure'))}")
+summary_lines.append(f"Infra scans {status_icon(os.environ.get('INFRA_STATUS', 'failure'))}")
+
+payload = {
+    'text': '*Academy Quality Gates*\n' + '\n'.join(summary_lines)
+}
+
+import urllib.request
+
+request = urllib.request.Request(
+    webhook,
+    data=json.dumps(payload).encode('utf-8'),
+    headers={'Content-Type': 'application/json'}
+)
+
+with urllib.request.urlopen(request) as response:
+    response.read()
+PY
+
   deploy_gate:
     name: Deployment Gate Approval
     runs-on: ubuntu-latest
@@ -294,6 +520,7 @@ jobs:
       - flutter_ios
       - security_scans
       - infra_scan
+      - quality_gates
     environment:
       name: staging
       url: https://staging.academy.example

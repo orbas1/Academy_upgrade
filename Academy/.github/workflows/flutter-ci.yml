@@ -31,8 +31,16 @@ jobs:
       - name: Flutter analyze
         run: flutter analyze
 
-      - name: Flutter tests
-        run: flutter test --coverage
+      - name: Flutter tests with coverage gate
+        run: |
+          flutter test --coverage
+          python $GITHUB_WORKSPACE/tools/ci/enforce_lcov_coverage.py coverage/lcov.info 80 coverage/summary.json
+
+      - name: Upload coverage summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-coverage-summary
+          path: 'Student Mobile APP/academy_lms_app/coverage/summary.json'
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v4
