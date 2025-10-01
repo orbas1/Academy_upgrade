@@ -1,0 +1,49 @@
+{
+  "@version": "2.7.0",
+  "site": [
+    {
+      "@name": "https://staging.academy.invalid",
+      "@host": "staging.academy.invalid",
+      "@port": "443",
+      "alerts": [
+        {
+          "pluginid": "10015",
+          "alert": "Incomplete or No Cache-control and Pragma HTTP Header Set",
+          "name": "Missing cache control",
+          "riskcode": "1",
+          "riskdesc": "Low (Medium)",
+          "confidence": "2",
+          "instances": [
+            {"uri": "https://staging.academy.invalid/community"},
+            {"uri": "https://staging.academy.invalid/events"}
+          ],
+          "solution": "Ensure the appropriate Cache-Control and Pragma headers are set.",
+          "reference": "https://owasp.org/www-project-secure-headers/",
+          "cweid": "525",
+          "wascid": "13"
+        },
+        {
+          "pluginid": "10021",
+          "alert": "X-Content-Type-Options Header Missing",
+          "riskcode": "2",
+          "riskdesc": "Medium (Medium)",
+          "confidence": "3",
+          "instances": [
+            {"uri": "https://staging.academy.invalid/community"}
+          ],
+          "solution": "Ensure that the X-Content-Type-Options header is set to 'nosniff'.",
+          "reference": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options",
+          "cweid": "16",
+          "wascid": "15"
+        },
+        {
+          "pluginid": "0",
+          "alert": "Informational banner",
+          "riskcode": "0",
+          "riskdesc": "Informational (Medium)",
+          "instances": []
+        }
+      ]
+    }
+  ]
+}
