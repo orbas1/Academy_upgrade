@@ -4,6 +4,8 @@ namespace App\Domain\Communities\Models;
 
 use App\Domain\Search\Concerns\Searchable;
 use App\Models\User;
+use Database\Factories\CommunityPostCommentFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,6 +27,11 @@ class CommunityPostComment extends Model
         'is_pinned' => 'boolean',
         'is_locked' => 'boolean',
     ];
+
+    protected static function newFactory(): Factory
+    {
+        return CommunityPostCommentFactory::new();
+    }
 
     public function community(): BelongsTo
     {

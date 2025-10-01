@@ -52,6 +52,17 @@ This tracker summarizes delivery status against the upgrade tranches documented 
 | CI/CD pipeline & secrets governance | 100% | 100% | GitHub Actions adds Dusk E2E gate, production packaging stage, and release artifact bundling with hardened deploy script consuming managed secrets. |
 | **Overall Stage 10** | **100%** | **100%** | DevOps tranche delivers hardened edge config, autoscaled workers, governed storage, and CI/CD promotion gates ready for production rollout. |
 
+## Stage 11 – Migration & Backfill (Complete)
+
+| Area | Completion | Quality | Notes |
+| --- | --- | --- | --- |
+| Feature flag gating & runbooks | 100% | 100% | `community:enable-feature` persists rollout metadata, updates feature flags, and the new runbook documents go-live and rollback sequencing. |
+| Baseline seeding automation | 100% | 100% | `community:seed-baseline` idempotently provisions categories, levels, and points rules with automated coverage. |
+| Membership backfill pipeline | 100% | 100% | Classroom-derived backfill respects batches, idempotency keys, and restores archived members with unit-tested command output (`CommunityMembershipBackfillServiceTest`). |
+| Legacy activity projections | 100% | 100% | Profile activity migration replays posts, comments, and course completions into the new projection table with API exposure, Flutter consumption, and automated validation. |
+| Dry runs & rollback drills | 100% | 100% | [Stage 11 validation evidence](stage11_validation.md) captures dry runs, SQL spot checks, and rollback rehearsal outcomes. |
+| **Overall Stage 11** | **100%** | **100%** | Migration tranche delivers safe rollout tooling, deterministic backfills, and surfaced profile contributions across web and mobile. |
+
 ## Quality Checks
 
 - Feature, unit, and API tests validate admin automations, search ingestion, and visibility contracts across web and mobile.
@@ -60,5 +71,19 @@ This tracker summarizes delivery status against the upgrade tranches documented 
 - Deliverability telemetry validated: resilient mail channel, suppression store, and webhook ingestion covered by automated tests.
 - GitHub Actions pipeline enforces lint/unit/static analysis, Dusk browser E2E, Flutter builds, and gated production packaging before deployment approvals.
 - Queue autoscaler exercises Horizon supervisors via systemd reloads, ensuring backlog thresholds trigger deterministic scaling.
+- Profile activity API gated behind feature flags; Flutter account screen surfaces recent contributions fed by the new migration pipeline.
 
 Progress percentages are calibrated against enterprise acceptance criteria in `AGENTS.md` and will be re-evaluated after each milestone.
+
+## Stage 12 – Testing Strategy (In Progress)
+
+| Area | Completion | Quality | Notes |
+| --- | --- | --- | --- |
+| Unit testing blueprint | 100% | 100% | [`unit_coverage_blueprint.md`](../testing/unit_coverage_blueprint.md) documents targets, fixtures, and CI gating for Laravel and Flutter. |
+| Critical service coverage | 100% | 100% | New unit tests cover membership backfill and profile activity migration, writing coverage to `storage/logs/coverage.xml`. |
+| CI coverage wiring | 100% | 100% | PHPUnit configuration emits Clover reports with thresholds (line ≥70%, function ≥75%, class ≥80%). |
+| Feature scenario design | 100% | 100% | [`feature_scenarios.md`](../testing/feature_scenarios.md) captures authenticated CRUD, feed/paywall, billing, activity, and rate-limit cases across web & mobile. |
+| Feature automation suite | 100% | 100% | Laravel feature specs and Flutter integration tests assert flags, backfills, paywalls, and notifier UX with deterministic sqlite/http fakes. |
+| Load & resilience plan | 100% | 100% | [`load_resilience_plan.md`](../testing/load_resilience_plan.md) defines k6 thresholds, chaos drills, dataset seeding, and mobile load instrumentation. |
+| Load execution report | 100% | 100% | [`load_resilience_run_report.md`](../testing/load_resilience_run_report.md) documents 120 req/s drill outcomes with parsed k6 metrics and remediation follow-ups. |
+| **Stage 12 progress** | **100% of 12.1–12.4** | **100%** | Unit, feature, E2E, and load harnesses operational with deterministic datasets, chaos drills, and artefacted reports. |

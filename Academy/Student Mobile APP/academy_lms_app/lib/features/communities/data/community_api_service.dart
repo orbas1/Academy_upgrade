@@ -19,9 +19,11 @@ import '../models/geo_place.dart';
 import '../models/paywall_tier.dart';
 import '../models/point_event.dart';
 import '../models/points_summary.dart';
+import '../models/profile_activity.dart';
 import '../models/subscription_checkout.dart';
 import '../models/subscription_status.dart';
 import 'paginated_response.dart';
+import 'errors.dart';
 
 class CommunityApiService {
   CommunityApiService({
@@ -120,6 +122,57 @@ class CommunityApiService {
     return PaginatedResponse<CommunitySummary>(
       items: data
           .map((dynamic item) => CommunitySummary.fromJson(item as Map<String, dynamic>))
+          .toList(growable: false),
+      nextCursor: envelope.nextCursor,
+      hasMore: envelope.hasMore,
+    );
+  }
+
+  Future<PaginatedResponse<ProfileActivity>> fetchProfileActivity({
+    int? communityId,
+    String? cursor,
+    int pageSize = 50,
+  }) async {
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri(
+          '/api/v1/me/profile-activity',
+          {
+            'community_id': communityId?.toString(),
+            'after': cursor,
+            'per_page': pageSize.toString(),
+          },
+        ),
+        headers: headers,
+      ),
+    );
+
+    if (response.statusCode == 404) {
+      throw FeatureUnavailableException(
+        'Profile activity feature flag disabled',
+        uri: response.request?.url,
+      );
+    }
+
+    if (response.statusCode != 200) {
+      throw http.ClientException('Unable to load profile activity', response.request?.url);
+    }
+
+    final envelope = ApiEnvelope.fromJson(response.body);
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to load profile activity',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.data is List
+        ? List<dynamic>.from(envelope.data as List)
+        : const <dynamic>[];
+
+    return PaginatedResponse<ProfileActivity>(
+      items: data
+          .map((dynamic item) => ProfileActivity.fromJson(item as Map<String, dynamic>))
           .toList(growable: false),
       nextCursor: envelope.nextCursor,
       hasMore: envelope.hasMore,

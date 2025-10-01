@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Events\Community;
 
+use App\Domain\Communities\Models\CommunityMember as DomainCommunityMember;
+use App\Domain\Communities\Models\CommunitySinglePurchase as DomainCommunitySinglePurchase;
+use App\Domain\Communities\Models\CommunitySubscription as DomainCommunitySubscription;
 use App\Models\Community\CommunityMember;
 use App\Models\Community\CommunitySinglePurchase;
 use App\Models\Community\CommunitySubscription;
@@ -17,9 +20,9 @@ class PaymentSucceeded
     use InteractsWithSockets;
     use SerializesModels;
 
-    public CommunityMember $member;
+    public CommunityMember|DomainCommunityMember $member;
 
-    public CommunitySubscription|CommunitySinglePurchase|null $purchase;
+    public CommunitySubscription|DomainCommunitySubscription|CommunitySinglePurchase|DomainCommunitySinglePurchase|null $purchase;
 
     /**
      * @var array<string, mixed>
@@ -27,8 +30,8 @@ class PaymentSucceeded
     public array $context;
 
     public function __construct(
-        CommunityMember $member,
-        CommunitySubscription|CommunitySinglePurchase|null $purchase = null,
+        CommunityMember|DomainCommunityMember $member,
+        CommunitySubscription|DomainCommunitySubscription|CommunitySinglePurchase|DomainCommunitySinglePurchase|null $purchase = null,
         array $context = []
     ) {
         $this->member = $member;

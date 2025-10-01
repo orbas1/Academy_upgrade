@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Events\Community;
 
+use App\Domain\Communities\Models\CommunityMember as DomainCommunityMember;
 use App\Models\Community\CommunityMember;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -15,14 +16,14 @@ class MemberJoined
     use InteractsWithSockets;
     use SerializesModels;
 
-    public CommunityMember $member;
+    public CommunityMember|DomainCommunityMember $member;
 
     /**
      * @var array<string, mixed>
      */
     public array $context;
 
-    public function __construct(CommunityMember $member, array $context = [])
+    public function __construct(CommunityMember|DomainCommunityMember $member, array $context = [])
     {
         $this->member = $member;
         $this->context = $context + [

@@ -29,13 +29,12 @@ class DistributeNotification implements ShouldQueue
      */
     public array $payload;
 
-    public string $queue = 'notifications';
-
     public int $tries = 3;
 
     public function __construct(array $payload = [])
     {
         $this->payload = $payload;
+        $this->onQueue('notifications');
     }
 
     public function handle(): void

@@ -3,6 +3,8 @@
 namespace App\Domain\Communities\Models;
 
 use App\Models\User;
+use Database\Factories\CommunityMemberFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,6 +26,11 @@ class CommunityMember extends Model
         'joined_at' => 'datetime',
         'last_seen_at' => 'datetime',
     ];
+
+    protected static function newFactory(): Factory
+    {
+        return CommunityMemberFactory::new();
+    }
 
     public function community(): BelongsTo
     {

@@ -5,6 +5,8 @@ namespace App\Domain\Communities\Models;
 use App\Domain\Search\Concerns\Searchable;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Database\Factories\CommunityFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +30,11 @@ class Community extends Model
         'is_featured' => 'boolean',
         'launched_at' => 'datetime',
     ];
+
+    protected static function newFactory(): Factory
+    {
+        return CommunityFactory::new();
+    }
 
     public function category(): BelongsTo
     {

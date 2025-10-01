@@ -12,12 +12,14 @@ import 'package:academy_lms_app/services/community_manifest_service.dart';
 
 import '../data/community_cache.dart';
 import '../data/community_repository.dart';
+import '../data/errors.dart';
 import '../data/offline_action_queue.dart';
 import '../data/queue_health_repository.dart';
 import '../models/community_feed_item.dart';
 import '../models/community_leaderboard_entry.dart';
 import '../models/community_member.dart';
 import '../models/community_summary.dart';
+import '../models/profile_activity.dart';
 import 'community_presence_notifier.dart';
 
 class CommunityNotifier extends ChangeNotifier {
@@ -63,27 +65,40 @@ class CommunityNotifier extends ChangeNotifier {
   List<CommunitySummary> _communities = <CommunitySummary>[];
   List<CommunityFeedItem> _feed = <CommunityFeedItem>[];
   List<CommunityLeaderboardEntry> _leaderboard = <CommunityLeaderboardEntry>[];
+  List<ProfileActivity> _profileActivity = <ProfileActivity>[];
   bool _loading = false;
   bool _membershipLoading = false;
   bool _mutatingMembership = false;
   bool _loadingMoreCommunities = false;
   bool _communitiesHasMore = false;
   bool _leaderboardLoading = false;
+  bool _profileActivityLoading = false;
+  bool _profileActivityLoadingMore = false;
+  bool _profileActivityHasMore = false;
+  bool _profileActivityAvailable = true;
   String _currentCommunitiesFilter = 'all';
   String? _error;
   CommunityMember? _membership;
   String? _queueWarning;
+  String? _profileActivityError;
+  int? _profileActivityCommunityFilter;
   bool _manifestApplied = false;
 
   List<CommunitySummary> get communities => _communities;
   List<CommunityFeedItem> get feed => _feed;
   List<CommunityLeaderboardEntry> get leaderboard => _leaderboard;
+  List<ProfileActivity> get profileActivity => _profileActivity;
   bool get isLoading => _loading;
   bool get isMembershipLoading => _membershipLoading;
   bool get isMutatingMembership => _mutatingMembership;
   bool get isLoadingMoreCommunities => _loadingMoreCommunities;
   bool get canLoadMoreCommunities => _communitiesHasMore;
   bool get isLeaderboardLoading => _leaderboardLoading;
+  bool get isProfileActivityLoading => _profileActivityLoading;
+  bool get isProfileActivityLoadingMore => _profileActivityLoadingMore;
+  bool get canLoadMoreProfileActivity => _profileActivityHasMore;
+  bool get isProfileActivityFeatureAvailable => _profileActivityAvailable;
+  String? get profileActivityError => _profileActivityError;
   String get currentCommunitiesFilter => _currentCommunitiesFilter;
   String? get error => _error;
   CommunityMember? get membership => _membership;
@@ -166,6 +181,73 @@ class CommunityNotifier extends ChangeNotifier {
       }
     } finally {
       _setLoading(false);
+    }
+  }
+
+  Future<void> refreshProfileActivity({int? communityId, int pageSize = 50}) async {
+    if (_profileActivityLoading) {
+      return;
+    }
+
+    _profileActivityLoading = true;
+    _profileActivityError = null;
+    _profileActivityCommunityFilter = communityId;
+    _repository.resetProfileActivityPaging(communityId: communityId);
+    notifyListeners();
+
+    try {
+      final response = await _repository.loadProfileActivity(
+        communityId: communityId,
+        resetCursor: true,
+        pageSize: pageSize,
+      );
+      _profileActivity = response.items;
+      _profileActivityHasMore = response.hasMore;
+      _profileActivityAvailable = true;
+    } on FeatureUnavailableException {
+      _profileActivity = <ProfileActivity>[];
+      _profileActivityHasMore = false;
+      _profileActivityAvailable = false;
+      _profileActivityError = null;
+    } catch (Object error) {
+      _profileActivity = <ProfileActivity>[];
+      _profileActivityHasMore = false;
+      _profileActivityError = error.toString();
+    } finally {
+      _profileActivityLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadMoreProfileActivity({int? communityId, int pageSize = 50}) async {
+    final keyCommunityId = communityId ?? _profileActivityCommunityFilter;
+
+    if (_profileActivityLoadingMore || !_repository.hasMoreProfileActivity(communityId: keyCommunityId)) {
+      _profileActivityHasMore = _repository.hasMoreProfileActivity(communityId: keyCommunityId);
+      return;
+    }
+
+    _profileActivityLoadingMore = true;
+    notifyListeners();
+
+    try {
+      final response = await _repository.loadProfileActivity(
+        communityId: keyCommunityId,
+        pageSize: pageSize,
+      );
+
+      if (response.items.isNotEmpty) {
+        _profileActivity = <ProfileActivity>[..._profileActivity, ...response.items];
+      }
+
+      _profileActivityHasMore = response.hasMore;
+    } on FeatureUnavailableException {
+      _profileActivityAvailable = false;
+    } catch (Object error) {
+      _profileActivityError = error.toString();
+    } finally {
+      _profileActivityLoadingMore = false;
+      notifyListeners();
     }
   }
 

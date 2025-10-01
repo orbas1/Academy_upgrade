@@ -10,12 +10,14 @@ import '../models/geo_place.dart';
 import '../models/paywall_tier.dart';
 import '../models/point_event.dart';
 import '../models/points_summary.dart';
+import '../models/profile_activity.dart';
 import '../models/subscription_checkout.dart';
 import '../models/subscription_status.dart';
 import 'package:academy_lms_app/services/community_manifest_service.dart';
 import 'community_api_service.dart';
 import 'community_cache.dart';
 import 'paginated_response.dart';
+import 'errors.dart';
 
 class CommunityRepository {
   CommunityRepository({CommunityApiService? api, CommunityCache? cache})
@@ -29,6 +31,8 @@ class CommunityRepository {
   final Map<int, String?> _notificationCursors = <int, String?>{};
   final Map<String, String?> _commentCursors = <String, String?>{};
   final Map<int, String?> _pointHistoryCursors = <int, String?>{};
+  final Map<String, String?> _profileActivityCursors = <String, String?>{};
+  bool _profileActivityAvailable = true;
 
   void updateAuthToken(String? token) {
     _api.updateAuthToken(token);
@@ -190,6 +194,44 @@ class CommunityRepository {
     _pointHistoryCursors.remove(communityId);
   }
 
+  Future<PaginatedResponse<ProfileActivity>> loadProfileActivity({
+    int? communityId,
+    bool resetCursor = false,
+    int pageSize = 50,
+  }) async {
+    final key = _profileActivityKey(communityId);
+    if (resetCursor) {
+      _profileActivityCursors.remove(key);
+    }
+
+    try {
+      final response = await _api.fetchProfileActivity(
+        communityId: communityId,
+        cursor: resetCursor ? null : _profileActivityCursors[key],
+        pageSize: pageSize,
+      );
+
+      _profileActivityCursors[key] = response.nextCursor;
+      _profileActivityAvailable = true;
+
+      return response;
+    } on FeatureUnavailableException {
+      _profileActivityAvailable = false;
+      rethrow;
+    }
+  }
+
+  bool isProfileActivityAvailable() => _profileActivityAvailable;
+
+  void resetProfileActivityPaging({int? communityId}) {
+    _profileActivityCursors.remove(_profileActivityKey(communityId));
+  }
+
+  bool hasMoreProfileActivity({int? communityId}) {
+    final cursor = _profileActivityCursors[_profileActivityKey(communityId)];
+    return cursor != null && cursor.isNotEmpty;
+  }
+
   Future<PaginatedResponse<CommunitySummary>?> loadCachedCommunities(String filter) {
     return _cache.readCommunityList(filter);
   }
@@ -200,6 +242,8 @@ class CommunityRepository {
   }) {
     return _cache.readCommunityFeed(communityId, filter);
   }
+
+  String _profileActivityKey(int? communityId) => communityId == null ? 'all' : 'community:$communityId';
 
   Future<void> saveCommunitySnapshot({
     required String filter,

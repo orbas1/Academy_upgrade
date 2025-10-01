@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Community;
 
 use App\Services\Community\Concerns\NotImplemented;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 
 class NullMembershipService implements MembershipService
 {
@@ -54,7 +55,7 @@ class NullMembershipService implements MembershipService
         $this->notImplemented();
     }
 
-    public function getActiveMembers(\App\Models\Community\Community $community, array $filters = []): \Illuminate\Support\Collection
+    public function getActiveMembers(\App\Models\Community\Community $community, array $filters = []): LengthAwarePaginatorContract
     {
         $this->notImplemented();
     }

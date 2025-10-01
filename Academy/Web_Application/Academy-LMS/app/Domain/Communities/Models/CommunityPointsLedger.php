@@ -3,6 +3,8 @@
 namespace App\Domain\Communities\Models;
 
 use App\Models\User;
+use Database\Factories\CommunityPointsLedgerFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +22,11 @@ class CommunityPointsLedger extends Model
         'metadata' => 'array',
         'occurred_at' => 'datetime',
     ];
+
+    protected static function newFactory(): Factory
+    {
+        return CommunityPointsLedgerFactory::new();
+    }
 
     public function community(): BelongsTo
     {

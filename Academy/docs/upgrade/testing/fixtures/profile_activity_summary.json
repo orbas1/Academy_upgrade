@@ -1,0 +1,61 @@
+{
+  "type": "Summary",
+  "metrics": {
+    "profile_activity_requests": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 43200,
+        "rate": 119.99
+      }
+    },
+    "profile_activity_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 412.38,
+        "min": 128.65,
+        "max": 1218.44,
+        "med": 398.12,
+        "p(90)": 602.27,
+        "p(95)": 689.55,
+        "p(99)": 882.91
+      }
+    },
+    "profile_activity_errors": {
+      "type": "rate",
+      "contains": "default",
+      "values": {
+        "rate": 0.0038
+      }
+    },
+    "http_req_failed": {
+      "type": "rate",
+      "contains": "default",
+      "values": {
+        "rate": 0.0031
+      }
+    }
+  },
+  "thresholds": {
+    "profile_activity_duration": {
+      "ok": true,
+      "thresholds": ["p(95)<800", "max<2000"]
+    },
+    "profile_activity_errors": {
+      "ok": true,
+      "thresholds": ["rate<0.01"]
+    },
+    "http_req_failed": {
+      "ok": true,
+      "thresholds": ["rate<0.01"]
+    }
+  },
+  "state": {
+    "testRunDurationMs": 600000,
+    "profile_activity": {
+      "executor": "ramping-arrival-rate",
+      "max_vus": 176
+    }
+  }
+}

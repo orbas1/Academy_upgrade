@@ -83,5 +83,6 @@ class Kernel extends HttpKernel
         'observability.token'      => \App\Http\Middleware\RequireObservabilityToken::class,
         'role'                     => \App\Http\Middleware\EnsureRole::class,
         'device.activity'          => \App\Http\Middleware\UpdateDeviceSessionActivity::class,
+        'feature.enabled'          => \App\Http\Middleware\EnsureFeatureIsEnabled::class,
     ];
 }

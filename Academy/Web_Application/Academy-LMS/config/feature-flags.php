@@ -3,6 +3,8 @@
 $defaults = [
     'communities' => false,
     'webauthn' => false,
+    'community_profile_activity' => false,
+    'community_membership_beta' => false,
 ];
 
 $fileOverrides = [];
