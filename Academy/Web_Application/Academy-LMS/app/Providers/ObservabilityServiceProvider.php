@@ -101,11 +101,15 @@ class ObservabilityServiceProvider extends ServiceProvider
                 ? $event->job->resolveName()
                 : $event->job::class;
 
+            $duration = property_exists($event, 'time') && is_numeric($event->time)
+                ? (float) $event->time
+                : 0.0;
+
             $manager->recordQueueJob(
                 $jobName,
                 $event->connectionName,
                 method_exists($event->job, 'getQueue') ? $event->job->getQueue() : null,
-                $event->time
+                $duration
             );
         });
 

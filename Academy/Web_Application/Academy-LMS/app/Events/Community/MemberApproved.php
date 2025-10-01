@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Events\Community;
 
+use App\Domain\Communities\Models\CommunityMember as DomainCommunityMember;
 use App\Models\Community\CommunityMember;
 use App\Models\User;
 use Illuminate\Broadcasting\InteractsWithSockets;
@@ -16,7 +17,7 @@ class MemberApproved
     use InteractsWithSockets;
     use SerializesModels;
 
-    public CommunityMember $member;
+    public CommunityMember|DomainCommunityMember $member;
 
     public ?User $approver;
 
@@ -25,7 +26,7 @@ class MemberApproved
      */
     public array $context;
 
-    public function __construct(CommunityMember $member, ?User $approver = null, array $context = [])
+    public function __construct(CommunityMember|DomainCommunityMember $member, ?User $approver = null, array $context = [])
     {
         $this->member = $member;
         $this->approver = $approver;

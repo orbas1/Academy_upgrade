@@ -2,6 +2,8 @@
 
 namespace App\Domain\Communities\Models;
 
+use Database\Factories\CommunitySubscriptionTierFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,6 +23,11 @@ class CommunitySubscriptionTier extends Model
         'published_at' => 'datetime',
         'is_public' => 'boolean',
     ];
+
+    protected static function newFactory(): Factory
+    {
+        return CommunitySubscriptionTierFactory::new();
+    }
 
     public function community(): BelongsTo
     {

@@ -9,7 +9,7 @@ use App\Models\Community\Community;
 use App\Models\Community\CommunityMember;
 use App\Models\User;
 use Carbon\CarbonInterface;
-use Illuminate\Support\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 
 /**
  * Contract describing how membership lifecycle actions are orchestrated.
@@ -34,5 +34,5 @@ interface MembershipService
 
     public function recordLastSeen(CommunityMember $member, CarbonInterface $seenAt): void;
 
-    public function getActiveMembers(Community $community, array $filters = []): Collection;
+    public function getActiveMembers(Community $community, array $filters = []): LengthAwarePaginatorContract;
 }

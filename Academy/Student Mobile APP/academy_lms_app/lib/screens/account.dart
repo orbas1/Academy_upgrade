@@ -5,8 +5,12 @@ import 'dart:convert';
 // import 'package:academy_lms_app/screens/login.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../features/communities/state/community_notifier.dart';
+import '../features/communities/models/profile_activity.dart';
 
 import '../constants.dart';
 import '../providers/auth.dart';
@@ -36,6 +40,13 @@ class _AccountScreenState extends State<AccountScreen> {
   void initState() {
     super.initState();
     getData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final notifier = context.read<CommunityNotifier>();
+      notifier.refreshProfileActivity();
+    });
   }
 
   Future<void> getData() async {
@@ -189,6 +200,16 @@ class _AccountScreenState extends State<AccountScreen> {
                                 ),
                               ),
                             ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20.0),
+                              child: Divider(
+                                thickness: 1,
+                                color: kGreyLightColor.withOpacity(0.3),
+                                height: 5,
+                              ),
+                            ),
+                            _buildContributionsCard(context),
                             Padding(
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 20.0),
@@ -412,6 +433,127 @@ class _AccountScreenState extends State<AccountScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildContributionsCard(BuildContext context) {
+    return Consumer<CommunityNotifier>(
+      builder: (context, notifier, child) {
+        if (!notifier.isProfileActivityFeatureAvailable) {
+          return const SizedBox.shrink();
+        }
+
+        final activities = notifier.profileActivity;
+
+        if (notifier.isProfileActivityLoading && activities.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (notifier.profileActivityError != null && activities.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            child: Card(
+              child: ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: const Text('Recent contributions unavailable'),
+                subtitle: Text(notifier.profileActivityError ?? 'Unknown error'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: notifier.isProfileActivityLoading
+                      ? null
+                      : () => notifier.refreshProfileActivity(
+                            communityId: null,
+                          ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          child: Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ListTile(
+                  title: const Text('Recent contributions'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: notifier.isProfileActivityLoading
+                        ? null
+                        : () => notifier.refreshProfileActivity(
+                              communityId: null,
+                            ),
+                  ),
+                ),
+                if (activities.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                    child: Text('You have not contributed yet. Join a community conversation to see it here.'),
+                  )
+                else ...[
+                  for (final activity in activities.take(3))
+                    ListTile(
+                      leading: const Icon(Icons.bolt_outlined),
+                      title: Text(_describeActivity(activity)),
+                      subtitle: Text(_formatActivityTimestamp(activity.occurredAt)),
+                    ),
+                  if (activities.length > 3)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text(
+                        '${activities.length - 3} more recorded${notifier.canLoadMoreProfileActivity ? '...' : ''}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                ],
+                if (notifier.canLoadMoreProfileActivity)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: notifier.isProfileActivityLoading || notifier.isProfileActivityLoadingMore
+                          ? null
+                          : () => notifier.loadMoreProfileActivity(),
+                      child: notifier.isProfileActivityLoadingMore
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Load more'),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static String _describeActivity(ProfileActivity activity) {
+    switch (activity.activityType) {
+      case 'community_post.published':
+        return 'Published a post${activity.community != null ? ' in ${activity.community!.name}' : ''}';
+      case 'community_comment.posted':
+        return 'Replied to a discussion${activity.community != null ? ' in ${activity.community!.name}' : ''}';
+      case 'course.completed':
+        return 'Completed a course';
+      default:
+        return activity.activityType;
+    }
+  }
+
+  static String _formatActivityTimestamp(String occurredAt) {
+    final parsed = DateTime.tryParse(occurredAt);
+    if (parsed == null) {
+      return occurredAt;
+    }
+
+    return DateFormat.yMMMd().add_jm().format(parsed.toLocal());
   }
 }
 

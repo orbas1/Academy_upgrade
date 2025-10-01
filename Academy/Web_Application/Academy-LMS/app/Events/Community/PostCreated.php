@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Events\Community;
 
+use App\Domain\Communities\Models\CommunityMember as DomainCommunityMember;
+use App\Domain\Communities\Models\CommunityPost as DomainCommunityPost;
 use App\Models\Community\CommunityMember;
 use App\Models\Community\CommunityPost;
 use Illuminate\Broadcasting\InteractsWithSockets;
@@ -16,16 +18,16 @@ class PostCreated
     use InteractsWithSockets;
     use SerializesModels;
 
-    public CommunityPost $post;
+    public CommunityPost|DomainCommunityPost $post;
 
-    public CommunityMember $member;
+    public CommunityMember|DomainCommunityMember $member;
 
     /**
      * @var array<string, mixed>
      */
     public array $context;
 
-    public function __construct(CommunityPost $post, CommunityMember $member, array $context = [])
+    public function __construct(CommunityPost|DomainCommunityPost $post, CommunityMember|DomainCommunityMember $member, array $context = [])
     {
         $this->post = $post;
         $this->member = $member;

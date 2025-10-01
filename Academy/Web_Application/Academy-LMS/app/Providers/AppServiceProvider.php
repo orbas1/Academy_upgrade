@@ -9,6 +9,7 @@ use App\Services\Security\UploadSecurityService;
 use App\Support\Authorization\RoleMatrix;
 use App\Support\Database\KeysetPaginator;
 use App\Support\Database\MySqlPerformanceConfigurator;
+use App\Support\FeatureFlags\FeatureRolloutRepository;
 use App\Support\Http\ApiResponseBuilder;
 use App\Support\Localization\LocaleManager;
 use App\Support\Migrations\MigrationPlanner;
@@ -88,6 +89,13 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(LocaleManager::class, function ($app) {
             return new LocaleManager($app->make(ConfigRepository::class));
+        });
+
+        $this->app->singleton(FeatureRolloutRepository::class, function ($app) {
+            return new FeatureRolloutRepository(
+                $app->make(Filesystem::class),
+                storage_path('app/feature-rollouts.json')
+            );
         });
     }
 

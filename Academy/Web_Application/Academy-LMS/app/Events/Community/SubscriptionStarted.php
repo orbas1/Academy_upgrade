@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Events\Community;
 
+use App\Domain\Communities\Models\CommunityMember as DomainCommunityMember;
+use App\Domain\Communities\Models\CommunitySubscription as DomainCommunitySubscription;
 use App\Models\Community\CommunityMember;
 use App\Models\Community\CommunitySubscription;
 use Illuminate\Broadcasting\InteractsWithSockets;
@@ -16,17 +18,20 @@ class SubscriptionStarted
     use InteractsWithSockets;
     use SerializesModels;
 
-    public CommunityMember $member;
+    public CommunityMember|DomainCommunityMember $member;
 
-    public CommunitySubscription $subscription;
+    public CommunitySubscription|DomainCommunitySubscription $subscription;
 
     /**
      * @var array<string, mixed>
      */
     public array $context;
 
-    public function __construct(CommunityMember $member, CommunitySubscription $subscription, array $context = [])
-    {
+    public function __construct(
+        CommunityMember|DomainCommunityMember $member,
+        CommunitySubscription|DomainCommunitySubscription $subscription,
+        array $context = []
+    ) {
         $this->member = $member;
         $this->subscription = $subscription;
         $this->context = $context + [

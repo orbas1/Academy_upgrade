@@ -5,6 +5,8 @@ use App\Models\Addon;
 use function PHPUnit\Framework\fileExists;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 // Global Settings
 if (!function_exists('get_src')) {
@@ -646,28 +648,62 @@ if (!function_exists('get_all_language')) {
 if (!function_exists('get_phrase')) {
     function get_phrase($phrase = '', $value_replace = array())
     {
-        $active_lan    = session('language') ?? get_settings('language');
-        $active_lan_id = DB::table('languages')->where('name', 'like', $active_lan)->value('id');
-        $lan_phrase    = DB::table('language_phrases')->where('language_id', $active_lan_id)->where('phrase', $phrase)->first();
-
-        if ($lan_phrase) {
-            $translated = $lan_phrase->translated;
-        } else {
-            $translated  = $phrase;
-            $english_lan = DB::table('languages')->where('name', 'like', 'english')->first();
-            if (DB::table('language_phrases')->where('language_id', $english_lan->id)->where('phrase', $phrase)->count() == 0) {
-                DB::table('language_phrases')->insert(['language_id' => $english_lan->id, 'phrase' => $phrase, 'translated' => $translated]);
+        $formatPlaceholders = static function (string $value, array $replacements): string {
+            if (!is_array($replacements)) {
+                $replacements = [$replacements];
             }
-        }
 
-        if (!is_array($value_replace)) {
-            $value_replace = array($value_replace);
-        }
-        foreach ($value_replace as $replace) {
-            $translated = preg_replace('/____/', $replace, $translated, 1); // Replace one placeholder at a time
-        }
+            foreach ($replacements as $replace) {
+                $value = preg_replace('/____/', (string) $replace, $value, 1);
+            }
 
-        return $translated;
+            return $value;
+        };
+
+        try {
+            if (! Schema::hasTable('languages') || ! Schema::hasTable('language_phrases')) {
+                return $formatPlaceholders((string) $phrase, (array) $value_replace);
+            }
+
+            $active_lan = session('language') ?? get_settings('language');
+            $active_lan_id = DB::table('languages')->where('name', 'like', $active_lan)->value('id');
+
+            if (! $active_lan_id) {
+                return $formatPlaceholders((string) $phrase, (array) $value_replace);
+            }
+
+            $lan_phrase = DB::table('language_phrases')
+                ->where('language_id', $active_lan_id)
+                ->where('phrase', $phrase)
+                ->first();
+
+            if ($lan_phrase) {
+                $translated = $lan_phrase->translated;
+            } else {
+                $translated = (string) $phrase;
+                $english_lan = DB::table('languages')->where('name', 'like', 'english')->first();
+
+                if ($english_lan && ! DB::table('language_phrases')
+                    ->where('language_id', $english_lan->id)
+                    ->where('phrase', $phrase)
+                    ->exists()) {
+                    DB::table('language_phrases')->insert([
+                        'language_id' => $english_lan->id,
+                        'phrase' => $phrase,
+                        'translated' => $translated,
+                    ]);
+                }
+            }
+
+            return $formatPlaceholders($translated, (array) $value_replace);
+        } catch (\Throwable $exception) {
+            Log::warning('localization.lookup_failed', [
+                'phrase' => $phrase,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return $formatPlaceholders((string) $phrase, (array) $value_replace);
+        }
     }
 }
 

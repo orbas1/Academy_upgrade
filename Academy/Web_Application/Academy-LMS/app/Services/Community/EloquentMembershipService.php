@@ -14,6 +14,7 @@ use App\Models\Community\Community;
 use App\Models\Community\CommunityMember;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
@@ -218,7 +219,7 @@ class EloquentMembershipService implements MembershipService
         return $updated;
     }
 
-    public function recordLastSeen(CommunityMember $member, CarbonImmutable $seenAt): void
+    public function recordLastSeen(CommunityMember $member, CarbonInterface $seenAt): void
     {
         $this->memberships->trackPresence($member, true, $seenAt);
     }

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Events\Community;
 
+use App\Domain\Communities\Models\CommunityMember as DomainCommunityMember;
+use App\Domain\Communities\Models\CommunityPost as DomainCommunityPost;
+use App\Domain\Communities\Models\CommunityPostLike as DomainCommunityPostLike;
 use App\Models\Community\CommunityMember;
 use App\Models\Community\CommunityPost;
 use App\Models\Community\CommunityPostLike;
@@ -17,19 +20,23 @@ class PostLiked
     use InteractsWithSockets;
     use SerializesModels;
 
-    public CommunityMember $member;
+    public CommunityMember|DomainCommunityMember $member;
 
-    public CommunityPost $post;
+    public CommunityPost|DomainCommunityPost $post;
 
-    public CommunityPostLike $like;
+    public CommunityPostLike|DomainCommunityPostLike $like;
 
     /**
      * @var array<string, mixed>
      */
     public array $context;
 
-    public function __construct(CommunityMember $member, CommunityPost $post, CommunityPostLike $like, array $context = [])
-    {
+    public function __construct(
+        CommunityMember|DomainCommunityMember $member,
+        CommunityPost|DomainCommunityPost $post,
+        CommunityPostLike|DomainCommunityPostLike $like,
+        array $context = []
+    ) {
         $this->member = $member;
         $this->post = $post;
         $this->like = $like;

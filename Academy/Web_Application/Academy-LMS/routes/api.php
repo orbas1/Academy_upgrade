@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\Community\SearchQueryController;
 use App\Http\Controllers\Api\V1\Ops\MigrationPlanController;
 use App\Http\Controllers\Api\V1\Ops\MigrationRunbookController;
 use App\Http\Controllers\Api\V1\Profile\AnalyticsConsentController;
+use App\Http\Controllers\Api\V1\Profile\ProfileActivityController;
 use App\Http\Controllers\Api\V1\Queue\QueueHealthSummaryController;
 use App\Http\Controllers\Api\V1\Security\DeviceSessionController;
 use App\Http\Controllers\Monitoring\MetricsController;
@@ -190,6 +191,9 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/me/analytics-consent', AnalyticsConsentController::class)
             ->middleware('throttle:60,1');
+
+        Route::get('/me/profile-activity', [ProfileActivityController::class, 'index'])
+            ->middleware(['feature.enabled:community_profile_activity', 'throttle:240,1']);
 
         Route::get('/admin/secrets/{key}', [AdminSecretController::class, 'show'])
             ->middleware(['throttle:60,1', 'can:secrets.manage', 'role:admin']);

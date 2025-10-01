@@ -19,11 +19,14 @@ class CommunityFlowE2ETest extends DuskTestCase
                 ->visit('/testing/community-flow')
                 ->assertSee('Community Flow Test Harness')
                 ->press('@run-flow')
-                ->waitFor('@run-flow', 5)
-                ->waitFor('#result[data-status="complete"]', 10)
-                ->assertSeeIn('#result', 'leaderboard')
-                ->assertSeeIn('#result', 'notifications')
-                ->assertSeeIn('#result', 'points');
+                ->waitFor('#result[data-status="complete"]', 15)
+                ->assertSeeIn('#result', '"status": "ok"')
+                ->assertSeeIn('#result', '"member_count": 2')
+                ->assertSeeIn('#result', '"like_count": 1')
+                ->assertSeeIn('#result', 'community_flow_v1')
+                ->assertSeeIn('#result', 'Congrats on the launch!')
+                ->assertSeeIn('#result', '"leaderboard"')
+                ->assertSeeIn('#result', '"notifications"');
         });
     }
 }

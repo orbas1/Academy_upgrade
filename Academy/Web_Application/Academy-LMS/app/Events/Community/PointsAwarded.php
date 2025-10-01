@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Events\Community;
 
+use App\Domain\Communities\Models\CommunityMember as DomainCommunityMember;
+use App\Domain\Communities\Models\CommunityPointsLedger as DomainCommunityPointsLedger;
 use App\Models\Community\CommunityMember;
 use App\Models\Community\CommunityPointsLedger;
 use App\Models\User;
@@ -17,9 +19,9 @@ class PointsAwarded
     use InteractsWithSockets;
     use SerializesModels;
 
-    public CommunityMember $member;
+    public CommunityMember|DomainCommunityMember $member;
 
-    public CommunityPointsLedger $ledger;
+    public CommunityPointsLedger|DomainCommunityPointsLedger $ledger;
 
     public int $points;
 
@@ -33,8 +35,8 @@ class PointsAwarded
     public array $context;
 
     public function __construct(
-        CommunityMember $member,
-        CommunityPointsLedger $ledger,
+        CommunityMember|DomainCommunityMember $member,
+        CommunityPointsLedger|DomainCommunityPointsLedger $ledger,
         int $points,
         string $action,
         ?User $actor = null,

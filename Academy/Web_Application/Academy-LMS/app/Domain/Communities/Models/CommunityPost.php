@@ -5,6 +5,8 @@ namespace App\Domain\Communities\Models;
 use App\Domain\Search\Concerns\Searchable;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Database\Factories\CommunityPostFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,6 +37,11 @@ class CommunityPost extends Model
         'expires_at' => 'datetime',
         'archived_at' => 'datetime',
     ];
+
+    protected static function newFactory(): Factory
+    {
+        return CommunityPostFactory::new();
+    }
 
     public function markArchived(string $reason, CarbonImmutable $archivedAt, array $context = []): void
     {
