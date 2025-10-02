@@ -1,0 +1,63 @@
+%% Academy Mobile Apps (Flutter) UI Overview
+%% Mermaid flowchart illustrating core screens, widgets and navigation scaffolding
+flowchart TB
+  classDef section fill:#eef6ff,stroke:#1f4b99,stroke-width:1.2,color:#0b1f33;
+
+  subgraph AppShell["Application Shell"]
+    direction TB
+    tabs(["TabsScreen Scaffold\nAppBar with brand logo, IndexedStack body, Convex bottom bar (Home, Communities, My Courses, Cart, Account)"]):::section
+    fab(["Floating Filter Button\nRounded FAB launching course FilterScreen when not on Cart tab"]):::section
+    authSwitch(["Auth-aware Tabs\nUnauthenticated users see LoginScreen placeholders except Home"]):::section
+    tabs --> fab
+    tabs --> authSwitch
+  end
+
+  subgraph HomeScreen["Home Screen"]
+    direction TB
+    refresh(["RefreshIndicator wrapping ScrollView\nBootstraps categories & top courses via Providers"]):::section
+    topSection(["Top Course Header Row\nTitle + 'All courses' CTA navigating to catalog"]):::section
+    courseCarousel(["Horizontal Top Course Cards\nImage, title snippet, rating summary, tap to open CourseDetail"]):::section
+    categoryHeader(["Course Categories Header\nRepeats 'All courses' CTA"]):::section
+    categoryList(["Vertical Category List\nThumbnail, sub-category count, gradient chevron, navigates to CategoryDetails"]):::section
+    refresh --> topSection --> courseCarousel --> categoryHeader --> categoryList
+  end
+
+  subgraph CourseDetail["Course Detail Screen"]
+    direction TB
+    headerActions(["App bar shortcut row\nAccount icon + Buy Now / Checkout buttons depending on purchase state"]):::section
+    overviewTabs({"TabController (3)\nOverview, Curriculum, Reviews rendered inside tab views"}):::section
+    videoPreview(["Preview Player Modal Support\nHandles YouTube, Vimeo, HTML5 and local videos via Plyr widgets"]):::section
+    enrollmentCTA(["Enrollment & Share Utilities\nFree-enroll handler, add/remove cart, share links"]):::section
+    headerActions --> overviewTabs --> videoPreview --> enrollmentCTA
+  end
+
+  subgraph LearningLibrary["My Courses Module"]
+    direction TB
+    myCoursesGrid(["AlignedGridView\nTwo-column card grid populated from MyCourses provider"]):::section
+    progressTiles(["MyCourseGrid Cards\nShow cover image, progress indicators, resume controls (Start/Continue/Watch Again)"]):::section
+    myCoursesGrid --> progressTiles
+  end
+
+  subgraph Commerce["Cart & Checkout"]
+    direction TB
+    cartList(["CartScreen ListView\nCourse tiles with thumbnail, title, rating summary, delete prompt"]):::section
+    totals(["Pricing Summary\nSubtotal & tax formatted by currency position, displays totals"] ):::section
+    checkoutCTA(["Checkout Button\nBuilds auth token, launches external payment URL"]):::section
+    cartList --> totals --> checkoutCTA
+  end
+
+  subgraph AccountSuite["Account & Settings"]
+    direction TB
+    profileHeader(["Profile Card\nCircle avatar, name, phone pulled from SharedPreferences"]):::section
+    quickActions(["Account Action Tiles\nEdit Profile, Wishlists, Migration Runbook, Device Security, Change Password, Delete Account, Logout"] ):::section
+    communityInsights(["Community Contributions\nActivity metrics surfaced via CommunityNotifier refresh"]):::section
+    profileHeader --> quickActions --> communityInsights
+  end
+
+  subgraph Communities["Communities Explorer"]
+    direction TB
+    onboarding(["Onboarding Flow Trigger\nSchedules prompt after auth & bootstrap"] ):::section
+    listView(["Refreshable Community List\nCommunityCard entries with join/leave/open actions & empty state messaging"]):::section
+    errorSnack(["Error Handling\nSnackBar surfaced when CommunityNotifier reports issues"]):::section
+    onboarding --> listView --> errorSnack
+  end

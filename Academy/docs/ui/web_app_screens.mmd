@@ -1,0 +1,52 @@
+%% Academy Web Application UI Overview
+%% Mermaid flowchart capturing key screens and dashboards
+flowchart TB
+  classDef section fill:#fdf6e3,stroke:#657b83,stroke-width:1.2,color:#073642;
+
+  subgraph PublicMarketing["Public Website (Marketing)"]
+    direction TB
+    hero(["Hero Banner Slider\nCTA button to Explore Courses\nFull-width imagery & swiper pagination"]):::section
+    categories{{"Top Categories Grid\n5 icon cards linking to course listings"}}:::section
+    topCourses(["Top Courses Card Row\nLesson count, rating badge, price ribbon & CTA"]):::section
+    counters(("Impact Counters Strip\nStudents · Instructors · Premium & Free courses")):::section
+    instructorCTA(["Become an Instructor CTA\nVideo thumbnail with modal play button & copy"] ):::section
+    faq{{"FAQ Accordion\nCollapsible questions & answers"}}:::section
+    testimonials(["Testimonial Carousel\nLearner photo, quote, timestamp & star rating"]):::section
+    newsletter(["Newsletter Subscription\nIllustrated card with email input & privacy link"]):::section
+    blog(["Latest Blog Highlights\nImage cards with title, excerpt & posted date"] ):::section
+    hero --> categories --> topCourses --> counters --> instructorCTA --> faq --> testimonials --> newsletter --> blog
+  end
+
+  subgraph CourseExperience["Course Catalog & Detail Experience"]
+    direction TB
+    listing(["Courses Index\nBreadcrumb, layout toggle (grid/list), filter sidebar & paginated cards"]):::section
+    details(["Course Detail Hero\nBreadcrumb, title, instructor chip, rating, language, certificate, enrollment & duration stats"]):::section
+    tabs{{"Sticky Tab Menu\nOverview · Curriculum · Details · Instructor · Reviews sections"}}:::section
+    pricing(["Right-hand Pricing Card\nPurchase actions, badges, coupon modal & preview video modal"] ):::section
+    listing --> details --> tabs
+    tabs --> pricing
+  end
+
+  subgraph StudentPortal["Student Portal"]
+    direction TB
+    sidebar(["Profile Sidebar\nAvatar upload, truncated email, navigation links (Courses, Bootcamps, Bookings, Teams, Ebooks, Profile, Wishlist, Messages, Purchase History, Logout) & Become Instructor CTA"]):::section
+    myCourses(["My Courses Grid\nThumbnail, instructor chip, progress bar, expiry badges, smart resume button"] ):::section
+    sidebar --> myCourses
+  end
+
+  subgraph CommerceFlow["Commerce & Checkout"]
+    direction TB
+    cartHeader(["Cart Breadcrumb & Title Section"]):::section
+    cartItems(["Cart Item Rows\nCourse thumbnail, description snippet, pricing (incl. discount/strike-through) & remove action"]):::section
+    paymentSummary(["Payment Summary Card\nSubtotal, discount, tax, coupon entry, gift toggle & Continue to payment button"] ):::section
+    cartHeader --> cartItems --> paymentSummary
+  end
+
+  subgraph AdminDashboard["Admin Dashboard"]
+    direction TB
+    statCards(["Metric Cards\nCounts for courses, lessons, enrollments, students & instructors"]):::section
+    revenueChart(["Admin Revenue Chart\nYear-to-date line chart with link to revenue screen"]):::section
+    courseStatus(["Course Status Widget\nPie chart with legend for Active, Upcoming, Pending, Private, Draft, Inactive"] ):::section
+    payouts(["Pending Withdrawal Table\nInstructor name/email with requested amount"] ):::section
+    statCards --> revenueChart --> courseStatus --> payouts
+  end
