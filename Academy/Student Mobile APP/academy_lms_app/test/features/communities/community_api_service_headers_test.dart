@@ -24,8 +24,8 @@ void main() {
       authToken: 'test-token',
       tokenProvider: ({bool forceRefresh = false}) async => 'resolved-token',
       identityHeadersBuilder: () => <String, String>{
-        'X-Academy-Client': 'mobile-app/test-suite; version=1.0.0; env=test',
-        'User-Agent': 'AcademyLMS/1.0.0 (test-suite; test)',
+        'X-Orbas-Client': 'mobile-app/test-suite; version=1.0.0; env=test',
+        'User-Agent': 'OrbasLearn/1.0.0 (test-suite; test)',
       },
     );
 
@@ -34,8 +34,8 @@ void main() {
     expect(capturedHeaders, hasLength(1));
     final headers = capturedHeaders.single;
     expect(headers['Accept'], equals('application/json'));
-    expect(headers['X-Academy-Client'], startsWith('mobile-app/test-suite'));
-    expect(headers['User-Agent'], contains('AcademyLMS/1.0.0'));
+    expect(headers['X-Orbas-Client'], startsWith('mobile-app/test-suite'));
+    expect(headers['User-Agent'], contains('OrbasLearn/1.0.0'));
     expect(headers['Authorization'], equals('Bearer resolved-token'));
   });
 }

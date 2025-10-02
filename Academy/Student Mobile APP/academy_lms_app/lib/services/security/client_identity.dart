@@ -8,7 +8,7 @@ import '../../config/app_configuration.dart';
 class ClientIdentity {
   const ClientIdentity._();
 
-  static const String clientHeader = 'X-Academy-Client';
+  static const String clientHeader = 'X-Orbas-Client';
 
   /// Build the platform descriptor and attach the configured version/env data.
   static Map<String, String> headers() {
@@ -18,7 +18,7 @@ class ClientIdentity {
     final String environment = configuration.environment;
 
     final String descriptor = 'mobile-app/$platform; version=$version; env=$environment';
-    final String userAgent = 'AcademyLMS/$version ($platform; $environment)';
+    final String userAgent = 'OrbasLearn/$version ($platform; $environment)';
 
     return <String, String>{
       clientHeader: descriptor,
