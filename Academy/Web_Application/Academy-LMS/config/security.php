@@ -50,5 +50,14 @@ return [
             'enabled' => (bool) env('DATA_PROTECTION_BACKUP_ENABLED', false),
             'profile' => env('DATA_PROTECTION_BACKUP_PROFILE', 'media'),
         ],
+        'upload_scans' => [
+            'retention_days' => (int) env('DATA_PROTECTION_UPLOAD_SCAN_RETENTION_DAYS', 60),
+            'quarantine_retention_days' => (int) env('DATA_PROTECTION_UPLOAD_QUARANTINE_RETENTION_DAYS', 30),
+        ],
+        'exports' => [
+            'disk' => env('DATA_PROTECTION_EXPORT_DISK', env('COMPLIANCE_EXPORT_DISK', 'local')),
+            'path' => env('DATA_PROTECTION_EXPORT_PATH', 'compliance/exports'),
+            'retention_days' => (int) env('DATA_PROTECTION_EXPORT_RETENTION_DAYS', 30),
+        ],
     ],
 ];

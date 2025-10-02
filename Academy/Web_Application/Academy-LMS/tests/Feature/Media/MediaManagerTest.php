@@ -7,14 +7,23 @@ use App\Jobs\Media\TranscodeMediaToMp4;
 use App\Services\Media\MediaManager;
 use App\Services\Media\MediaUploadResult;
 use App\Services\Media\ResponsivePathGenerator;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Filesystem\FilesystemManager;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
+use Mockery;
 use Tests\TestCase;
 
 class MediaManagerTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+
+        parent::tearDown();
+    }
+
     public function test_it_stores_images_and_dispatches_responsive_generation(): void
     {
         Storage::fake('media');
@@ -89,5 +98,56 @@ class MediaManagerTest extends TestCase
         Bus::assertDispatched(TranscodeMediaToMp4::class, function (TranscodeMediaToMp4 $job) use ($result): bool {
             return $job->disk === 'media' && $job->path === $result->path;
         });
+    }
+
+    public function test_it_generates_signed_urls_when_enabled(): void
+    {
+        $disk = Mockery::mock(FilesystemAdapter::class);
+        $disk->shouldReceive('temporaryUrl')
+            ->once()
+            ->with('secure/path.png', Mockery::type('\Illuminate\Support\Carbon'), [])
+            ->andReturn('https://signed.example/secure/path.png');
+
+        $filesystem = Mockery::mock(FilesystemManager::class);
+        $filesystem->shouldReceive('disk')->with('media')->andReturn($disk);
+
+        config([
+            'media.default_disk' => 'media',
+            'media.signed_urls.enabled' => true,
+            'media.signed_urls.ttl_minutes' => 5,
+            'media.signed_urls.response_headers' => [],
+            'media.cdn_url' => null,
+        ]);
+
+        $manager = new MediaManager($filesystem);
+
+        $this->assertSame(
+            'https://signed.example/secure/path.png',
+            $manager->toCdnUrl('secure/path.png', 'media')
+        );
+    }
+
+    public function test_it_falls_back_to_public_url_when_signing_fails(): void
+    {
+        $disk = Mockery::mock(FilesystemAdapter::class);
+        $disk->shouldReceive('temporaryUrl')->andThrow(new \RuntimeException('not supported'));
+        $disk->shouldReceive('url')->andReturn('https://files.example/path.png');
+
+        $filesystem = Mockery::mock(FilesystemManager::class);
+        $filesystem->shouldReceive('disk')->with('media')->andReturn($disk);
+
+        config([
+            'media.default_disk' => 'media',
+            'media.signed_urls.enabled' => true,
+            'media.signed_urls.ttl_minutes' => 5,
+            'media.cdn_url' => null,
+        ]);
+
+        $manager = new MediaManager($filesystem);
+
+        $this->assertSame(
+            'https://files.example/path.png',
+            $manager->toCdnUrl('path.png', 'media')
+        );
     }
 }

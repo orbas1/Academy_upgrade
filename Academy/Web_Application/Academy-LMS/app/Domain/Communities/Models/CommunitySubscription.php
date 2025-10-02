@@ -2,6 +2,7 @@
 
 namespace App\Domain\Communities\Models;
 
+use App\Casts\EncryptedAttribute;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,7 @@ class CommunitySubscription extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'metadata' => 'array',
+        'metadata' => EncryptedAttribute::class,
         'renews_at' => 'datetime',
         'ended_at' => 'datetime',
         'canceled_at' => 'datetime',

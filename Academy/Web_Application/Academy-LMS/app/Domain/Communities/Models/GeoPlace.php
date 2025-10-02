@@ -2,6 +2,7 @@
 
 namespace App\Domain\Communities\Models;
 
+use App\Casts\EncryptedAttribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -14,7 +15,7 @@ class GeoPlace extends Model
 
     protected $casts = [
         'bounding_box' => 'array',
-        'metadata' => 'array',
+        'metadata' => EncryptedAttribute::class,
         'latitude' => 'float',
         'longitude' => 'float',
     ];

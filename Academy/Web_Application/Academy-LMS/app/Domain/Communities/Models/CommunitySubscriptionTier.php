@@ -2,6 +2,7 @@
 
 namespace App\Domain\Communities\Models;
 
+use App\Casts\EncryptedAttribute;
 use Database\Factories\CommunitySubscriptionTierFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,7 +20,7 @@ class CommunitySubscriptionTier extends Model
 
     protected $casts = [
         'benefits' => 'array',
-        'metadata' => 'array',
+        'metadata' => EncryptedAttribute::class,
         'published_at' => 'datetime',
         'is_public' => 'boolean',
     ];

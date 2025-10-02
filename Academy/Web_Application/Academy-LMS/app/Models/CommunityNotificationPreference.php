@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Casts\EncryptedAttribute;
 use App\Models\Community\Community;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -49,7 +50,7 @@ class CommunityNotificationPreference extends Model
         'channel_push' => 'boolean',
         'channel_in_app' => 'boolean',
         'muted_events' => 'array',
-        'metadata' => 'array',
+        'metadata' => EncryptedAttribute::class,
     ];
 
     public function user(): BelongsTo

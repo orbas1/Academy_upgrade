@@ -19,7 +19,16 @@ class MediaManager
         $diskName = $disk ?: config('media.default_disk', config('filesystems.default'));
         $visibility = config('media.visibility', 'public');
 
-        $path = $file->storePublicly($directory, $diskName);
+        $filesystem = $this->filesystem->disk($diskName);
+        if ($visibility === 'public') {
+            $path = $file->storePublicly($directory, $diskName);
+        } else {
+            $path = $file->store($directory, $diskName);
+
+            if (method_exists($filesystem, 'setVisibility')) {
+                $filesystem->setVisibility($path, $visibility);
+            }
+        }
 
         $mime = $file->getClientMimeType() ?: $file->getMimeType() ?: '';
         $variants = [];
@@ -79,13 +88,30 @@ class MediaManager
     public function toCdnUrl(string $path, ?string $disk = null): string
     {
         $diskName = $disk ?: config('media.default_disk', config('filesystems.default'));
+        $filesystem = $this->filesystem->disk($diskName);
+
+        $signing = config('media.signed_urls', []);
+        if (! empty($signing['enabled'])) {
+            $ttl = max((int) ($signing['ttl_minutes'] ?? 10), 1);
+            $expiresAt = now()->addMinutes($ttl);
+            $headers = $signing['response_headers'] ?? [];
+
+            try {
+                if (method_exists($filesystem, 'temporaryUrl')) {
+                    return $filesystem->temporaryUrl($path, $expiresAt, $headers);
+                }
+            } catch (\Throwable $exception) {
+                report($exception);
+            }
+        }
+
         $cdnUrl = trim((string) config('media.cdn_url', ''));
 
         if ($cdnUrl !== '') {
             return rtrim($cdnUrl, '/') . '/' . ltrim($path, '/');
         }
 
-        return $this->filesystem->disk($diskName)->url($path);
+        return $filesystem->url($path);
     }
 
     public function responsiveUrl(string $path, int $width, ?string $disk = null): string

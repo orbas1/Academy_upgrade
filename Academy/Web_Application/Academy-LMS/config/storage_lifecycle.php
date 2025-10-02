@@ -47,6 +47,11 @@ return [
                     storage_path('app/public/uploads'),
                     storage_path('app/public/attachments'),
                 ],
+                'encryption' => [
+                    'enabled' => env('STORAGE_BACKUP_ENCRYPTION_ENABLED', true),
+                    'key' => env('STORAGE_BACKUP_ENCRYPTION_KEY'),
+                    'cipher' => env('STORAGE_BACKUP_ENCRYPTION_CIPHER', 'aes-256-cbc'),
+                ],
             ],
         ],
 

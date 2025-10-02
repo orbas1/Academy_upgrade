@@ -3,6 +3,7 @@ class DataProtectionConfiguration {
     required this.personalDataRetentionDays,
     required this.secureWipeOnLogout,
     required this.legacySensitiveKeys,
+    required this.cacheDirectoryNames,
   });
 
   DataProtectionConfiguration._internal()
@@ -15,11 +16,17 @@ class DataProtectionConfiguration {
             'ACADEMY_MOBILE_SECURE_WIPE_ON_LOGOUT',
             defaultValue: true,
           ),
-          legacySensitiveKeys: _parseLegacyKeys(
+          legacySensitiveKeys: _parseList(
             const String.fromEnvironment(
               'ACADEMY_MOBILE_LEGACY_SENSITIVE_KEYS',
               defaultValue:
                   'password,user,password_confirmation,user_name,user_photo,school_name,email',
+            ),
+          ),
+          cacheDirectoryNames: _parseList(
+            const String.fromEnvironment(
+              'ACADEMY_MOBILE_CACHE_DIRECTORIES',
+              defaultValue: 'downloads,offline_cache',
             ),
           ),
         );
@@ -30,27 +37,30 @@ class DataProtectionConfiguration {
   final int personalDataRetentionDays;
   final bool secureWipeOnLogout;
   final List<String> legacySensitiveKeys;
+  final List<String> cacheDirectoryNames;
 
   factory DataProtectionConfiguration.override({
     required int personalDataRetentionDays,
     required bool secureWipeOnLogout,
     List<String>? legacySensitiveKeys,
+    List<String>? cacheDirectoryNames,
   }) {
     return DataProtectionConfiguration._(
       personalDataRetentionDays: personalDataRetentionDays,
       secureWipeOnLogout: secureWipeOnLogout,
-      legacySensitiveKeys: _normaliseKeys(legacySensitiveKeys ?? const <String>[]),
+      legacySensitiveKeys: _normaliseList(legacySensitiveKeys ?? const <String>[]),
+      cacheDirectoryNames: _normaliseList(cacheDirectoryNames ?? const <String>[]),
     );
   }
 
-  static List<String> _parseLegacyKeys(String raw) {
-    return _normaliseKeys(raw.split(','));
+  static List<String> _parseList(String raw) {
+    return _normaliseList(raw.split(','));
   }
 
-  static List<String> _normaliseKeys(Iterable<String> keys) {
-    return keys
-        .map((key) => key.trim())
-        .where((key) => key.isNotEmpty)
+  static List<String> _normaliseList(Iterable<String> entries) {
+    return entries
+        .map((entry) => entry.trim())
+        .where((entry) => entry.isNotEmpty)
         .toList(growable: false);
   }
 }

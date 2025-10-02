@@ -2,6 +2,7 @@
 
 namespace App\Domain\Communities\Models;
 
+use App\Casts\EncryptedAttribute;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +17,7 @@ class CommunityPaywallAccess extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'metadata' => 'array',
+        'metadata' => EncryptedAttribute::class,
         'access_starts_at' => 'datetime',
         'access_ends_at' => 'datetime',
     ];
