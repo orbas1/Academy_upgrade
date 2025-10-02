@@ -6,6 +6,11 @@ This tracker summarizes the completion state of the Orbas Learn replatforming ef
 
 ## Overall Readiness Snapshot
 
+Refer to `AGENTS.md` for the milestone roadmap that converts this 20% foundation
+into a production-ready release. Each status row below maps to those milestones,
+and the quality scorecard (Section 0) defines the evidence required before a
+row can advance to "Production" status.
+
 | Area | Status | Notes |
 | --- | --- | --- |
 | Platform upgrade (Laravel 11, PHP 8.3) | ⚠️ At risk | Framework scaffolding and configuration hardening have not started. Current codebase still targets legacy Laravel conventions. |
@@ -36,6 +41,7 @@ This tracker summarizes the completion state of the Orbas Learn replatforming ef
 6. **Realtime & Notifications:** Deliver presence heartbeats, websocket feeds, notification center, push messaging, and moderation tooling.
 7. **Testing & Observability:** Establish PHPUnit/Pest coverage for services, Playwright or Dusk E2E flows, load testing (k6), static analysis, and observability hooks.
 8. **DevOps & Installer Integration:** Containerize or script the installer launch flow, align `.env` scaffolding, and ensure automation for deployments, backups, and health monitoring.
+9. **Licensing removal & documentation alignment:** Strip CodeCanyon purchase checks across installers/controllers, ship the unified `install.sh`, and update all README/AGENTS docs to reflect milestone-driven progress tracking.
 
 ## High-Level Timeline Guidance
 

@@ -1249,151 +1249,129 @@ server {
 
 
 ---
-## Completion Workflow & Visualization Guidance
-1. **Orient the team:** Review the entire scope above, aligning domain leads (backend, frontend, mobile, security, analytics, DevOps) to their corresponding sections so ownership is clear before execution.
-2. **Visual planning:** Translate the task list below into a shared kanban or roadmap board with swimlanes per section number; use color coding to map Functionality, Integration, UI/UX, and Security scores for quick status heatmaps.
-3. **Progress tracking:** During implementation, update each checkbox when deliverables meet acceptance criteria, and fill the four grading boxes (0–100%) based on QA, integration tests, UX reviews, and security validations.
-4. **Review cadence:** Schedule cross-functional reviews at the completion of each numbered cluster (e.g., Sections 0–3, 4–6) to reassess risks, adjust grades, and confirm dependencies remain unblocked.
-5. **Completion proof:** Archive evidence (test reports, design mocks, rollout logs) alongside the grades to provide traceability for compliance, audits, and stakeholder sign-off.
+## Roadmap from 20% → 100% Completion
 
-## Comprehensive Execution Task Matrix
-1. [x] **Section 0 – Platform Upgrade & Hardening Overview:** Consolidate the blueprint for Laravel core upgrade, security baseline, and performance enhancements spanning Sections 1–3. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-2. [x] **Section 1.1 – Pre-flight & Risk Controls:** Execute backups, validate compatibility matrix, and formalize blue/green deployment with feature flags. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-3. [x] **Section 1.2 – Upgrade Steps:** Apply Composer updates, refactor bootstrap pipeline, replace deprecated packages, enforce Argon2id hashing, and implement automated tests/static analysis. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-4. [x] **Section 1.3 – Coding Standards & Modularity:** Restructure domains, enforce contract-based services, and adopt DTO patterns per guidelines. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-5. [x] **Section 2.1 – HTTP Security Headers:** Implement Nginx snippet and Laravel middleware overrides for content security. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-6. [x] **Section 2.2 – Session, CSRF, Cookies:** Enforce secure cookie policies, secret storage, and key rotation procedures. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-7. [x] **Section 2.3 – Authentication & Authorization:** Roll out 2FA/WebAuthn, RBAC protections, and device/session management UX. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-8. [x] **Section 2.4 – Input & File Security:** Harden validation, upload scanning, and quarantine workflows. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-9. [x] **Section 2.5 – Rate Limiting & Anti-Abuse:** Configure throttles, scoring, and bot-detection hooks. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-10. [x] **Section 2.6 – Secrets & Keys:** Centralize secret management and rotation cadence. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-11. [x] **Section 2.7 – Compliance & Data Protection:** Implement PII encryption, data export/erasure tooling, and immutable audit logging. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-12. [x] **Section 2.8 – Security Testing:** Operationalize SAST, DAST, dependency scanning, and monthly patch workflows. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-13. [x] **Section 2.9 – Incident Response:** Finalize playbooks, communication templates, and mitigation tooling. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-14. [x] **Section 3.1 – Caching Strategy:** Enable config/route/view caches, query caching, and HTTP cache policies. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-15. [x] **Section 3.2 – Redis & Horizon:** Isolate Redis DBs, tune Horizon queues, and configure autoscaling. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-16. [x] **Section 3.3 – Octane Optional Adoption:** Evaluate and implement Octane with safeguards for singleton leaks. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-17. [x] **Section 3.4 – Database Performance:** Tune MySQL configs, add partial indexes, and ensure keyset pagination. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-18. [x] **Section 3.5 – Media & CDN:** Configure S3/CloudFront workflows, responsive media, and background transcodes. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-19. [x] **Section 3.6 – Page Performance:** Apply code-splitting, prefetching, and CSS optimization strategies. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-20. [x] **Section 3.7 – Load & Stress Testing:** Execute k6 scripts and validate performance targets. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-21. [x] **Section 3.8 – Rollback & Recovery:** Prepare cache clear scripts, Octane rollback steps, and feature kill switches. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-22. [x] **Section 3 Deliverables Summary:** Compile upgrade tranche deliverables, including runbooks and k6 results. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-23. [x] **Section 1.1 – Naming & Conventions:** Standardize table naming, enums, and timestamp usage for community data model. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-24. [x] **Section 1.2 – Core Tables Implementation:** Build schemas for categories, communities, members, posts, comments, likes, follows, leaderboards, levels, points rules, admin settings, geo places, subscription tiers, subscriptions, paywall access, and single purchases. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-25. [x] **Section 1.3 – Indices, Partitions & Performance:** Apply composite indexes and partitioning strategies for feeds. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-26. [x] **Section 1.4 – Foreign Keys & Deletes:** Enforce cascade/soft delete rules for community relationships. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-27. [x] **Section 1.5 – Migration Scripts:** Author Laravel migrations following provided stubs. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-28. [x] **Section 1.6 – Seeders:** Populate default categories, levels, and points rules. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-29. [x] **Section 1.7 – Data Quality & Integrity:** Implement sanitization jobs, counter reconciliations, and maintenance checks. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-30. [x] **Section 2.1 – Backend Package Structure:** Organize domain models, services, policies, and controllers as outlined. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-31. [x] **Section 2.2 – Service Responsibilities:** Implement membership, feed, post, comment, like, follow, points, leaderboard, geo, subscription, paywall, calendar, and classroom link services. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-32. [x] **Section 2.3 – Policies & Gates:** Configure policy matrix, role checks, and paywall enforcement. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-33. [x] **Section 2.4 – Events & Jobs:** Emit and process events for memberships, posts, notifications, points, and webhooks. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-34. [x] **Section 2.5 – REST API Contracts:** Deliver CRUD endpoints, feed queries, moderation tools, and pagination spec compliance. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-35. [x] **Section 2.6 – Validation:** Implement form requests with enumerated rules and error messaging. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-36. [x] **Section 2.7 – Stripe Webhooks:** Handle subscription lifecycle, reconciliation, and retries. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-37. [x] **Section 2.8 – Search Integration:** Configure Scout/Meili indexes, transformers, and sync jobs. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-38. [x] **Section 2.9 – Error & Response Model:** Normalize API responses with error envelopes and pagination metadata. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-39. [x] **Section 2.10 – OpenAPI Specification:** Publish updated spec covering all endpoints. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-40. [x] **Section 3.1 – Frontend Tech & Architecture:** Align Vite, Vue/React, and state management architecture with module boundaries. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-41. [x] **Section 3.2 – Component Library:** Build atoms-to-organisms components for feeds, composer, reactions, and modals. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-42. [x] **Section 3.3 – UX Flows:** Implement onboarding, feed navigation, posting, moderation, and paywall interactions. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-43. [x] **Section 3.4 – Accessibility & i18n:** Ensure WCAG compliance, keyboard navigation, localization, and RTL support. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-44. [x] **Section 3.5 – Frontend Performance:** Optimize bundle sizes, lazy loading, and caching hints. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-45. [x] **Section 3.6 – Error States:** Design and implement graceful fallbacks for empty feeds, offline, moderation, and payment errors. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-46. [x] **Section 3.7 – Admin Dashboard Web:** Deliver moderation, analytics, and configuration panels. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-47. [x] **Section 3.8 – Design System Tokens:** Extend typography, color, spacing, and elevation tokens for communities module. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-48. [x] **Section 4 – Acceptance Criteria (Tranche):** Validate that completed features meet articulated acceptance tests. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-49. [x] **Section 5 – Test Plan:** Execute described manual and automated test coverage. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-50. [x] **Section 6 – Deliverables Summary:** Collate artifacts for tranche sign-off. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-51. [x] **Section 4.1 – Flutter Architecture:** Align module structure, state management, and offline storage. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-52. [x] **Section 4.2 – Mobile Auth & Session:** Integrate OAuth/session refresh, secure storage, and passkey readiness. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-53. [x] **Section 4.3 – Networking & Reliability:** Implement retry logic, caching, and offline queues. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-54. [x] **Section 4.4 – Realtime & Presence:** Wire Pusher/WS channels for typing indicators, online status, and notifications. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-55. [x] **Section 4.5 – Screens & Flows:** Build Flutter screens for community lists, detail, feed, composer, comments, leaderboards, and paywalls. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-56. [x] **Section 4.6 – Mobile Enhancements:** Implement haptics, gestures, offline banners, and share sheets. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-57. [x] **Section 4.7 – Error Handling & Telemetry:** Capture crashes, logs, and analytics breadcrumbs. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-58. [x] **Section 4.8 – Build & Release:** Configure CI, signing, store metadata, and phased rollout toggles. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-59. [x] **Section 5.1 – HTTP Security Headers Deep Dive:** Align middleware overrides with mobile/web clients. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-60. [x] **Section 5.2 – Auth & Authorization Controls:** Enforce device trust, session revocation, and role checks. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-61. [x] **Section 5.3 – Data Protection:** Apply encryption, backups, and retention schedules. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-62. [x] **Section 5.4 – Uploads Security:** Enforce scanning, resizing, and signed URL expirations. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-63. [ ] **Section 5.5 – Payments Security:** Validate PCI scope, webhook security, and refund workflows. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-64. [ ] **Section 5.6 – Abuse & Moderation:** Implement rate limits, moderator tools, and enforcement actions. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-65. [x] **Section 6.1 – Analytics Event Taxonomy:** Define community-related events across platforms. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-66. [x] **Section 6.2 – Instrumentation:** Implement client/server event emission and batching. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-67. [x] **Section 6.3 – Admin Dashboards:** Surface analytics, retention, and monetization metrics. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-68. [x] **Section 6.4 – Data Governance:** Establish retention, privacy review, and schema evolution policies. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-69. [x] **Section 6 Acceptance Criteria:** Validate analytics accuracy and dashboards. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-70. [x] **Section 6 Deliverables:** Package tracking specs, dashboards, and governance docs. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-71. [x] **Section 7.1 – Admin Dashboard Enhancements:** Implement moderation queue, member management, and paywall settings. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-72. [x] **Section 7.2 – Roles & Permissions:** Map admin capabilities to RBAC and audit trails. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-73. [x] **Section 7.3 – Metrics & Reporting:** Deliver KPIs, exports, and scheduled reports. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-74. [x] **Section 7.4 – Automation Jobs:** Schedule digest sends, leaderboard recalculations, and cleanups. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-75. [x] **Section 7.5 – Audit & Compliance:** Enable immutable logging, access reviews, and compliance dashboards. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-76. [x] **Section 8.1 – Search Engine Setup:** Configure Meilisearch clusters, synonyms, and ranking rules. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-77. [x] **Section 8.2 – Ingestion & Sync:** Build indexing jobs and change data capture. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-78. [x] **Section 8.3 – Query UX:** Implement filters, facets, typeahead, and highlights. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-79. [x] **Section 8.4 – Permissions & Privacy:** Enforce access control on search results. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-80. [x] **Section 8.5 – Admin Search Tools:** Build audit search, spam sweeps, and saved search alerts. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-81. [x] **Section 9.1 – Messaging Templates:** Design localized email and push templates for community events. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-82. [x] **Section 9.2 – Delivery Pipeline:** Configure notification jobs, provider integrations, and retries. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-83. [x] **Section 9.3 – Digests:** Build summary digests with segmentation and A/B testing. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-84. [x] **Section 9.4 – Preferences:** Implement user notification center and unsubscribe flows. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-85. [x] **Section 9.5 – Deep Links & Actions:** Support universal links, push actions, and contextual routing. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-86. [x] **Section 9.6 – Monitoring & Deliverability:** Track bounce rates, provider health, and alerting. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-87. [x] **Section 9.7 – Messaging Acceptance Criteria:** Validate notification correctness and UX. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-88. [x] **Section 9.8 – Messaging Deliverables:** Bundle templates, configs, and runbooks. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-89. [x] **Section 10.1 – Nginx & Networking:** Implement config hardening, WAF rules, and CDN routing. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-90. [x] **Section 10.2 – Queues & Workers:** Scale Horizon, schedule cron, and monitor throughput. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-91. [x] **Section 10.3 – Storage & Lifecycle:** Configure S3 lifecycles, backups, and cold storage. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-92. [x] **Section 10.4 – CI/CD Pipelines:** Update build pipelines for PHP 8.3, Flutter, and infrastructure scans. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-93. [x] **Section 10.5 – Secrets Management:** Integrate Vault/SSM, rotation jobs, and access policies. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-94. [x] **Section 10.6 – Observability & Alerts:** Implement logging, metrics, tracing, and SLO dashboards. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-95. [x] **Section 11.1 – Migration Strategy:** Define expand/contract phases with backfill plans. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-96. [x] **Section 11.2 – Migration Steps (Runbook Drafting):** Outline a granular step-by-step migration sequence covering prechecks, maintenance windows, actor responsibilities, and rollback triggers for each schema change. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-97. [x] **Section 11.2 – Migration Steps (Dry Runs & Validation):** Execute migrations in staging, capture timings/logs, validate data integrity, and secure sign-off for production execution. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-98. [x] **Section 11.3 – Migration Scripts (Scaffolding):** Build artisan commands and SQL templates that encapsulate expand/contract phases with idempotent guards. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-99. [x] **Section 11.3 – Migration Scripts (Backfill Execution):** Implement data backfill jobs, rehearse retry strategies, and document verification checkpoints. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-100. [x] **Section 11.4 – Rollback Plan (Design):** Define rollback automation, snapshot strategy, and go/no-go criteria tied to telemetry alerts. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-101. [x] **Section 11.4 – Rollback Plan (Testing):** Run rollback fire drills in staging, validate data restoration, and refine runbooks with lessons learned. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-102. [x] **Section 12.1 – Unit Testing (Coverage Blueprint):** Identify priority services/models, map required test cases, and configure tooling thresholds. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-103. [x] **Section 12.1 – Unit Testing (Implementation):** Author tests, achieve targeted coverage, and integrate with CI reporting. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-104. [x] **Section 12.2 – Feature Testing (Scenario Design):** Document API/UI scenarios, fixtures, and acceptance pathways for feature coverage. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-105. [x] **Section 12.2 – Feature Testing (Automation Suite):** Implement feature tests, stabilize flaky cases, and hook into deployment gates. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-106. [x] **Section 12.3 – End-to-End Testing (Environment Prep):** Provision E2E environments, seed accounts, and script smoke paths for web/mobile. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-107. [x] **Section 12.3 – End-to-End Testing (Run & Reporting):** Execute browser/mobile E2E suites, triage failures, and publish run reports. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-108. [x] **Section 12.4 – Load & Resilience Testing (Plan):** Model target loads, design k6/chaos experiments, and define success SLOs. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-109. [x] **Section 12.4 – Load & Resilience Testing (Execution):** Run load drills, capture metrics, and deliver remediation recommendations. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-110. [x] **Section 12.5 – Security Testing (Preparation):** Schedule pen tests, configure SCA tooling, and prepare threat models. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-111. [x] **Section 12.5 – Security Testing (Remediation):** Execute scans, document findings, and verify fixes through retesting. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-112. [x] **Section 12.6 – CI Gates & Coverage (Design):** Define pass/fail thresholds, branch policies, and notification routing. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-113. [x] **Section 12.6 – CI Gates & Coverage (Integration):** Implement pipelines enforcing gates, surface dashboards, and document override protocol. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-114. [x] **Section 12.7 – Test Data & Fixtures (Design):** Curate representative datasets, anonymization rules, and refresh cadence. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-115. [x] **Section 12.7 – Test Data & Fixtures (Automation):** Build generation scripts, storage processes, and access controls. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-116. [x] **Section 12 Acceptance Criteria (Evidence Collection):** Aggregate pass/fail artifacts, QA sign-offs, and metric dashboards. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-117. [x] **Section 12 Acceptance Criteria (Stakeholder Review):** Conduct review meeting, capture approvals, and log outstanding follow-ups. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-118. [x] **Section 12 Deliverables (Packaging):** Compile reports, coverage badges, and fixture docs into a shared repository. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-119. [x] **Section 12 Deliverables (Distribution):** Communicate deliverables to stakeholders, record delivery receipts, and index references. (Functionality grade [100]/100% | Integration grade [100]/100% | UI:UX grade [100]/100% | Security grade [100]/100%)
-120. [ ] **Section 13 – Requirements Mapping (Matrix Build):** Map features to requirement IDs, gaps, and compliance notes. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-121. [ ] **Section 13 – Requirements Mapping (Validation):** Review traceability with QA/legal, update matrices, and approve baselines. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-122. [ ] **Section 14 – Migration Stubs (Template Authoring):** Produce migration stub examples aligned to naming conventions and dependencies. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-123. [ ] **Section 14 – Migration Stubs (Team Enablement):** Host walkthrough, share usage guidelines, and capture feedback updates. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-124. [ ] **Section 15 – Example Policies (Authoring):** Draft representative policies, map to production roles, and include commentary. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-125. [ ] **Section 15 – Example Policies (Integration):** Wire policies into Laravel authorization, write tests, and document override paths. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-126. [ ] **Section 16 – `.env` Additions (Inventory):** Catalogue new environment variables, defaults, and secret owners. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-127. [ ] **Section 16 – `.env` Additions (Template Updates):** Update `.env.example`, provisioning scripts, and vault sync notes. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-128. [ ] **Section 17 – Nginx Security Snippet (Deployment):** Package hardened config, ship to environments, and document prerequisites. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-129. [ ] **Section 17 – Nginx Security Snippet (Verification):** Run header scans, penetration spot-checks, and record compliance evidence. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-130. [ ] **Section 18 – Rollout Plan (Drafting):** Define phases, metrics, communication cadences, and contingency triggers. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-131. [ ] **Section 18 – Rollout Plan (Pilot Execution):** Run pilot release, monitor telemetry, and adjust plan based on feedback. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-132. [ ] **Section 19 – Risks & Mitigations (Register Build):** Compile risk register with owners, thresholds, and mitigations. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-133. [ ] **Section 19 – Risks & Mitigations (Monitoring):** Implement dashboards/alerts for risk triggers and rehearse response playbooks. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-134. [ ] **Section 20 – Documentation & Handover (Authoring):** Produce API docs, ERDs, runbooks, SOPs, and checklists. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-135. [ ] **Section 20 – Documentation & Handover (Transition):** Conduct handover sessions, gather acknowledgements, and store materials in knowledge base. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-136. [ ] **Final Deliverables Recap (Checklist Assembly):** Build final verification checklist aligning to every tranche deliverable. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
-137. [ ] **Final Deliverables Recap (Executive Review):** Present completion package to leadership, capture approvals, and archive closure notes. (Functionality grade [    ]/100% | Integration grade [    ]/100% | UI:UX grade [    ]/100% | Security grade [    ]/100%)
+> Current state: foundational contracts and documentation exist, but the production experience is ~20% complete. Complete the milestones below in order; do not move forward until every task in the current milestone meets the quality gates and is backed by production-grade logic (no stubs).
+
+### 0. Quality Grading Model
+
+#### 0.1 Grade Scale (applies to every task)
+
+- **100%** – Top production level (launch-ready with polish, monitoring, and documentation).
+- **90%** – Production level with minor fit-and-finish issues documented for follow-up.
+- **80%** – Production-capable but requires targeted tweaks before release.
+- **70%** – Testing only; feature incomplete or blocked by known gaps.
+- **60% and below** – Not ready; must not ship or graduate to the next milestone.
+
+#### 0.2 Task Weighting & Scoring
+
+- Every roadmap task (A1–E5) carries equal weight. Compute the overall milestone or program grade as the arithmetic mean of the latest task grades.
+- Record grades in the scoring worksheet (Section 6) each time work lands. A milestone is considered complete only when every task is ≥90% and the milestone average is ≥92%.
+
+#### 0.3 Quality Checker Reference
+
+Use the shorthand references below whenever you evaluate or ship a task. Each task lists the required checkers; capture test evidence, screenshots, or runbook links for every checker before closing work. If a checker is truly not applicable, log an explicit `N/A` rationale with the reviewer.
+
+| Ref | Dimension | Expectations |
+| --- | --- | --- |
+| **QC-01** | Code Quality | Meets coding standards, static analysis clean, patterns follow architecture guidelines. |
+| **QC-02** | Security | Threat model addressed, middleware and policies enforced, secrets handled correctly, scanners green. |
+| **QC-03** | Functionality | Business logic complete with automated tests proving happy/sad paths. |
+| **QC-04** | Integration | Works across modules/services, with contract tests or end-to-end validation. |
+| **QC-05** | Phone App – Core | Flutter build passes, architecture patterns (Riverpod/Dio) followed, platform services wired. |
+| **QC-06** | Phone App – Screens | Screens implemented per spec with navigation, states, and offline handling. |
+| **QC-07** | Phone App – Admin Screen | Administrative/creator tools available in mobile with permissions. |
+| **QC-08** | Phone App – Profile | Profile editing, avatars, achievements, and settings complete and synced. |
+| **QC-09** | Web App – Core | Laravel app stable, routes registered, caching/queues configured. |
+| **QC-10** | Web App – Pages | Public/member-facing pages implemented and responsive. |
+| **QC-11** | Web App – Admin Dashboard | Admin dashboards feature-complete with charts and controls. |
+| **QC-12** | Web App – User Dashboard | Learner/member dashboard delivers required widgets and personalization. |
+| **QC-13** | Web App – Provider Dashboard | Instructor/creator tooling implemented with reporting. |
+| **QC-14** | Web App – Settings | Settings area covers notifications, privacy, billing, and integrations. |
+| **QC-15** | Design | Visual language matches Orbas Learn brand, assets exported, tokens maintained. |
+| **QC-16** | Wireframes | Wireframes updated to reflect shipped experience and kept in sync. |
+| **QC-17** | UI/UX | Interaction design validated via usability review, accessibility, and performance checks. |
+
+### 1. Milestone A (20% → 35%): Repository Cleanup & Installation Readiness
+
+| Task ID | Summary | Expected Deliverables | Required Quality Checkers |
+| --- | --- | --- | --- |
+| **A1** | Remove CodeCanyon artefacts | Purge licence middleware, purchase-code prompts, and vendor callbacks. Replace with Orbas Learn onboarding copy and regression tests. | QC-01, QC-02, QC-03, QC-04, QC-09, QC-10, QC-11, QC-14 |
+| **A2** | Unified installer automation | Harden `install.sh` with non-interactive flags, Apache/Nginx support, queue/scheduler provisioning, idempotent reruns, and checksum verification. | QC-01, QC-02, QC-03, QC-04, QC-09 |
+| **A3** | Documentation and branding alignment | Update every README, `.env.example`, installer prompt, and screenshot to the Orbas Learn brand; cross-link roadmap and grading rubric. | QC-01, QC-03, QC-09, QC-10, QC-15, QC-16, QC-17 |
+| **A4** | Repository hygiene guardrails | Introduce EditorConfig, lint/format hooks, Dependabot, secrets scanning, static analysis pipelines, and contributor guide updates. | QC-01, QC-02, QC-03, QC-04, QC-09 |
+
+### 2. Milestone B (35% → 55%): Domain & Data Model Implementation
+
+| Task ID | Summary | Expected Deliverables | Required Quality Checkers |
+| --- | --- | --- | --- |
+| **B1** | Community data model rollout | New migrations and Eloquent models for communities, memberships, posts, comments, reactions, follows, tiers/paywalls, points, leaderboards, geo, calendars, classroom links, and device registrations with FK/index coverage. | QC-01, QC-02, QC-03, QC-04, QC-09, QC-10, QC-11, QC-12, QC-13, QC-14 |
+| **B2** | Seeders and factories | High-fidelity seeders/factories feeding installer, plus rollback/backfill artisan commands with expand/contract strategy docs. | QC-01, QC-03, QC-04, QC-09, QC-10, QC-12 |
+| **B3** | Compliance audit trails | Event-sourced audit tables for moderation, payments, automation jobs; reporting endpoints and retention policies documented. | QC-01, QC-02, QC-03, QC-04, QC-09, QC-11, QC-13 |
+
+### 3. Milestone C (55% → 75%): Backend Services, APIs, and Integrations
+
+| Task ID | Summary | Expected Deliverables | Required Quality Checkers |
+| --- | --- | --- | --- |
+| **C1** | Community service implementations | Concrete services for membership, feed, composer, moderation, reactions, points, leaderboard, subscriptions, geo, classroom sync with automated tests. | QC-01, QC-02, QC-03, QC-04, QC-09, QC-10, QC-11, QC-12, QC-13 |
+| **C2** | Public API & realtime surface | REST + realtime endpoints, validators, policies, resources, OpenAPI spec, and generated TypeScript/Dart SDKs. | QC-01, QC-02, QC-03, QC-04, QC-05, QC-09, QC-10, QC-11, QC-12, QC-13, QC-14 |
+| **C3** | Search platform integration | Scout + Meilisearch/Elastic integration, indexing observers, synonyms, reindex commands, and permission-aware queries. | QC-01, QC-02, QC-03, QC-04, QC-09, QC-10 |
+| **C4** | Platform reliability upgrades | Standardized error envelopes, rate limiting, Horizon configuration, scheduled jobs, notification pipelines, and observability wiring. | QC-01, QC-02, QC-03, QC-04, QC-09, QC-11, QC-13 |
+
+### 4. Milestone D (75% → 90%): Web Experience & Admin Control Center
+
+| Task ID | Summary | Expected Deliverables | Required Quality Checkers |
+| --- | --- | --- | --- |
+| **D1** | Communities web UX | Discovery, joined list, feed, composer (text/media/scheduled), comments, reactions, bookmarks, saved searches, offline states built in Blade/Vite or Inertia/Vue. | QC-01, QC-02, QC-03, QC-04, QC-09, QC-10, QC-15, QC-17 |
+| **D2** | Admin operations suite | Moderation dashboard, member management, levels/points tuning, paywall tier editor, automation jobs, geo/calendar admin, audit trail viewers. | QC-01, QC-02, QC-03, QC-04, QC-09, QC-11, QC-13, QC-14, QC-15, QC-17 |
+| **D3** | Design system & accessibility | Tokenized design library, WCAG AA compliance, localization, dark mode, analytics instrumentation across interactions. | QC-01, QC-02, QC-03, QC-09, QC-15, QC-16, QC-17 |
+| **D4** | Notifications & messaging hub | Web notifications center, email template previews, preference management, and analytics on engagement. | QC-01, QC-02, QC-03, QC-04, QC-09, QC-10, QC-11, QC-12, QC-13, QC-14, QC-17 |
+
+### 5. Milestone E (90% → 100%): Mobile, Messaging, Payments, and Operations
+
+| Task ID | Summary | Expected Deliverables | Required Quality Checkers |
+| --- | --- | --- | --- |
+| **E1** | Flutter architecture & parity | Riverpod/Dio refactor, generated models, full community flows (join/subscribe, feed, compose, notifications, leaderboard, calendar, geo, classroom) with offline caching and deep links. | QC-01, QC-02, QC-03, QC-04, QC-05, QC-06, QC-07, QC-08, QC-15, QC-17 |
+| **E2** | Mobile and web messaging unification | Push notifications (FCM/APNs), in-app messaging, moderation alerts, unified preference management. | QC-01, QC-02, QC-03, QC-04, QC-05, QC-06, QC-07, QC-08, QC-09, QC-10, QC-11, QC-12, QC-13, QC-14, QC-17 |
+| **E3** | Payments and monetization | Stripe billing portal, webhook resiliency, entitlement syncing, refunds/disputes workflows, revenue analytics, and reporting dashboards. | QC-01, QC-02, QC-03, QC-04, QC-05, QC-08, QC-09, QC-10, QC-11, QC-12, QC-13, QC-14, QC-17 |
+| **E4** | Security and compliance hardening | Device/session management, 2FA/WebAuthn, upload scanning, secrets rotation, incident response runbooks, compliance automation. | QC-01, QC-02, QC-03, QC-04, QC-05, QC-09, QC-11, QC-13, QC-14, QC-17 |
+| **E5** | CI/CD, IaC, and launch readiness | GitHub/GitLab pipelines, infrastructure scripts (Docker Compose/Ansible/Terraform), load & security testing suites, observability dashboards, final launch checklist with go/no-go metrics. | QC-01, QC-02, QC-03, QC-04, QC-05, QC-09, QC-10, QC-11, QC-12, QC-13, QC-14, QC-17 |
+
+### 6. Score Aggregation Worksheet
+
+Maintain the following table (copy into tracking docs or project boards) to compute milestone and overall readiness grades. Update the `Grade` column after every review and average the column to derive the program score.
+
+| Task ID | Latest Grade (%) | Evidence Links / Notes |
+| --- | --- | --- |
+| A1 | | |
+| A2 | | |
+| A3 | | |
+| A4 | | |
+| B1 | | |
+| B2 | | |
+| B3 | | |
+| C1 | | |
+| C2 | | |
+| C3 | | |
+| C4 | | |
+| D1 | | |
+| D2 | | |
+| D3 | | |
+| D4 | | |
+| E1 | | |
+| E2 | | |
+| E3 | | |
+| E4 | | |
+| E5 | | |
+
+> **Completion rule:** Declare the roadmap at 100% only when every task grade is ≥95% and the aggregate average is ≥97%. Document any remediation backlog separately.
+
+### Cutover Acceptance Criteria
+
+- All automated tests (PHPUnit/Pest, Playwright/k6, Flutter integration, static analysis) pass in CI; installer script provisions a fresh environment with zero manual edits.
+- Feature flags removed or default-on; documentation, runbooks, and screenshots updated to reflect production flows across web and mobile.
+- Operations sign-off: monitoring alerts configured, rollback rehearsed, risk register closed, and onboarding materials delivered to support/community teams.
+
 ## Current Codebase State
 
 ### Repository layout
