@@ -2,6 +2,7 @@
 
 namespace App\Domain\Communities\Models;
 
+use App\Casts\EncryptedAttribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,11 +16,11 @@ class CommunityAdminSetting extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'moderation_rules' => 'array',
-        'membership_requirements' => 'array',
-        'posting_policies' => 'array',
-        'escalation_contacts' => 'array',
-        'automation_settings' => 'array',
+        'moderation_rules' => EncryptedAttribute::class,
+        'membership_requirements' => EncryptedAttribute::class,
+        'posting_policies' => EncryptedAttribute::class,
+        'escalation_contacts' => EncryptedAttribute::class,
+        'automation_settings' => EncryptedAttribute::class,
     ];
 
     public function community(): BelongsTo

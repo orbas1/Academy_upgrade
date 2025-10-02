@@ -1,7 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart' as path_provider;
 
 import '../../config/data_protection.dart';
 import 'secure_credential_store.dart';
@@ -14,20 +18,25 @@ class DataProtectionService {
     SharedPreferences? preferences,
     CredentialWiper? credentialWiper,
     DateTime Function()? clock,
+    Future<List<Directory>> Function(List<String> names)? directoryResolver,
   })  : _configuration = configuration ?? DataProtectionConfiguration.instance,
         _preferences = preferences,
         _credentialWiper = credentialWiper,
-        _clock = clock ?? DateTime.now;
+        _clock = clock ?? DateTime.now,
+        _directoryResolver =
+            directoryResolver ?? _defaultDirectoryResolver;
 
   DataProtectionService.test({
     required DataProtectionConfiguration configuration,
     required SharedPreferences preferences,
     CredentialWiper? credentialWiper,
     DateTime Function()? clock,
+    Future<List<Directory>> Function(List<String> names)? directoryResolver,
   })  : _configuration = configuration,
         _preferences = preferences,
         _credentialWiper = credentialWiper,
-        _clock = clock ?? DateTime.now;
+        _clock = clock ?? DateTime.now,
+        _directoryResolver = directoryResolver ?? ((_) async => <Directory>[]);
 
   static final DataProtectionService instance = DataProtectionService._internal();
 
@@ -35,6 +44,7 @@ class DataProtectionService {
   SharedPreferences? _preferences;
   final CredentialWiper? _credentialWiper;
   final DateTime Function() _clock;
+  final Future<List<Directory>> Function(List<String> names) _directoryResolver;
 
   static const String _trackedKeysKey = 'data_protection.tracked_keys';
   static const String _lastEnforcedKey = 'data_protection.last_enforced_at';
@@ -66,6 +76,8 @@ class DataProtectionService {
     await _removeLegacySensitiveKeys(prefs);
     await _persistTrackedKeys(prefs, tracked);
     await prefs.setString(_lastEnforcedKey, now.toIso8601String());
+
+    await _enforceCacheRetention();
   }
 
   Future<void> registerPersonalDataKey(String key) async {
@@ -111,6 +123,8 @@ class DataProtectionService {
           _credentialWiper ?? () => SecureCredentialStore.instance.clearAll();
       await wiper();
     }
+
+    await _wipeCacheDirectories();
   }
 
   Future<SharedPreferences> _ensurePrefs() async {
@@ -170,5 +184,118 @@ class DataProtectionService {
         await prefs.remove(key);
       }
     }
+  }
+
+  Future<void> _enforceCacheRetention() async {
+    final directoryNames = _configuration.cacheDirectoryNames;
+    if (directoryNames.isEmpty) {
+      return;
+    }
+
+    final directories = await _directoryResolver(directoryNames);
+    if (directories.isEmpty) {
+      return;
+    }
+
+    final retentionDays = _configuration.personalDataRetentionDays;
+    final cutoff = retentionDays > 0
+        ? _clock().toUtc().subtract(Duration(days: retentionDays))
+        : null;
+
+    for (final directory in directories) {
+      await _cleanDirectory(directory, cutoff);
+    }
+  }
+
+  Future<void> _cleanDirectory(Directory directory, DateTime? cutoff) async {
+    try {
+      if (!await directory.exists()) {
+        return;
+      }
+
+      if (cutoff == null) {
+        await directory.delete(recursive: true);
+        return;
+      }
+
+      await for (final entity
+          in directory.list(recursive: true, followLinks: false)) {
+        try {
+          final stat = await entity.stat();
+          if (stat.modified.isBefore(cutoff)) {
+            await entity.delete(recursive: true);
+          }
+        } catch (_) {
+          // ignore and continue with next entity
+        }
+      }
+    } catch (_) {
+      // Swallow filesystem errors to avoid crashing the app during retention.
+    }
+  }
+
+  Future<void> _wipeCacheDirectories() async {
+    final directories = await _directoryResolver(_configuration.cacheDirectoryNames);
+    for (final directory in directories) {
+      try {
+        if (await directory.exists()) {
+          await directory.delete(recursive: true);
+        }
+      } catch (_) {
+        // ignore
+      }
+    }
+  }
+
+  static Future<List<Directory>> _defaultDirectoryResolver(
+    List<String> names,
+  ) async {
+    if (names.isEmpty) {
+      return <Directory>[];
+    }
+
+    final resolved = <Directory>[];
+    final uniqueNames = names.toSet();
+
+    Directory? documents;
+    Directory? support;
+    Directory? tempDir;
+
+    try {
+      documents = await path_provider.getApplicationDocumentsDirectory();
+    } catch (_) {}
+
+    try {
+      support = await path_provider.getApplicationSupportDirectory();
+    } catch (_) {}
+
+    try {
+      tempDir = await path_provider.getTemporaryDirectory();
+    } catch (_) {}
+
+    final bases = <Directory?>[documents, support, tempDir];
+
+    for (final name in uniqueNames) {
+      final trimmed = name.trim();
+      if (trimmed.isEmpty) {
+        continue;
+      }
+
+      final candidate = Directory(trimmed);
+      if (candidate.isAbsolute) {
+        resolved.add(candidate);
+        continue;
+      }
+
+      for (final base in bases) {
+        if (base == null) {
+          continue;
+        }
+
+        resolved.add(Directory(p.join(base.path, trimmed)));
+      }
+    }
+
+    return resolved;
   }
 }

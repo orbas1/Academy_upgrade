@@ -2,6 +2,7 @@
 
 namespace App\Domain\Communities\Models;
 
+use App\Casts\EncryptedAttribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,7 +15,7 @@ class CommunityPointsRule extends Model
 
     protected $casts = [
         'conditions' => 'array',
-        'metadata' => 'array',
+        'metadata' => EncryptedAttribute::class,
         'is_active' => 'boolean',
     ];
 
