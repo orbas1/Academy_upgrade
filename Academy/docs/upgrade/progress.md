@@ -6,17 +6,22 @@ This tracker summarizes the completion state of the Orbas Learn replatforming ef
 
 ## Overall Readiness Snapshot
 
+Refer to `AGENTS.md` for the milestone roadmap that converts this 20% foundation
+into a production-ready release. Each status row below maps to those milestones,
+and the quality scorecard (Section 0) defines the evidence required before a
+row can advance to "Production" status.
+
 | Area | Status | Notes |
 | --- | --- | --- |
-| Platform upgrade (Laravel 11, PHP 8.3) | ⚠️ At risk | Framework scaffolding and configuration hardening have not started. Current codebase still targets legacy Laravel conventions. |
-| Domain services & contracts | ⏳ In progress | Membership contract is bridged to legacy Eloquent workflows and now exposes points awarding via a contract adapter. Remaining services (feed, posts, moderation, geo, subscriptions, paywall, calendar, classroom links) are interface-only with no bindings. |
-| Data model alignment | ❌ Blocked | Community migrations exist but require verification, foreign keys, and seed coverage for tiers, geo, levels, and automation triggers. Legacy LMS tables still dominate. |
-| API surface & quality gate | ⏳ In progress | Quality gate command exists, but API endpoints for the new domain remain unimplemented. No OpenAPI generation yet. |
-| Frontend (Blade / Web UI) | ❌ Not started | Wireframed community experience is not represented in Blade templates. Legacy LMS UI remains. |
-| Mobile (Flutter) | ⚠️ At risk | Documentation updated for Orbas Learn naming, but Riverpod/Dio refactors, realtime presence, and paywall flows are unimplemented. |
-| Payments & subscriptions | ❌ Not started | Stripe integration, entitlement checks, and webhook handling remain TODO. |
-| Analytics, notifications, messaging | ❌ Not started | No instrumentation, push notifications, or digest flows are committed. |
-| DevOps, automation, & testing | ⚠️ At risk | Runbooks for seeding and reindexing exist. Automated tests cover new contracts superficially, but CI/CD, load testing, and infrastructure scripting are missing. |
+| Platform upgrade (Laravel 11, PHP 8.3) | ⏳ In progress | Composer now targets Laravel 11/PHP 8.3 and Horizon, queue autoscaling, and security providers are registered; Apache/Nginx dual hosting and some hardening tasks remain.【F:Web_Application/Academy-LMS/composer.json†L1-L40】【F:Web_Application/Academy-LMS/app/Console/Commands/QueueAutoscaleCommand.php†L1-L120】 |
+| Domain services & contracts | ⏳ In progress | Feed, membership, moderation, paywall, subscriptions, geo, and leaderboard services are implemented with adapters and bindings, though coverage for classroom sync/realtime is still outstanding.【F:Web_Application/Academy-LMS/app/Domain/Communities/Services/CommunityFeedService.php†L1-L77】【F:Web_Application/Academy-LMS/app/Providers/CommunityServiceProvider.php†L1-L60】 |
+| Data model alignment | ⏳ In progress | Community core and engagement migrations define schema, indexes, and geo/paywall tables; additional seed data for paywall tiers, geo fixtures, and device registrations is pending.【F:Web_Application/Academy-LMS/database/migrations/2024_12_24_000000_create_community_core_tables.php†L1-L159】【F:Web_Application/Academy-LMS/database/seeders/Communities/CommunityFoundationSeeder.php†L1-L116】 |
+| API surface & quality gate | ⏳ In progress | API v1 exposes community CRUD/feed/members/geo plus admin modules with throttling, and the `communities:quality-gate` command checks configuration gaps. OpenAPI/SDK generation remains on the backlog.【F:Web_Application/Academy-LMS/routes/api.php†L57-L208】【F:Web_Application/Academy-LMS/app/Console/Commands/CommunitiesQualityGateCommand.php†L1-L214】 |
+| Frontend (Blade / Web UI) | ⏳ In progress | Vue-based admin SPA modules exist for communities and moderation, but public member-facing feeds still rely on legacy Blade + Alpine flows and lack the new UX treatment.【F:Web_Application/Academy-LMS/resources/js/modules/communities/views/CommunitiesIndexView.vue†L1-L160】【F:Web_Application/Academy-LMS/resources/js/app.js†L1-L24】 |
+| Mobile (Flutter) | ⚠️ At risk | Provider/http stack remains in place, navigation centres on legacy LMS tabs, and community/push/payment features are unimplemented pending Riverpod/Dio/FCM adoption.【F:Student Mobile APP/academy_lms_app/lib/providers/auth.dart†L1-L68】【F:Student Mobile APP/academy_lms_app/lib/screens/tab_screen.dart†L1-L120】 |
+| Payments & subscriptions | ⚠️ At risk | Stripe subscription services and webhook handling exist server-side, yet entitlement UI, refunds/disputes workflows, and analytics dashboards are still missing across web/mobile.【F:Web_Application/Academy-LMS/app/Services/Community/StripeSubscriptionService.php†L1-L200】【F:Web_Application/Academy-LMS/app/Services/Billing/StripeWebhookService.php†L1-L175】 |
+| Analytics, notifications, messaging | ⚠️ At risk | Notification preference APIs and events are present, but consolidated notification centres, push delivery, and analytics visualisations remain TODO.【F:Web_Application/Academy-LMS/app/Http/Controllers/Api/V1/Community/CommunityNotificationPreferenceController.php†L1-L66】【F:Web_Application/Academy-LMS/app/Events/Community/PostCreated.php†L1-L80】 |
+| DevOps, automation, & testing | ⏳ In progress | CI runs Pint, PHPUnit, Larastan, Dusk, and Flutter tests; runbooks cover rollback/search. Infrastructure as code, secrets scanning, and load/security automation still need to be wired.【F:.github/workflows/ci.yml†L1-L160】【F:docs/upgrade/runbooks/search-reindex.md†L1-L80】 |
 
 ## Delivered Work (Repo Artifacts)
 
@@ -36,6 +41,7 @@ This tracker summarizes the completion state of the Orbas Learn replatforming ef
 6. **Realtime & Notifications:** Deliver presence heartbeats, websocket feeds, notification center, push messaging, and moderation tooling.
 7. **Testing & Observability:** Establish PHPUnit/Pest coverage for services, Playwright or Dusk E2E flows, load testing (k6), static analysis, and observability hooks.
 8. **DevOps & Installer Integration:** Containerize or script the installer launch flow, align `.env` scaffolding, and ensure automation for deployments, backups, and health monitoring.
+9. **Licensing removal & documentation alignment:** Strip CodeCanyon purchase checks across installers/controllers, ship the unified `install.sh`, and update all README/AGENTS docs to reflect milestone-driven progress tracking.
 
 ## High-Level Timeline Guidance
 
