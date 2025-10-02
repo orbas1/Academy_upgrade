@@ -85,6 +85,9 @@
         ],
         "cache:warm": [
             "@php artisan app:cache-warm"
+        ],
+        "dusk": [
+            "@php artisan dusk"
         ]
     },
     "extra": {
