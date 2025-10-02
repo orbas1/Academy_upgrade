@@ -13,11 +13,17 @@ services:
       APP_ENV: local
       APP_DEBUG: "1"
       APP_PORT: 8000
+      APP_URL: http://localhost:8000
       DB_HOST: mysql
       DB_PORT: 3306
       DB_DATABASE: academy
       DB_USERNAME: academy
       DB_PASSWORD: academy
+      DB_ADMIN_USERNAME: root
+      DB_ADMIN_PASSWORD: root
+      DB_CREATE_DATABASE: "1"
+      RUN_DB_SEED: "0"
+      WARM_CACHES: "1"
       SKIP_COMPOSER_INSTALL: "0"
       SKIP_MIGRATIONS: "0"
     depends_on:
