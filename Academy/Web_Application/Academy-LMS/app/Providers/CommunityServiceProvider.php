@@ -23,6 +23,10 @@ use App\Services\Community\FollowService;
 use App\Services\Community\GeoService;
 use App\Services\Community\LeaderboardService;
 use App\Services\Community\LikeService;
+use App\Domain\Communities\Contracts\MembershipService as MembershipContract;
+use App\Domain\Communities\Contracts\PointsService as PointsContract;
+use App\Domain\Communities\Services\Adapters\MembershipServiceAdapter;
+use App\Domain\Communities\Services\Adapters\PointsServiceAdapter;
 use App\Services\Community\MembershipService;
 use App\Services\Community\NullClassroomLinkService;
 use App\Services\Community\StripeSubscriptionService;
@@ -37,11 +41,13 @@ class CommunityServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(MembershipService::class, EloquentMembershipService::class);
+        $this->app->bind(MembershipContract::class, MembershipServiceAdapter::class);
         $this->app->bind(FeedService::class, EloquentFeedService::class);
         $this->app->bind(PostService::class, EloquentPostService::class);
         $this->app->bind(LikeService::class, EloquentLikeService::class);
         $this->app->bind(FollowService::class, EloquentFollowService::class);
         $this->app->bind(PointsService::class, EloquentPointsService::class);
+        $this->app->bind(PointsContract::class, PointsServiceAdapter::class);
         $this->app->bind(LeaderboardService::class, EloquentLeaderboardService::class);
         $this->app->bind(GeoService::class, EloquentGeoService::class);
         $this->app->bind(SubscriptionService::class, StripeSubscriptionService::class);
