@@ -1,0 +1,19 @@
+{
+  "artifacts": [
+    {
+      "path": "Web_Application/Academy-LMS/tests/Fixtures/community_fixture_set.json",
+      "record_counts": {
+        "communities": 2,
+        "posts": 8,
+        "upcoming_events": 4
+      },
+      "sha256": "83bd9be57ae517416a570f63643b3350a80d433a3aa05022e2c97059da8e4ecd"
+    },
+    {
+      "line_count": 338,
+      "path": "Student Mobile APP/academy_lms_app/test/fixtures/community_fixture_set.dart",
+      "sha256": "a7a0eb0a1d9f875212622086d77db1062f3fa54bcd0249e53ee2ec8d8b1cc53f"
+    }
+  ],
+  "generated_at": "2025-10-02T05:55:36.675574+00:00"
+}

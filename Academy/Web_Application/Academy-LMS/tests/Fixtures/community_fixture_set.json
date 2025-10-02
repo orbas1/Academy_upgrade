@@ -1,0 +1,715 @@
+{
+  "communities": [
+    {
+      "category": "Leadership",
+      "created_at": "2023-01-12T16:20:00Z",
+      "id": 101,
+      "leaderboard": [
+        {
+          "badges": [
+            "founder",
+            "top-mentor"
+          ],
+          "display_name": "Alicia Patel",
+          "level": 12,
+          "points": 12850,
+          "role": "owner",
+          "user_id": 501
+        },
+        {
+          "badges": [
+            "product-coach"
+          ],
+          "display_name": "Diego Marquez",
+          "level": 11,
+          "points": 11680,
+          "role": "admin",
+          "user_id": 502
+        },
+        {
+          "badges": [
+            "apac-champion",
+            "insights-top-5"
+          ],
+          "display_name": "Stephanie Cho",
+          "level": 9,
+          "points": 8450,
+          "role": "moderator",
+          "user_id": 503
+        },
+        {
+          "badges": [
+            "streak-30",
+            "okrs-pro"
+          ],
+          "display_name": "Jonas Kr\u00fcger",
+          "level": 7,
+          "points": 5275,
+          "role": "member",
+          "user_id": 504
+        },
+        {
+          "badges": [
+            "cohort-guide"
+          ],
+          "display_name": "Naomi Ibe",
+          "level": 6,
+          "points": 3925,
+          "role": "member",
+          "user_id": 505
+        }
+      ],
+      "member_counts": {
+        "active": 5,
+        "banned": 0,
+        "online": 1,
+        "pending": 1,
+        "total": 6
+      },
+      "name": "Product Leaders Guild",
+      "paywalled_posts": [
+        {
+          "author_id": 503,
+          "created_at": "2024-05-27T11:05:00+00:00",
+          "engagement": {
+            "comments": 24,
+            "reactions": 96,
+            "score": 186.88,
+            "shares": 5
+          },
+          "excerpt": "Slide deck + template from our last cohort.",
+          "id": 9002,
+          "paywall_tier_id": 301,
+          "tags": [
+            "roadmapping",
+            "frameworks"
+          ],
+          "title": "Outcome Canvas Template",
+          "type": "image",
+          "visibility": "paid"
+        }
+      ],
+      "points_rules": [
+        {
+          "action": "post_created",
+          "cooldown_hours": 2,
+          "points": 25
+        },
+        {
+          "action": "comment_created",
+          "cooldown_hours": 1,
+          "points": 10
+        },
+        {
+          "action": "like_received",
+          "cooldown_hours": 0,
+          "points": 2
+        }
+      ],
+      "recent_posts": [
+        {
+          "author_id": 501,
+          "created_at": "2024-05-28T14:30:00+00:00",
+          "engagement": {
+            "comments": 32,
+            "reactions": 143,
+            "score": 303.0,
+            "shares": 9
+          },
+          "excerpt": "How we keep global squads aligned with a 24-hour cycle.",
+          "id": 9001,
+          "paywall_tier_id": null,
+          "tags": [
+            "product-discovery",
+            "leadership"
+          ],
+          "title": "Async Discovery Rituals",
+          "type": "text",
+          "visibility": "community"
+        },
+        {
+          "author_id": 503,
+          "created_at": "2024-05-27T11:05:00+00:00",
+          "engagement": {
+            "comments": 24,
+            "reactions": 96,
+            "score": 186.88,
+            "shares": 5
+          },
+          "excerpt": "Slide deck + template from our last cohort.",
+          "id": 9002,
+          "paywall_tier_id": 301,
+          "tags": [
+            "roadmapping",
+            "frameworks"
+          ],
+          "title": "Outcome Canvas Template",
+          "type": "image",
+          "visibility": "paid"
+        },
+        {
+          "author_id": 504,
+          "created_at": "2024-05-24T19:20:00+00:00",
+          "engagement": {
+            "comments": 44,
+            "reactions": 182,
+            "score": 321.0,
+            "shares": 17
+          },
+          "excerpt": "Recording + transcript from our April live session.",
+          "id": 9003,
+          "paywall_tier_id": null,
+          "tags": [
+            "roadmapping",
+            "stakeholder"
+          ],
+          "title": "Stakeholder Alignment Clinic",
+          "type": "video",
+          "visibility": "public"
+        },
+        {
+          "author_id": 502,
+          "created_at": "2024-05-22T17:45:00+00:00",
+          "engagement": {
+            "comments": 15,
+            "reactions": 61,
+            "score": 97.0,
+            "shares": 2
+          },
+          "excerpt": "Vote on your preferred rhythm for async check-ins.",
+          "id": 9004,
+          "paywall_tier_id": null,
+          "tags": [
+            "okr",
+            "cadence"
+          ],
+          "title": "Q3 OKR Cadence",
+          "type": "poll",
+          "visibility": "community"
+        }
+      ],
+      "role_distribution": [
+        {
+          "count": 1,
+          "role": "admin"
+        },
+        {
+          "count": 3,
+          "role": "member"
+        },
+        {
+          "count": 1,
+          "role": "moderator"
+        },
+        {
+          "count": 1,
+          "role": "owner"
+        }
+      ],
+      "slug": "product-leaders",
+      "tiers": [
+        {
+          "benefits": [
+            "Access to public posts",
+            "Monthly newsletter"
+          ],
+          "billing_interval": "monthly",
+          "currency": "USD",
+          "id": 300,
+          "name": "Open Lounge",
+          "price": 0.0
+        },
+        {
+          "benefits": [
+            "Weekly live clinics",
+            "Private frameworks",
+            "1:1 office hours"
+          ],
+          "billing_interval": "monthly",
+          "currency": "USD",
+          "id": 301,
+          "name": "Executive Circle",
+          "price": 129.0
+        }
+      ],
+      "timezone": "America/New_York",
+      "timezone_distribution": [
+        {
+          "members": 1,
+          "timezone": "Africa/Lagos"
+        },
+        {
+          "members": 1,
+          "timezone": "America/Chicago"
+        },
+        {
+          "members": 1,
+          "timezone": "America/Los_Angeles"
+        },
+        {
+          "members": 1,
+          "timezone": "America/New_York"
+        },
+        {
+          "members": 1,
+          "timezone": "Asia/Singapore"
+        },
+        {
+          "members": 1,
+          "timezone": "Europe/Berlin"
+        }
+      ],
+      "trending_posts": [
+        {
+          "author_id": 504,
+          "created_at": "2024-05-24T19:20:00+00:00",
+          "engagement": {
+            "comments": 44,
+            "reactions": 182,
+            "score": 321.0,
+            "shares": 17
+          },
+          "excerpt": "Recording + transcript from our April live session.",
+          "id": 9003,
+          "paywall_tier_id": null,
+          "tags": [
+            "roadmapping",
+            "stakeholder"
+          ],
+          "title": "Stakeholder Alignment Clinic",
+          "type": "video",
+          "visibility": "public"
+        },
+        {
+          "author_id": 501,
+          "created_at": "2024-05-28T14:30:00+00:00",
+          "engagement": {
+            "comments": 32,
+            "reactions": 143,
+            "score": 303.0,
+            "shares": 9
+          },
+          "excerpt": "How we keep global squads aligned with a 24-hour cycle.",
+          "id": 9001,
+          "paywall_tier_id": null,
+          "tags": [
+            "product-discovery",
+            "leadership"
+          ],
+          "title": "Async Discovery Rituals",
+          "type": "text",
+          "visibility": "community"
+        },
+        {
+          "author_id": 503,
+          "created_at": "2024-05-27T11:05:00+00:00",
+          "engagement": {
+            "comments": 24,
+            "reactions": 96,
+            "score": 186.88,
+            "shares": 5
+          },
+          "excerpt": "Slide deck + template from our last cohort.",
+          "id": 9002,
+          "paywall_tier_id": 301,
+          "tags": [
+            "roadmapping",
+            "frameworks"
+          ],
+          "title": "Outcome Canvas Template",
+          "type": "image",
+          "visibility": "paid"
+        }
+      ],
+      "upcoming_events": [
+        {
+          "duration_minutes": 60,
+          "hosts": [
+            501
+          ],
+          "id": 3001,
+          "location": "Zoom",
+          "rsvp_count": 86,
+          "starts_at": "2024-06-05T17:00:00+00:00",
+          "title": "Quarterly Product Leadership AMA",
+          "visibility": "public"
+        },
+        {
+          "duration_minutes": 45,
+          "hosts": [
+            503,
+            504
+          ],
+          "id": 3002,
+          "location": "Gather",
+          "rsvp_count": 54,
+          "starts_at": "2024-06-12T13:00:00+00:00",
+          "title": "Outcome Roadmap Critique",
+          "visibility": "community"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "category": "Growth",
+      "created_at": "2022-09-03T10:12:00Z",
+      "id": 102,
+      "leaderboard": [
+        {
+          "badges": [
+            "founder",
+            "webinar-host"
+          ],
+          "display_name": "Priya Natarajan",
+          "level": 13,
+          "points": 15420,
+          "role": "owner",
+          "user_id": 601
+        },
+        {
+          "badges": [
+            "automation-architect"
+          ],
+          "display_name": "Marcus Lee",
+          "level": 11,
+          "points": 12110,
+          "role": "admin",
+          "user_id": 602
+        },
+        {
+          "badges": [
+            "cohort-captain"
+          ],
+          "display_name": "Marta Kowalski",
+          "level": 10,
+          "points": 9820,
+          "role": "moderator",
+          "user_id": 605
+        },
+        {
+          "badges": [
+            "workflow-guru"
+          ],
+          "display_name": "Elena Popov",
+          "level": 8,
+          "points": 7340,
+          "role": "member",
+          "user_id": 603
+        },
+        {
+          "badges": [
+            "automation-top-10"
+          ],
+          "display_name": "Liam O'Connor",
+          "level": 7,
+          "points": 5640,
+          "role": "member",
+          "user_id": 606
+        }
+      ],
+      "member_counts": {
+        "active": 5,
+        "banned": 1,
+        "online": 1,
+        "pending": 0,
+        "total": 6
+      },
+      "name": "Creator Engineers Collective",
+      "paywalled_posts": [
+        {
+          "author_id": 602,
+          "created_at": "2024-05-28T09:40:00+00:00",
+          "engagement": {
+            "comments": 67,
+            "reactions": 208,
+            "score": 466.75,
+            "shares": 21
+          },
+          "excerpt": "Deep dive on caching workflows for community scale.",
+          "id": 9101,
+          "paywall_tier_id": 401,
+          "tags": [
+            "automation",
+            "notion"
+          ],
+          "title": "Scaling Your Notion API",
+          "type": "video",
+          "visibility": "paid"
+        }
+      ],
+      "points_rules": [
+        {
+          "action": "workflow_published",
+          "cooldown_hours": 6,
+          "points": 40
+        },
+        {
+          "action": "comment_created",
+          "cooldown_hours": 1,
+          "points": 12
+        },
+        {
+          "action": "member_referred",
+          "cooldown_hours": 0,
+          "points": 120
+        }
+      ],
+      "recent_posts": [
+        {
+          "author_id": 602,
+          "created_at": "2024-05-28T09:40:00+00:00",
+          "engagement": {
+            "comments": 67,
+            "reactions": 208,
+            "score": 466.75,
+            "shares": 21
+          },
+          "excerpt": "Deep dive on caching workflows for community scale.",
+          "id": 9101,
+          "paywall_tier_id": 401,
+          "tags": [
+            "automation",
+            "notion"
+          ],
+          "title": "Scaling Your Notion API",
+          "type": "video",
+          "visibility": "paid"
+        },
+        {
+          "author_id": 601,
+          "created_at": "2024-05-27T20:22:00+00:00",
+          "engagement": {
+            "comments": 29,
+            "reactions": 134,
+            "score": 266.8,
+            "shares": 11
+          },
+          "excerpt": "Benchmarks from our last 15 launches across channels.",
+          "id": 9102,
+          "paywall_tier_id": null,
+          "tags": [
+            "launch",
+            "growth"
+          ],
+          "title": "Creator Flywheel Benchmarks",
+          "type": "text",
+          "visibility": "community"
+        },
+        {
+          "author_id": 603,
+          "created_at": "2024-05-26T16:10:00+00:00",
+          "engagement": {
+            "comments": 18,
+            "reactions": 97,
+            "score": 151.0,
+            "shares": 6
+          },
+          "excerpt": "Workflow library for multi-step automation sequences.",
+          "id": 9103,
+          "paywall_tier_id": null,
+          "tags": [
+            "automation",
+            "templates"
+          ],
+          "title": "Zapier Blueprint",
+          "type": "image",
+          "visibility": "community"
+        },
+        {
+          "author_id": 605,
+          "created_at": "2024-05-25T11:18:00+00:00",
+          "engagement": {
+            "comments": 11,
+            "reactions": 72,
+            "score": 106.0,
+            "shares": 4
+          },
+          "excerpt": "Vote on the focus for our next async sprint.",
+          "id": 9104,
+          "paywall_tier_id": null,
+          "tags": [
+            "roadmap",
+            "events"
+          ],
+          "title": "July Build Sprint",
+          "type": "poll",
+          "visibility": "community"
+        }
+      ],
+      "role_distribution": [
+        {
+          "count": 1,
+          "role": "admin"
+        },
+        {
+          "count": 3,
+          "role": "member"
+        },
+        {
+          "count": 1,
+          "role": "moderator"
+        },
+        {
+          "count": 1,
+          "role": "owner"
+        }
+      ],
+      "slug": "creator-engineers",
+      "tiers": [
+        {
+          "benefits": [
+            "Community feed",
+            "Template drops",
+            "Weekly office hours"
+          ],
+          "billing_interval": "monthly",
+          "currency": "USD",
+          "id": 400,
+          "name": "Builder",
+          "price": 39.0
+        },
+        {
+          "benefits": [
+            "Private automation reviews",
+            "Partner marketplace",
+            "Revenue labs"
+          ],
+          "billing_interval": "quarterly",
+          "currency": "USD",
+          "id": 401,
+          "name": "Operator",
+          "price": 189.0
+        }
+      ],
+      "timezone": "Europe/London",
+      "timezone_distribution": [
+        {
+          "members": 1,
+          "timezone": "America/New_York"
+        },
+        {
+          "members": 1,
+          "timezone": "Asia/Hong_Kong"
+        },
+        {
+          "members": 1,
+          "timezone": "Europe/Dublin"
+        },
+        {
+          "members": 1,
+          "timezone": "Europe/London"
+        },
+        {
+          "members": 1,
+          "timezone": "Europe/Madrid"
+        },
+        {
+          "members": 1,
+          "timezone": "Europe/Warsaw"
+        }
+      ],
+      "trending_posts": [
+        {
+          "author_id": 602,
+          "created_at": "2024-05-28T09:40:00+00:00",
+          "engagement": {
+            "comments": 67,
+            "reactions": 208,
+            "score": 466.75,
+            "shares": 21
+          },
+          "excerpt": "Deep dive on caching workflows for community scale.",
+          "id": 9101,
+          "paywall_tier_id": 401,
+          "tags": [
+            "automation",
+            "notion"
+          ],
+          "title": "Scaling Your Notion API",
+          "type": "video",
+          "visibility": "paid"
+        },
+        {
+          "author_id": 601,
+          "created_at": "2024-05-27T20:22:00+00:00",
+          "engagement": {
+            "comments": 29,
+            "reactions": 134,
+            "score": 266.8,
+            "shares": 11
+          },
+          "excerpt": "Benchmarks from our last 15 launches across channels.",
+          "id": 9102,
+          "paywall_tier_id": null,
+          "tags": [
+            "launch",
+            "growth"
+          ],
+          "title": "Creator Flywheel Benchmarks",
+          "type": "text",
+          "visibility": "community"
+        },
+        {
+          "author_id": 603,
+          "created_at": "2024-05-26T16:10:00+00:00",
+          "engagement": {
+            "comments": 18,
+            "reactions": 97,
+            "score": 151.0,
+            "shares": 6
+          },
+          "excerpt": "Workflow library for multi-step automation sequences.",
+          "id": 9103,
+          "paywall_tier_id": null,
+          "tags": [
+            "automation",
+            "templates"
+          ],
+          "title": "Zapier Blueprint",
+          "type": "image",
+          "visibility": "community"
+        }
+      ],
+      "upcoming_events": [
+        {
+          "duration_minutes": 75,
+          "hosts": [
+            601,
+            602
+          ],
+          "id": 3101,
+          "location": "Zoom",
+          "rsvp_count": 132,
+          "starts_at": "2024-06-03T18:00:00+00:00",
+          "title": "Automation Show & Tell",
+          "visibility": "community"
+        },
+        {
+          "duration_minutes": 50,
+          "hosts": [
+            602,
+            603
+          ],
+          "id": 3102,
+          "location": "Circle Studio",
+          "rsvp_count": 104,
+          "starts_at": "2024-06-18T16:30:00+00:00",
+          "title": "Creator Revenue Playbooks",
+          "visibility": "paid"
+        }
+      ],
+      "visibility": "private"
+    }
+  ],
+  "generated_at": "2024-05-28T16:30:00+00:00",
+  "global_metrics": {
+    "active_members": 10,
+    "communities": 2,
+    "engagement": {
+      "average_score": 237.3,
+      "max_score": 466.75,
+      "min_score": 97.0
+    },
+    "paywalled_posts": 2
+  }
+}
