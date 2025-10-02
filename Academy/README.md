@@ -22,6 +22,17 @@ For an honest look at remaining scope, consult the
 major service, UI, data, and DevOps milestones that are still outstanding before
 we can enter broad beta testing.
 
+To understand how each deliverable is graded, review the "Quality Grading Model"
+in [`AGENTS.md`](AGENTS.md). Every roadmap task is assigned equal weight, and
+the required quality checkers (code quality, security, functionality, platform
+surfaces, and design) must be documented before we move to the next milestone.
+
+> **Status (February 2025):** Only ~20% of the community upgrade is represented
+> in the repository. Foundational contracts and documentation exist, but the
+> production experience, installation automation, payments, mobile parity, and
+> DevOps tooling are still incomplete. Prioritise work according to the
+> "Roadmap from 20% → 100%" section in `AGENTS.md`.
+
 ---
 
 ## 1. Prerequisites
@@ -59,45 +70,23 @@ git clone git@github.com:your-org/orbas-learn.git
 cd orbas-learn/Academy
 ```
 
-The `tools/Start_Up Script` remains the fastest way to configure the Laravel
-stack. It now honors Orbas Learn defaults for app naming, metrics, and secret
-paths.
+The legacy `tools/Start_Up Script` bootstraps the Laravel stack, but it still
+asks for CodeCanyon purchase codes, pauses for interactive input, and writes an
+Apache-only vhost. Milestone A in `AGENTS.md` tracks the removal of the licence
+middleware and the work to publish a single `install.sh` wrapper that runs the
+entire bootstrap (env files, dependencies, database, queues, cron, vhosts) in
+non-interactive mode for both Apache and Nginx.
 
-```bash
-DB_USERNAME=myuser DB_PASSWORD=mypassword LOCAL_DOMAIN=orbas.test \
-  ./tools/Start_Up\ Script
-```
-
-Key behaviours:
-
-1. Copies `.env.example` → `.env` with Orbas Learn defaults and injects database
-   credentials supplied via environment variables.
-2. Validates PHP, Composer, Node, npm, and MySQL connectivity before continuing.
-3. Creates the target database (defaults to `orbas_learn`) if permissions allow.
-4. Installs PHP and Node dependencies, generates an `APP_KEY`, and clears caches.
-5. Runs migrations and (unless `SEED_DATABASE=0`) seeds baseline reference data.
-6. Builds Vite assets so the dashboard loads without the dev server.
-7. Writes an Apache vhost stub to `infra/apache/local_orbas.test.conf` for local
-   reverse proxies.
-
-Override behaviour with the following flags:
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `SEED_DATABASE` | `1` | Execute `php artisan db:seed --force`. |
-| `SKIP_DATABASE` | `0` | Skip DB connectivity, migrations, and seeders. |
-| `SKIP_FRONTEND_BUILD` | `0` | Skip `npm run build`. |
-| `SKIP_VHOST` | `0` | Prevent Apache stub generation. |
-| `APP_PORT` | `8000` | Used for `APP_URL` and post-setup hints. |
-
-If you prefer a lighter bootstrap, run the preflight script directly:
+Until that installer lands, run the following manual steps:
 
 ```bash
 cp Web_Application/Academy-LMS/.env.example Web_Application/Academy-LMS/.env
-SKIP_FRONTEND_BUILD=1 tools/preflight/bootstrap_local_env.sh
+php Web_Application/Academy-LMS/artisan key:generate
+composer install
+npm install
 ```
 
-Update `.env` with correct credentials before running migrations manually.
+Then update `.env` with correct credentials before running migrations manually.
 
 ---
 
@@ -135,11 +124,9 @@ php artisan migrate
 php artisan db:seed
 ```
 
-Baseline seeders load:
-
-- Foundational community categories and membership levels.
-- Demo users for smoke testing (admin, moderator, member).
-- Stripe test products if the `SUBSCRIPTION_*` env variables are present.
+Current seeders only cover default community categories, levels, and points
+rules. Demo users, subscription fixtures, geo metadata, and analytics scaffolds
+still need to be authored.
 
 ### 3.3 Local Services
 
@@ -158,33 +145,31 @@ subscription webhooks.
 
 ### 3.4 Testing & Quality Gates
 
-Run the quality gate locally before opening a PR:
+Run the available checks locally before opening a PR:
 
 ```bash
-composer test          # PHPUnit & Pest suites
-php artisan test       # Feature tests
-npm run lint           # Front-end linting (ESLint/Tailwind)
-npm run typecheck      # TypeScript checks
-phpstan analyse        # Static analysis (level defined in phpstan.neon.dist)
-php artisan communities:quality-gate --json  # Schema/seed/config readiness check
+php artisan test
+composer phpstan
+composer security-scan
+npm run build
+php artisan communities:quality-gate --json
 ```
 
 Pending TODOs:
 
+- Add first-class `composer test` and JavaScript lint/typecheck scripts.
 - Configure Playwright for browser end-to-end tests.
 - Wire up k6 scripts for feed throughput testing.
-- Expand seeders to cover leaderboard fixtures.
+- Expand seeders to cover leaderboard fixtures and subscription tiers.
 - Automate the quality gate in CI (see `docs/upgrade/runbooks/quality-gate.md`).
 
 ### 3.5 Community Service Contracts
 
-Service interfaces that codify Orbas Learn community responsibilities now live
-under `app/Domain/Communities/Contracts` in the Laravel project. They cover
-memberships, feeds, posts, comments, likes, points, leaderboards, geo, billing,
-paywall checks, calendars, and classroom mirroring. Downstream services (web
-controllers, jobs, and the Flutter client SDK) should depend on these
-interfaces rather than concrete implementations to keep the multi-app upgrade
-aligned.
+Initial service contracts for the communities domain live under
+`app/Domain/Communities/Contracts`. Most concrete implementations are still
+missing—Milestones B and C in `AGENTS.md` track the required services, adapters,
+and tests. Until those land, controllers and jobs will continue to lean on the
+legacy LMS helpers.
 
 ---
 
@@ -235,18 +220,26 @@ workspace migration is complete (tracked in `docs/mobile-roadmap.md`).
   cutovers.
 - **Load tests** reside in `tools/perf/k6`. Use the shared `README` for
   invocation examples.
-- **Installer interface** launches via `tools/Start_Up Script` and feeds status
-  updates through ANSI output for CI/CD compatibility.
+- **Installer interface** is being rebuilt. The legacy `tools/Start_Up Script`
+  still exists but requires CodeCanyon prompts and manual steps; track Milestone
+  A for the replacement `install.sh` flow.
 
 ---
 
 ## 6. Next Steps
 
-- Complete renaming in Flutter (`X-Academy-Client` → `X-Orbas-Client`, app
-  strings, icons).
-- Replace legacy LMS-only features with community-first services as outlined in
-  `docs/orbas-learn-roadmap.md`.
-- Implement OpenAPI generation and publish the spec for mobile/web parity.
+The actionable backlog lives in `AGENTS.md` under **Roadmap from 20% → 100%
+Completion**. Focus on one milestone at a time:
 
-Please report configuration drift or missing instructions via the issue tracker
-so we can keep this runbook authoritative during the rebrand.
+1. **Milestone A** – Remove CodeCanyon licence checks, finish the one-command
+   installer, and align documentation across the repo.
+2. **Milestone B** – Ship the communities data model, factories, seeders, and
+   audit/rollback automation.
+3. **Milestone C** – Implement backend services, APIs, search, and monitoring.
+4. **Milestone D** – Deliver the web experience, moderation/admin control
+   centre, and notification UX.
+5. **Milestone E** – Bring the Flutter app, messaging pipeline, payments, and
+   DevOps platform to production readiness.
+
+Update this README as milestones close so new contributors land on an accurate
+snapshot of the platform.
