@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 if ($argc < 4) {
     fwrite(STDERR, "Usage: php enforce_php_coverage.php <clover-file> <min-percentage> <summary-output>\n");
+    fwrite(STDERR, "Optional environment overrides: PHP_COVERAGE_MIN_LINE, PHP_COVERAGE_MIN_METHOD, PHP_COVERAGE_MIN_BRANCH\n");
     exit(1);
 }
 
@@ -19,6 +20,20 @@ if ($min <= 0 || $min > 100) {
     fwrite(STDERR, 'Minimum coverage must be between 0 and 100.' . PHP_EOL);
     exit(1);
 }
+
+$resolveThreshold = static function (string $envName, float $default) {
+    $value = getenv($envName);
+    if ($value === false || $value === '') {
+        return $default;
+    }
+
+    $numeric = (float) $value;
+    if ($numeric <= 0 || $numeric > 100) {
+        throw new InvalidArgumentException(sprintf('%s must be between 0 and 100 (given %s).', $envName, $value));
+    }
+
+    return $numeric;
+};
 
 $xml = new SimpleXMLElement(file_get_contents($cloverPath));
 if (!isset($xml->project->metrics)) {
@@ -38,12 +53,21 @@ $lineCoverage = $totalStatements > 0 ? ($coveredStatements / $totalStatements) *
 $methodCoverage = $totalMethods > 0 ? ($coveredMethods / $totalMethods) * 100 : 0.0;
 $branchCoverage = $totalConditionals > 0 ? ($coveredConditionals / $totalConditionals) * 100 : 0.0;
 
+try {
+    $lineThreshold = $resolveThreshold('PHP_COVERAGE_MIN_LINE', $min);
+    $methodThreshold = $resolveThreshold('PHP_COVERAGE_MIN_METHOD', max($lineThreshold - 5, 0));
+    $branchThreshold = $resolveThreshold('PHP_COVERAGE_MIN_BRANCH', max($lineThreshold - 10, 0));
+} catch (InvalidArgumentException $exception) {
+    fwrite(STDERR, $exception->getMessage() . PHP_EOL);
+    exit(1);
+}
+
 $summary = [
     'generated_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DateTimeInterface::ATOM),
     'thresholds' => [
-        'line' => $min,
-        'method' => max($min - 5, 0),
-        'branch' => max($min - 10, 0),
+        'line' => $lineThreshold,
+        'method' => $methodThreshold,
+        'branch' => $branchThreshold,
     ],
     'coverage' => [
         'line' => round($lineCoverage, 2),

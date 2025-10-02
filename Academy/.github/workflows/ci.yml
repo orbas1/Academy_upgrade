@@ -88,10 +88,14 @@ jobs:
           cp .env.example .env.testing
           php artisan key:generate --env=testing
       - name: Run PHPUnit suites with coverage
+        env:
+          PHP_COVERAGE_MIN_LINE: '80'
+          PHP_COVERAGE_MIN_BRANCH: '80'
+          PHP_COVERAGE_MIN_METHOD: '75'
         run: |
           mkdir -p build/coverage
           php artisan test --log-junit=junit.xml --coverage-clover=build/coverage/clover.xml --coverage-text=build/coverage/phpunit-coverage.txt
-          php $GITHUB_WORKSPACE/tools/ci/enforce_php_coverage.php build/coverage/clover.xml 75 build/coverage/summary.json
+          php $GITHUB_WORKSPACE/tools/ci/enforce_php_coverage.php build/coverage/clover.xml 80 build/coverage/summary.json
       - name: Upload PHPUnit report
         uses: actions/upload-artifact@v4
         with:
@@ -409,6 +413,61 @@ jobs:
         with:
           name: quality-gates-summary
           path: coverage/quality-gates-summary.json
+      - name: Publish workflow dashboard summary
+        run: |
+          python - <<'PY'
+import json
+import os
+from pathlib import Path
+
+summary_path = Path('coverage/quality-gates-summary.json')
+if not summary_path.exists():
+    raise SystemExit('coverage/quality-gates-summary.json not found')
+
+with summary_path.open('r', encoding='utf-8') as handle:
+    summary = json.load(handle)
+
+icons = {
+    'success': '✅',
+    'failure': '❌',
+    'cancelled': '⚪️',
+    'skipped': '⚪️',
+}
+
+def icon(status: str) -> str:
+    return icons.get(status, '❌')
+
+def fmt(value):
+    if value is None:
+        return 'n/a'
+    return f"{value:.2f}%"
+
+rows = [
+    ('Backend', summary['backend']),
+    ('Flutter', summary['flutter']),
+    ('Security scans', summary['security']),
+    ('Infrastructure scans', summary['infrastructure']),
+]
+
+lines = [
+    '### Quality Gate Dashboard',
+    '',
+    '| Surface | Status | Coverage | Threshold |',
+    '| --- | --- | --- | --- |',
+]
+
+for label, data in rows:
+    coverage = fmt(data.get('coverage')) if isinstance(data, dict) else 'n/a'
+    threshold = fmt(data.get('threshold')) if isinstance(data, dict) else 'n/a'
+    lines.append(f"| {label} | {icon(data.get('status') if isinstance(data, dict) else '')} | {coverage} | {threshold} |")
+
+lines.append('')
+lines.append('_Source: coverage/quality-gates-summary.json_')
+
+summary_file = Path(os.environ['GITHUB_STEP_SUMMARY'])
+with summary_file.open('a', encoding='utf-8') as handle:
+    handle.write('\n'.join(lines) + '\n')
+PY
       - name: Publish pull request quality comment
         if: ${{ github.event_name == 'pull_request' }}
         uses: actions/github-script@v7
