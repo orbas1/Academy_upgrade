@@ -91,3 +91,12 @@ Progress percentages are calibrated against enterprise acceptance criteria in `A
 | Acceptance evidence & stakeholder review | 100% | 100% | [`stage12_acceptance_report.md`](../testing/stage12_acceptance_report.md) captures sign-offs, logs, and suite outcomes. |
 | Deliverable packaging & distribution | 100% | 100% | Fixture catalogue + history archive published and communicated to QA/mobile/platform leads. |
 | **Overall Stage 12** | **100%** | **100%** | Testing tranche complete with deterministic fixtures, validated automation, and documented distribution trail. |
+
+## Stage 13 – Acceptance Evidence & Audit (Complete)
+
+| Area | Completion | Quality | Notes |
+| --- | --- | --- | --- |
+| Acceptance report service & CLI | 100% | 100% | `AcceptanceReportService` synthesises config-driven checks with `acceptance:report` artisan command and JSON/table outputs. |
+| API exposure & governance | 100% | 100% | `/api/v1/ops/acceptance-report` secured via `acceptance.report.view`; wildcard gate behaviour corrected so non-admins defer to requirement-specific checks. |
+| Mobile acceptance dashboard | 100% | 100% | Flutter operations screen renders summary + requirement drill-down with offline cache + tests hitting mocked endpoint. |
+| Tracking & documentation | 100% | 100% | Stage 13 audit log updated with per-requirement completion/quality table and scripted evidence (`run_full_test_suite.sh`). |

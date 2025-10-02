@@ -159,10 +159,18 @@ if [[ -n "$LARAVEL_DIR" ]]; then
     laravel_test_cmd="php artisan test --parallel --group=data-protection"
   fi
 
+  pint_cmd="./vendor/bin/pint --test"
+  if [[ -n "${PINT_PATHS:-}" ]]; then
+    pint_cmd="./vendor/bin/pint --test"
+    for path in ${PINT_PATHS}; do
+      pint_cmd+=" \"$path\""
+    done
+  fi
+
   STEPS+=(
     "Laravel PHPUnit suite|$LARAVEL_DIR|$laravel_test_cmd"
     "Laravel static analysis (PHPStan)|$LARAVEL_DIR|composer phpstan:data-protection"
-    "Laravel Pint (format check)|$LARAVEL_DIR|./vendor/bin/pint --test"
+    "Laravel Pint (format check)|$LARAVEL_DIR|$pint_cmd"
   )
 fi
 
