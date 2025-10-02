@@ -45,6 +45,7 @@ return [
             'secrets.manage',
             'migration.plan.view',
             'migration.runbook.view',
+            'acceptance.report.view',
         ],
         'admin' => ['*'],
     ],

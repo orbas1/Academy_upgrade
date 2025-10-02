@@ -1,19 +1,16 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\frontend\CourseController;
-use App\Http\Controllers\ApiController;
+use App\Http\Controllers\Api\Observability\MobileMetricController;
 use App\Http\Controllers\Api\V1\Admin\AdminSavedSearchController;
 use App\Http\Controllers\Api\V1\Admin\AdminSearchController;
 use App\Http\Controllers\Api\V1\Admin\CommunityModuleManifestController;
 use App\Http\Controllers\Api\V1\Admin\SecretController as AdminSecretController;
 use App\Http\Controllers\Api\V1\Billing\StripeWebhookController;
-use App\Http\Controllers\Webhooks\MessagingWebhookController;
-use App\Http\Controllers\Api\V1\Community\SearchAuthorizationController;
 use App\Http\Controllers\Api\V1\Community\CommunityFeedController;
 use App\Http\Controllers\Api\V1\Community\CommunityNotificationPreferenceController;
+use App\Http\Controllers\Api\V1\Community\SearchAuthorizationController;
 use App\Http\Controllers\Api\V1\Community\SearchQueryController;
+use App\Http\Controllers\Api\V1\Ops\AcceptanceReportController;
 use App\Http\Controllers\Api\V1\Ops\MigrationPlanController;
 use App\Http\Controllers\Api\V1\Ops\MigrationRunbookController;
 use App\Http\Controllers\Api\V1\Profile\AnalyticsConsentController;
@@ -21,9 +18,11 @@ use App\Http\Controllers\Api\V1\Profile\ProfileActivityController;
 use App\Http\Controllers\Api\V1\Queue\QueueHealthSummaryController;
 use App\Http\Controllers\Api\V1\Security\DeviceSessionController;
 use App\Http\Controllers\Api\V1\Security\UploadQuotaController;
+use App\Http\Controllers\ApiController;
 use App\Http\Controllers\Monitoring\MetricsController;
-use App\Http\Controllers\Api\Observability\MobileMetricController;
-
+use App\Http\Controllers\Webhooks\MessagingWebhookController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -189,6 +188,9 @@ Route::prefix('v1')->group(function () {
             ->middleware('throttle:60,1');
         Route::get('/ops/migration-runbooks/{runbookKey}', [MigrationRunbookController::class, 'show'])
             ->middleware('throttle:60,1');
+        Route::get('/ops/acceptance-report', AcceptanceReportController::class)
+            ->middleware('throttle:60,1')
+            ->name('api.ops.acceptance-report');
 
         Route::post('/me/analytics-consent', AnalyticsConsentController::class)
             ->middleware('throttle:60,1');

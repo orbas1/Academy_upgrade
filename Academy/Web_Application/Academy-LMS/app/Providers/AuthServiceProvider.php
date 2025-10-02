@@ -2,10 +2,10 @@
 
 namespace App\Providers;
 
-use App\Support\Authorization\RoleMatrix;
-use Illuminate\Support\Facades\Gate;
 use App\Models\User;
+use App\Support\Authorization\RoleMatrix;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -26,7 +26,7 @@ class AuthServiceProvider extends ServiceProvider
         $matrix = $this->app->make(RoleMatrix::class);
 
         Gate::before(function (User $user) use ($matrix) {
-            return $matrix->allows($user, '*');
+            return $matrix->allows($user, '*') ? true : null;
         });
 
         Gate::define('community.view', function (User $user, mixed $community = null) use ($matrix) {
@@ -116,6 +116,10 @@ class AuthServiceProvider extends ServiceProvider
 
         Gate::define('migration.runbook.view', function (User $user) use ($matrix) {
             return $matrix->allows($user, 'migration.runbook.view');
+        });
+
+        Gate::define('acceptance.report.view', function (User $user) use ($matrix) {
+            return $matrix->allows($user, 'acceptance.report.view');
         });
 
         Gate::define('communities.manage', function (User $user) use ($matrix) {
