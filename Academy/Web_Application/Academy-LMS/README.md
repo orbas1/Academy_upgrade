@@ -139,3 +139,31 @@ php artisan config:cache
 | Apache 403 or 500 locally | Verify the generated virtual host is enabled and points to the `public` directory |
 
 Stay aligned with the broader mono-repo instructions via the [Local Development Handbook](../../docs/local-development.md).
+
+## 9. Symfony CLI + MariaDB (Docker) Sandbox
+
+Need an isolated environment that mirrors the PHP + database stack without installing anything locally? Bring up the Symfony CLI powered container with MariaDB using Docker Compose:
+
+```bash
+# from Academy_upgrade/Academy
+docker compose -f docker-compose.symfony.yml up --build
+```
+
+What happens on boot:
+
+1. The image installs PHP 8.3, Composer, and the Symfony CLI (requested for parity with teams that use the Symfony toolchain to serve PHP apps).
+2. `.env` is provisioned from `.env.docker.example` and an application key is generated if missing.
+3. Composer dependencies are installed.
+4. The container waits for the MariaDB service (`mariadb:11.3`), applies outstanding migrations, and starts the web server via `symfony server:start` exposed on [http://localhost:8000](http://localhost:8000).
+
+The MariaDB container exposes port `3306` so you can inspect the database with any MySQL/MariaDB client. Use the credentials defined in `.env.docker.example` (`academy` / `academy`). Data is persisted in the `mysql_data` named volume.
+
+### Customising the stack
+
+- Skip the automatic migration step by setting `SKIP_MIGRATIONS=1` in the `app` service environment.
+- Skip `composer install` (useful when you want to manage dependencies on the host) by setting `SKIP_COMPOSER_INSTALL=1`.
+- Need HTTPS or a different port? Override `APP_PORT` in the compose file and update the forwarded port (`host:container`).
+
+### Working with assets inside the container
+
+The PHP container intentionally omits Node.js to keep the image lean. Continue to run `npm install` / `npm run dev` on your host machine, or attach a separate Node container if you prefer a fully containerised workflow.
