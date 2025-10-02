@@ -2,6 +2,7 @@
 
 namespace App\Domain\Communities\Models;
 
+use App\Casts\EncryptedAttribute;
 use App\Domain\Search\Concerns\Searchable;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -26,7 +27,7 @@ class Community extends Model
 
     protected $casts = [
         'links' => 'array',
-        'settings' => 'array',
+        'settings' => EncryptedAttribute::class,
         'is_featured' => 'boolean',
         'launched_at' => 'datetime',
     ];

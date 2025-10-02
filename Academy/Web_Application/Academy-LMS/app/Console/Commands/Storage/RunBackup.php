@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 
@@ -37,7 +38,11 @@ class RunBackup extends Command
         $archivePath = storage_path("app/backups/{$backupId}.tar.gz");
         $this->files()->ensureDirectoryExists(dirname($archivePath));
 
-        $paths = Arr::wrap(Arr::get($config, 'paths', []));
+        /** @var array<int, string> $paths */
+        $paths = array_values(array_filter(
+            Arr::wrap(Arr::get($config, 'paths', [])),
+            fn ($path): bool => is_string($path) && $path !== ''
+        ));
 
         $this->info('Creating storage archive...');
         $this->createArchive($archivePath, $paths);
@@ -50,11 +55,20 @@ class RunBackup extends Command
             $this->appendToArchive($archivePath, [$dumpPath]);
         }
 
-        $remotePath = "backups/{$profile}/{$backupId}.tar.gz";
+        $archivePath = $this->maybeEncryptArchive($archivePath, $config);
+
+        $remotePath = "backups/{$profile}/" . basename($archivePath);
         $this->info("Uploading archive to {$remotePath}...");
         $stream = fopen($archivePath, 'rb');
-        $disk->put($remotePath, $stream);
-        fclose($stream);
+        if ($stream === false) {
+            throw new RuntimeException('Unable to open archive for reading.');
+        }
+
+        try {
+            $disk->put($remotePath, $stream);
+        } finally {
+            fclose($stream);
+        }
 
         $this->info('Backup complete. Pruning old archives...');
         $this->pruneOldBackups($disk, "backups/{$profile}", Arr::get($config, 'retention_days', 30));
@@ -69,15 +83,18 @@ class RunBackup extends Command
         return self::SUCCESS;
     }
 
+    /**
+     * @param array<int, string> $paths
+     */
     private function createArchive(string $archivePath, array $paths): void
     {
-        $paths = array_filter($paths, fn ($path) => $path && file_exists($path));
+        $validPaths = array_filter($paths, static fn (string $path): bool => file_exists($path));
 
-        if (empty($paths)) {
+        if (empty($validPaths)) {
             throw new RuntimeException('No backup paths have been configured.');
         }
 
-        $command = array_merge(['tar', '-czf', $archivePath], $paths);
+        $command = array_merge(['tar', '-czf', $archivePath], array_values($validPaths));
         $process = new Process($command);
         $process->setTimeout(3600);
         $process->run();
@@ -87,9 +104,12 @@ class RunBackup extends Command
         }
     }
 
+    /**
+     * @param array<int, string> $paths
+     */
     private function appendToArchive(string $archivePath, array $paths): void
     {
-        $command = array_merge(['tar', '-rf', $archivePath], $paths);
+        $command = array_merge(['tar', '-rf', $archivePath], array_values($paths));
         $process = new Process($command);
         $process->setTimeout(3600);
         $process->run();
@@ -128,6 +148,51 @@ class RunBackup extends Command
         }
     }
 
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function maybeEncryptArchive(string $archivePath, array $config): string
+    {
+        $encryption = Arr::get($config, 'encryption');
+
+        if (! is_array($encryption) || empty($encryption['enabled'])) {
+            return $archivePath;
+        }
+
+        $key = $encryption['key'] ?? env('STORAGE_BACKUP_ENCRYPTION_KEY');
+        if (! $key) {
+            throw new RuntimeException('Backup encryption is enabled but no encryption key has been provided.');
+        }
+
+        $cipher = $encryption['cipher'] ?? 'aes-256-cbc';
+        $encryptedPath = $archivePath . '.enc';
+
+        $process = new Process([
+            'openssl',
+            'enc',
+            '-' . $cipher,
+            '-salt',
+            '-pbkdf2',
+            '-pass',
+            'pass:' . $key,
+            '-in',
+            $archivePath,
+            '-out',
+            $encryptedPath,
+        ]);
+
+        $process->setTimeout(3600);
+        $process->run();
+
+        if (! $process->isSuccessful()) {
+            throw new RuntimeException('Failed to encrypt backup: ' . $process->getErrorOutput());
+        }
+
+        $this->files()->delete($archivePath);
+
+        return $encryptedPath;
+    }
+
     private function pruneOldBackups(Filesystem $disk, string $directory, int $retentionDays): void
     {
         $deadline = now()->subDays($retentionDays);
@@ -139,16 +204,18 @@ class RunBackup extends Command
         }
     }
 
+    /**
+     * @param array<string, mixed> $config
+     */
     private function resolveDisk(array $config): FilesystemAdapter
     {
         $diskName = Arr::get($config, 'disk', 's3-backups');
 
-        $disk = Storage::disk($diskName);
-        if (! $disk) {
-            throw new RuntimeException("Backup disk [{$diskName}] could not be resolved.");
+        try {
+            return Storage::disk($diskName);
+        } catch (InvalidArgumentException $exception) {
+            throw new RuntimeException("Backup disk [{$diskName}] could not be resolved.", 0, $exception);
         }
-
-        return $disk;
     }
 
     private function files(): LocalFilesystem

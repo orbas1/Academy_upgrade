@@ -27,6 +27,9 @@ class PrunePersonalData extends Command
         $this->components->twoColumnDetail('Device sessions removed', (string) $results['device_sessions_deleted']);
         $this->components->twoColumnDetail('Device access tokens removed', (string) $results['device_tokens_deleted']);
         $this->components->twoColumnDetail('Personal access tokens removed', (string) $results['personal_access_tokens_deleted']);
+        $this->components->twoColumnDetail('Upload scans pruned', (string) $results['upload_scans_deleted']);
+        $this->components->twoColumnDetail('Quarantine files removed', (string) $results['quarantine_files_removed']);
+        $this->components->twoColumnDetail('Export archives removed', (string) $results['export_archives_deleted']);
 
         if ($dryRun) {
             $this->comment('Dry run complete. No records were deleted.');

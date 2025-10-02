@@ -76,6 +76,9 @@
         "phpstan": [
             "vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --memory-limit=1G"
         ],
+        "phpstan:data-protection": [
+            "vendor/bin/phpstan analyse --memory-limit=1G app/Services/Security/DataRetentionService.php app/Console/Commands/Compliance/PrunePersonalData.php app/Console/Commands/Storage/RunBackup.php"
+        ],
         "security-scan": [
             "@phpstan",
             "composer audit --locked"

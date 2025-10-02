@@ -2,6 +2,7 @@
 
 namespace App\Domain\Communities\Models;
 
+use App\Casts\EncryptedAttribute;
 use App\Models\User;
 use Database\Factories\CommunityPointsLedgerFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -19,7 +20,7 @@ class CommunityPointsLedger extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'metadata' => 'array',
+        'metadata' => EncryptedAttribute::class,
         'occurred_at' => 'datetime',
     ];
 

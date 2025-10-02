@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:academy_lms_app/config/data_protection.dart';
 import 'package:academy_lms_app/services/security/data_protection_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart' as p;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -99,5 +101,44 @@ void main() {
 
     expect(prefsDisabled.containsKey('user'), isFalse);
     expect(wipeCalled, isFalse);
+  });
+
+  test('enforcePolicies prunes cache directories based on retention', () async {
+    final prefs = await SharedPreferences.getInstance();
+    var now = DateTime.utc(2024, 3, 1);
+
+    final tempRoot = await Directory.systemTemp.createTemp('cache-retention');
+    addTearDown(() async {
+      if (await tempRoot.exists()) {
+        await tempRoot.delete(recursive: true);
+      }
+    });
+
+    final downloadsDir = Directory(p.join(tempRoot.path, 'downloads'))..createSync(recursive: true);
+    final staleFile = File(p.join(downloadsDir.path, 'stale.json'))..writeAsStringSync('old');
+    staleFile.setLastModifiedSync(now.subtract(const Duration(days: 90)));
+    final freshFile = File(p.join(downloadsDir.path, 'fresh.json'))..writeAsStringSync('new');
+
+    final configuration = DataProtectionConfiguration.override(
+      personalDataRetentionDays: 30,
+      secureWipeOnLogout: false,
+      legacySensitiveKeys: const [],
+      cacheDirectoryNames: const ['downloads'],
+    );
+
+    final service = DataProtectionService.test(
+      configuration: configuration,
+      preferences: prefs,
+      clock: () => now,
+      directoryResolver: (_) async => [downloadsDir],
+    );
+
+    await service.enforcePolicies();
+
+    expect(staleFile.existsSync(), isFalse);
+    expect(freshFile.existsSync(), isTrue);
+
+    await service.wipeLocalFootprint();
+    expect(downloadsDir.existsSync(), isFalse);
   });
 }

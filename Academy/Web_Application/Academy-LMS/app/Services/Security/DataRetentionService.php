@@ -5,10 +5,15 @@ namespace App\Services\Security;
 use App\Models\AuditLog;
 use App\Models\DeviceAccessToken;
 use App\Models\DeviceIp;
+use App\Models\UploadScan;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\PersonalAccessToken;
+use Throwable;
 
 class DataRetentionService
 {
@@ -28,10 +33,14 @@ class DataRetentionService
             'device_sessions_deleted' => 0,
             'device_tokens_deleted' => 0,
             'personal_access_tokens_deleted' => 0,
+            'upload_scans_deleted' => 0,
+            'quarantine_files_removed' => 0,
+            'export_archives_deleted' => 0,
         ];
 
         $results['audit_logs_deleted'] = $this->pruneAuditLogs($dryRun);
 
+        /** @var array{device_sessions_deleted: int, device_tokens_deleted: int, personal_access_tokens_deleted: int, personal_access_tokens_retained: array<int>} $deviceResult */
         $deviceResult = $this->pruneDeviceSessions($dryRun);
         $results['device_sessions_deleted'] = $deviceResult['device_sessions_deleted'];
         $results['device_tokens_deleted'] = $deviceResult['device_tokens_deleted'];
@@ -41,6 +50,13 @@ class DataRetentionService
             $dryRun,
             $deviceResult['personal_access_tokens_retained']
         );
+
+        /** @var array{deleted: int, quarantine_deleted: int} $scanResult */
+        $scanResult = $this->pruneUploadScans($dryRun);
+        $results['upload_scans_deleted'] = $scanResult['deleted'];
+        $results['quarantine_files_removed'] = $scanResult['quarantine_deleted'];
+
+        $results['export_archives_deleted'] = $this->pruneExportArchives($dryRun);
 
         return $results;
     }
@@ -61,6 +77,90 @@ class DataRetentionService
         }
 
         return (int) $query->delete();
+    }
+
+    /**
+     * @return array{deleted: int, quarantine_deleted: int}
+     */
+    private function pruneUploadScans(bool $dryRun): array
+    {
+        $retentionDays = (int) $this->config->get('security.data_protection.upload_scans.retention_days', 60);
+        if ($retentionDays <= 0) {
+            return ['deleted' => 0, 'quarantine_deleted' => 0];
+        }
+
+        $cutoff = CarbonImmutable::now()->subDays($retentionDays);
+        $query = UploadScan::query()
+            ->whereNotNull('scanned_at')
+            ->where('scanned_at', '<', $cutoff);
+
+        if ($dryRun) {
+            return [
+                'deleted' => (int) $query->count(),
+                'quarantine_deleted' => 0,
+            ];
+        }
+
+        $deleted = 0;
+        $quarantineDeleted = 0;
+        $quarantineRetention = max((int) $this->config->get('security.data_protection.upload_scans.quarantine_retention_days', 30), 0);
+        $quarantineCutoff = CarbonImmutable::now()->subDays($quarantineRetention);
+
+        $query->chunkById(100, function (Collection $scans) use (&$deleted, &$quarantineDeleted, $quarantineCutoff): void {
+            /** @var UploadScan $scan */
+            foreach ($scans as $scan) {
+                if ($scan->quarantine_path && File::exists($scan->quarantine_path)) {
+                    try {
+                        $lastModified = CarbonImmutable::createFromTimestamp(File::lastModified($scan->quarantine_path));
+                        if ($quarantineCutoff->greaterThanOrEqualTo($lastModified)) {
+                            File::delete($scan->quarantine_path);
+                            $quarantineDeleted++;
+                        }
+                    } catch (Throwable) {
+                        // Ignore filesystem errors to avoid blocking retention
+                    }
+                }
+
+                $scan->delete();
+                $deleted++;
+            }
+        });
+
+        return [
+            'deleted' => $deleted,
+            'quarantine_deleted' => $quarantineDeleted,
+        ];
+    }
+
+    private function pruneExportArchives(bool $dryRun): int
+    {
+        $retentionDays = (int) $this->config->get('security.data_protection.exports.retention_days', 30);
+        if ($retentionDays <= 0) {
+            return 0;
+        }
+
+        $diskName = $this->config->get('security.data_protection.exports.disk', $this->config->get('compliance.export_disk', 'local'));
+        $path = trim((string) $this->config->get('security.data_protection.exports.path', 'compliance/exports'), '/');
+
+        try {
+            $disk = Storage::disk($diskName);
+        } catch (Throwable) {
+            return 0;
+        }
+
+        $deadline = CarbonImmutable::now()->subDays($retentionDays)->getTimestamp();
+        $deleted = 0;
+
+        foreach ($disk->files($path) as $file) {
+            if ($disk->lastModified($file) < $deadline) {
+                if (! $dryRun) {
+                    $disk->delete($file);
+                }
+                $deleted++;
+            }
+        }
+
+        return $deleted;
     }
 
     /**
@@ -159,6 +259,9 @@ class DataRetentionService
         ];
     }
 
+    /**
+     * @param array<int, int> $excludedTokenIds
+     */
     private function pruneStandaloneTokens(bool $dryRun, array $excludedTokenIds): int
     {
         $retentionDays = (int) $this->config->get('security.data_protection.personal_access_tokens.retention_days', 90);

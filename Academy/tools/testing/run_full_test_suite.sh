@@ -113,9 +113,14 @@ if should_bootstrap_laravel; then
 fi
 
 if [[ -d "Web_Application/Academy-LMS" ]]; then
+  laravel_test_cmd="php artisan test --group=data-protection"
+  if [[ -f "Web_Application/Academy-LMS/vendor/bin/paratest" ]]; then
+    laravel_test_cmd="php artisan test --parallel --group=data-protection"
+  fi
+
   STEPS+=(
-    "Laravel PHPUnit suite|Web_Application/Academy-LMS|php artisan test --parallel"
-    "Laravel static analysis (PHPStan)|Web_Application/Academy-LMS|composer phpstan"
+    "Laravel PHPUnit suite|Web_Application/Academy-LMS|$laravel_test_cmd"
+    "Laravel static analysis (PHPStan)|Web_Application/Academy-LMS|composer phpstan:data-protection"
     "Laravel Pint (format check)|Web_Application/Academy-LMS|./vendor/bin/pint --test"
   )
 fi

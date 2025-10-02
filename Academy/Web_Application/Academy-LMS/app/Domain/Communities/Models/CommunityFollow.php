@@ -2,6 +2,7 @@
 
 namespace App\Domain\Communities\Models;
 
+use App\Casts\EncryptedAttribute;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +16,7 @@ class CommunityFollow extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'metadata' => 'array',
+        'metadata' => EncryptedAttribute::class,
         'notifications_enabled' => 'boolean',
         'followed_at' => 'datetime',
     ];

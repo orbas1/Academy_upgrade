@@ -33,6 +33,10 @@ class PushDocumentsToIndex implements ShouldQueue
             return;
         }
 
+        if (config('scout.driver') !== 'meilisearch') {
+            return;
+        }
+
         try {
             $client->upsertDocuments($this->index, $this->documents);
         } catch (Throwable $exception) {

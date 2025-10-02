@@ -2,6 +2,7 @@
 
 namespace App\Domain\Communities\Models;
 
+use App\Casts\EncryptedAttribute;
 use App\Domain\Search\Concerns\Searchable;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -27,8 +28,8 @@ class CommunityPost extends Model
         'media' => 'array',
         'mentions' => 'array',
         'topics' => 'array',
-        'metadata' => 'array',
-        'lifecycle' => 'array',
+        'metadata' => EncryptedAttribute::class,
+        'lifecycle' => EncryptedAttribute::class,
         'is_pinned' => 'boolean',
         'is_locked' => 'boolean',
         'is_archived' => 'boolean',

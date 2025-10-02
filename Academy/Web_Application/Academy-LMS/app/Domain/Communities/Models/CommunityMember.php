@@ -2,6 +2,7 @@
 
 namespace App\Domain\Communities\Models;
 
+use App\Casts\EncryptedAttribute;
 use App\Models\User;
 use Database\Factories\CommunityMemberFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -20,8 +21,8 @@ class CommunityMember extends Model
 
     protected $casts = [
         'badges' => 'array',
-        'preferences' => 'array',
-        'metadata' => 'array',
+        'preferences' => EncryptedAttribute::class,
+        'metadata' => EncryptedAttribute::class,
         'is_online' => 'boolean',
         'joined_at' => 'datetime',
         'last_seen_at' => 'datetime',
