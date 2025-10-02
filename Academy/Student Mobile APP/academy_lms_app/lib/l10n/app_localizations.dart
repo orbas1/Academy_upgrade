@@ -16,7 +16,7 @@ class AppLocalizations {
 
   static const _localizedStrings = <String, Map<String, String>>{
     'en': {
-      'appTitle': 'Academy LMS App',
+      'appTitle': 'Orbas Learn',
       'loginTitle': 'Log In',
       'emailLabel': 'E-mail',
       'emailValidationError': 'Please enter a valid email address.',
@@ -61,7 +61,7 @@ class AppLocalizations {
       'deviceSecurityRefresh': 'Pull to refresh',
     },
     'es': {
-      'appTitle': 'Aplicación Academy LMS',
+      'appTitle': 'Aplicación Orbas Learn',
       'loginTitle': 'Iniciar sesión',
       'emailLabel': 'Correo electrónico',
       'emailValidationError': 'Introduce una dirección de correo válida.',
@@ -106,7 +106,7 @@ class AppLocalizations {
       'deviceSecurityRefresh': 'Desliza para actualizar',
     },
     'ar': {
-      'appTitle': 'تطبيق أكاديمي إل إم إس',
+      'appTitle': 'تطبيق أورباس ليرن',
       'loginTitle': 'تسجيل الدخول',
       'emailLabel': 'البريد الإلكتروني',
       'emailValidationError': 'يرجى إدخال بريد إلكتروني صالح.',
