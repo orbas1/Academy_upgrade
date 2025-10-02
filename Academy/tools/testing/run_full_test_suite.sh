@@ -29,7 +29,31 @@ fi
 
 cd "$ROOT_DIR"
 
-LOG_ROOT="$ROOT_DIR/tools/testing/logs"
+# Resolve project directories (repository contains an intermediate "Academy" folder).
+if [[ -d "Web_Application/Academy-LMS" ]]; then
+  LARAVEL_DIR="Web_Application/Academy-LMS"
+elif [[ -d "Academy/Web_Application/Academy-LMS" ]]; then
+  LARAVEL_DIR="Academy/Web_Application/Academy-LMS"
+else
+  LARAVEL_DIR=""
+fi
+
+if [[ -d "Student Mobile APP/academy_lms_app" ]]; then
+  FLUTTER_DIR="Student Mobile APP/academy_lms_app"
+elif [[ -d "Academy/Student Mobile APP/academy_lms_app" ]]; then
+  FLUTTER_DIR="Academy/Student Mobile APP/academy_lms_app"
+else
+  FLUTTER_DIR=""
+fi
+
+PROJECT_ROOT_REL="."
+if [[ -n "$LARAVEL_DIR" ]]; then
+  PROJECT_ROOT_REL="$(dirname "$(dirname "$LARAVEL_DIR")")"
+elif [[ -n "$FLUTTER_DIR" ]]; then
+  PROJECT_ROOT_REL="$(dirname "$(dirname "$FLUTTER_DIR")")"
+fi
+
+LOG_ROOT="$ROOT_DIR/$PROJECT_ROOT_REL/tools/testing/logs"
 mkdir -p "$LOG_ROOT"
 RUN_STAMP="$(date -u +"%Y%m%dT%H%M%SZ")"
 RUN_LOG_DIR="$LOG_ROOT/$RUN_STAMP"
@@ -52,14 +76,16 @@ command_exists() {
 }
 
 should_bootstrap_laravel() {
-  local base="Web_Application/Academy-LMS"
+  local base="$LARAVEL_DIR"
+  [[ -n "$base" ]] || return 1
   [[ -d "$base" ]] || return 1
   [[ -f "$base/vendor/autoload.php" ]] || return 0
   return 1
 }
 
 should_bootstrap_flutter() {
-  local base="Student Mobile APP/academy_lms_app"
+  local base="$FLUTTER_DIR"
+  [[ -n "$base" ]] || return 1
   [[ -d "$base" ]] || return 1
   [[ -d "$base/.dart_tool" ]] || return 0
   [[ -f "$base/.dart_tool/package_config.json" ]] || return 0
@@ -81,7 +107,18 @@ run_step() {
 
   local first_word
   first_word="${cmd%% *}"
-  if ! command_exists "$first_word"; then
+  if [[ "$first_word" == */* ]]; then
+    local check_dir="$ROOT_DIR"
+    if [[ -n "$workdir" ]]; then
+      check_dir="$workdir"
+    fi
+    if ! (cd "$check_dir" && [[ -x "$first_word" || -x "${first_word#./}" ]]); then
+      STEP_STATUS["$name"]="SKIPPED (missing '$first_word')"
+      STEP_LOG["$name"]="$logfile"
+      printf '[test-suite] ⚠ Skipping — required command "%s" not executable in %s.\n' "$first_word" "$check_dir" | tee "$logfile"
+      return
+    fi
+  elif ! command_exists "$first_word"; then
     STEP_STATUS["$name"]="SKIPPED (missing '$first_word')"
     STEP_LOG["$name"]="$logfile"
     printf '[test-suite] ⚠ Skipping — required command "%s" not found.\n' "$first_word" | tee "$logfile"
@@ -113,30 +150,30 @@ run_step() {
 # Step registration ----------------------------------------------------------
 
 if should_bootstrap_laravel; then
-  STEPS+=("Bootstrap Laravel dependencies|Web_Application/Academy-LMS|composer install --no-interaction --prefer-dist")
+  STEPS+=("Bootstrap Laravel dependencies|$LARAVEL_DIR|composer install --no-interaction --prefer-dist")
 fi
 
-if [[ -d "Web_Application/Academy-LMS" ]]; then
+if [[ -n "$LARAVEL_DIR" ]]; then
   laravel_test_cmd="php artisan test --group=data-protection"
-  if [[ -f "Web_Application/Academy-LMS/vendor/bin/paratest" ]]; then
+  if [[ -f "$LARAVEL_DIR/vendor/bin/paratest" ]]; then
     laravel_test_cmd="php artisan test --parallel --group=data-protection"
   fi
 
   STEPS+=(
-    "Laravel PHPUnit suite|Web_Application/Academy-LMS|$laravel_test_cmd"
-    "Laravel static analysis (PHPStan)|Web_Application/Academy-LMS|composer phpstan:data-protection"
-    "Laravel Pint (format check)|Web_Application/Academy-LMS|./vendor/bin/pint --test"
+    "Laravel PHPUnit suite|$LARAVEL_DIR|$laravel_test_cmd"
+    "Laravel static analysis (PHPStan)|$LARAVEL_DIR|composer phpstan:data-protection"
+    "Laravel Pint (format check)|$LARAVEL_DIR|./vendor/bin/pint --test"
   )
 fi
 
 if should_bootstrap_flutter; then
-  STEPS+=("Bootstrap Flutter dependencies|Student Mobile APP/academy_lms_app|flutter pub get")
+  STEPS+=("Bootstrap Flutter dependencies|$FLUTTER_DIR|flutter pub get")
 fi
 
-if [[ -d "Student Mobile APP/academy_lms_app" ]]; then
+if [[ -n "$FLUTTER_DIR" ]]; then
   STEPS+=(
-    "Flutter analyze|Student Mobile APP/academy_lms_app|flutter analyze"
-    "Flutter tests|Student Mobile APP/academy_lms_app|flutter test"
+    "Flutter analyze|$FLUTTER_DIR|flutter analyze"
+    "Flutter tests|$FLUTTER_DIR|flutter test"
   )
 fi
 

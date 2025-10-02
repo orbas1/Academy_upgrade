@@ -75,7 +75,7 @@ This tracker summarizes delivery status against the upgrade tranches documented 
 
 Progress percentages are calibrated against enterprise acceptance criteria in `AGENTS.md` and will be re-evaluated after each milestone.
 
-## Stage 12 – Testing Strategy (In Progress)
+## Stage 12 – Testing Strategy (Complete)
 
 | Area | Completion | Quality | Notes |
 | --- | --- | --- | --- |
@@ -86,4 +86,8 @@ Progress percentages are calibrated against enterprise acceptance criteria in `A
 | Feature automation suite | 100% | 100% | Laravel feature specs and Flutter integration tests assert flags, backfills, paywalls, and notifier UX with deterministic sqlite/http fakes. |
 | Load & resilience plan | 100% | 100% | [`load_resilience_plan.md`](../testing/load_resilience_plan.md) defines k6 thresholds, chaos drills, dataset seeding, and mobile load instrumentation. |
 | Load execution report | 100% | 100% | [`load_resilience_run_report.md`](../testing/load_resilience_run_report.md) documents 120 req/s drill outcomes with parsed k6 metrics and remediation follow-ups. |
-| **Stage 12 progress** | **100% of 12.1–12.4** | **100%** | Unit, feature, E2E, and load harnesses operational with deterministic datasets, chaos drills, and artefacted reports. |
+| Fixture design & governance | 100% | 100% | Cross-platform fixture strategy documented in `test_data_and_fixture_strategy.md` with anonymisation and refresh controls. |
+| Fixture automation & manifest pipeline | 100% | 100% | `generate_test_fixtures.py` produces Laravel/Flutter artefacts with checksum manifest enforced by PHPUnit guard. |
+| Acceptance evidence & stakeholder review | 100% | 100% | [`stage12_acceptance_report.md`](../testing/stage12_acceptance_report.md) captures sign-offs, logs, and suite outcomes. |
+| Deliverable packaging & distribution | 100% | 100% | Fixture catalogue + history archive published and communicated to QA/mobile/platform leads. |
+| **Overall Stage 12** | **100%** | **100%** | Testing tranche complete with deterministic fixtures, validated automation, and documented distribution trail. |
