@@ -9,6 +9,7 @@ use App\Services\Security\UploadSecurityService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
 
@@ -30,6 +31,8 @@ class FileUploader extends Model
                 'resize_height' => $height,
                 'optimized_width' => $optimizedWidth,
                 'optimized_height' => $optimizedHeight,
+                'user_id' => Auth::id(),
+                'visibility' => str_contains((string) $uploadTo, '/private/') ? 'private' : 'public',
             ]);
         } catch (UnsafeFileException|ScanFailedException|InfectedUploadException $exception) {
             Session::flash('error', $exception->getMessage());

@@ -23,6 +23,10 @@ if [[ -z "$ROOT_DIR" ]]; then
   exit 1
 fi
 
+if [[ ! -d "$ROOT_DIR/Web_Application/Academy-LMS" && -d "$ROOT_DIR/Academy/Web_Application/Academy-LMS" ]]; then
+  ROOT_DIR="$ROOT_DIR/Academy"
+fi
+
 cd "$ROOT_DIR"
 
 LOG_ROOT="$ROOT_DIR/tools/testing/logs"

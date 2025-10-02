@@ -5,6 +5,7 @@ import 'package:academy_lms_app/features/communities/models/community_feed_item.
 import 'package:academy_lms_app/features/communities/models/community_leaderboard_entry.dart';
 import 'package:academy_lms_app/features/communities/models/community_summary.dart';
 import 'package:academy_lms_app/features/communities/models/paywall_tier.dart';
+import 'package:academy_lms_app/features/communities/models/upload_quota_summary.dart';
 import 'package:academy_lms_app/features/communities/state/community_comments_notifier.dart';
 import 'package:academy_lms_app/features/communities/state/community_notifier.dart';
 import 'package:academy_lms_app/features/communities/state/community_presence_notifier.dart';
@@ -168,6 +169,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
   ) async {
     final presence = context.read<CommunityPresenceNotifier>();
     List<PaywallTier> paywallTiers = const <PaywallTier>[];
+    UploadQuotaSummary? quotaSummary;
     try {
       paywallTiers = await notifier.repository.loadPaywallTiers(widget.summary.id);
     } catch (error) {
@@ -181,12 +183,26 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
       }
     }
 
+    try {
+      quotaSummary = await notifier.repository.loadUploadQuota(communityId: widget.summary.id);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Unable to load upload quota: $error'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+
     final result = await showCommunityComposerSheet(
       context,
       communityId: widget.summary.id,
       presenceNotifier: presence,
       paywallTiers: paywallTiers,
       canPostPublic: notifier.canModerate || notifier.isMember,
+      quotaSummary: quotaSummary,
     );
     if (result == null) {
       return;

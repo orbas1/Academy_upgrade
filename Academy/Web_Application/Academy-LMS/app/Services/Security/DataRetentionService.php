@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\DeviceAccessToken;
 use App\Models\DeviceIp;
 use App\Models\UploadScan;
+use App\Models\UploadUsage;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Collection;
@@ -35,6 +36,7 @@ class DataRetentionService
             'personal_access_tokens_deleted' => 0,
             'upload_scans_deleted' => 0,
             'quarantine_files_removed' => 0,
+            'upload_usage_deleted' => 0,
             'export_archives_deleted' => 0,
         ];
 
@@ -55,6 +57,8 @@ class DataRetentionService
         $scanResult = $this->pruneUploadScans($dryRun);
         $results['upload_scans_deleted'] = $scanResult['deleted'];
         $results['quarantine_files_removed'] = $scanResult['quarantine_deleted'];
+
+        $results['upload_usage_deleted'] = $this->pruneUploadUsage($dryRun);
 
         $results['export_archives_deleted'] = $this->pruneExportArchives($dryRun);
 
@@ -161,6 +165,23 @@ class DataRetentionService
         }
 
         return $deleted;
+    }
+
+    private function pruneUploadUsage(bool $dryRun): int
+    {
+        $retentionDays = (int) $this->config->get('security.data_protection.upload_usage.retention_days', 365);
+        if ($retentionDays <= 0) {
+            return 0;
+        }
+
+        $cutoff = CarbonImmutable::now()->subDays($retentionDays);
+        $query = UploadUsage::query()->where('created_at', '<', $cutoff);
+
+        if ($dryRun) {
+            return (int) $query->count();
+        }
+
+        return (int) $query->delete();
     }
 
     /**

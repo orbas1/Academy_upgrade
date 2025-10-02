@@ -22,6 +22,7 @@ import '../models/points_summary.dart';
 import '../models/profile_activity.dart';
 import '../models/subscription_checkout.dart';
 import '../models/subscription_status.dart';
+import '../models/upload_quota_summary.dart';
 import 'paginated_response.dart';
 import 'errors.dart';
 
@@ -126,6 +127,34 @@ class CommunityApiService {
       nextCursor: envelope.nextCursor,
       hasMore: envelope.hasMore,
     );
+  }
+
+  Future<UploadQuotaSummary> fetchUploadQuota({int? communityId}) async {
+    final response = await _sendWithAuth(
+      (headers) => _client.get(
+        _buildUri(
+          '/api/v1/uploads/quota',
+          communityId != null ? {'community_id': communityId.toString()} : null,
+        ),
+        headers: headers,
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw http.ClientException('Unable to load upload quota', response.request?.url);
+    }
+
+    final envelope = ApiEnvelope.fromJson(response.body);
+
+    if (!envelope.isSuccess) {
+      throw http.ClientException(
+        envelope.firstErrorMessage ?? 'Unable to load upload quota',
+        response.request?.url,
+      );
+    }
+
+    final data = envelope.requireMapData();
+    return UploadQuotaSummary.fromMap(Map<String, dynamic>.from(data));
   }
 
   Future<PaginatedResponse<ProfileActivity>> fetchProfileActivity({

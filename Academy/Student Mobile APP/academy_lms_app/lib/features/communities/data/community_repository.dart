@@ -18,6 +18,7 @@ import 'community_api_service.dart';
 import 'community_cache.dart';
 import 'paginated_response.dart';
 import 'errors.dart';
+import '../models/upload_quota_summary.dart';
 
 class CommunityRepository {
   CommunityRepository({CommunityApiService? api, CommunityCache? cache})
@@ -150,6 +151,10 @@ class CommunityRepository {
 
   Future<PointsSummary> loadPointsSummary(int communityId) {
     return _api.fetchPointsSummary(communityId);
+  }
+
+  Future<UploadQuotaSummary> loadUploadQuota({int? communityId}) {
+    return _api.fetchUploadQuota(communityId: communityId);
   }
 
   Future<PaginatedResponse<PointEvent>> loadPointHistory(

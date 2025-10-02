@@ -26,6 +26,16 @@ return [
             'timeout' => env('UPLOAD_SCANNER_TIMEOUT', 30),
             'quarantine_path' => env('UPLOAD_QUARANTINE_PATH', storage_path('app/quarantine')),
         ],
+        'quota' => [
+            'user' => [
+                'limit_mb' => (int) env('UPLOAD_USER_QUOTA_MB', 2048),
+                'window_days' => (int) env('UPLOAD_USER_QUOTA_WINDOW_DAYS', 30),
+            ],
+            'community' => [
+                'limit_mb' => (int) env('UPLOAD_COMMUNITY_QUOTA_MB', 10240),
+                'window_days' => (int) env('UPLOAD_COMMUNITY_QUOTA_WINDOW_DAYS', 30),
+            ],
+        ],
     ],
     'device_trust' => [
         'ttl_days' => env('DEVICE_TRUST_TTL_DAYS', 60),
@@ -53,6 +63,9 @@ return [
         'upload_scans' => [
             'retention_days' => (int) env('DATA_PROTECTION_UPLOAD_SCAN_RETENTION_DAYS', 60),
             'quarantine_retention_days' => (int) env('DATA_PROTECTION_UPLOAD_QUARANTINE_RETENTION_DAYS', 30),
+        ],
+        'upload_usage' => [
+            'retention_days' => (int) env('DATA_PROTECTION_UPLOAD_USAGE_RETENTION_DAYS', 365),
         ],
         'exports' => [
             'disk' => env('DATA_PROTECTION_EXPORT_DISK', env('COMPLIANCE_EXPORT_DISK', 'local')),
