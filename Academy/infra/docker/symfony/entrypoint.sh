@@ -22,6 +22,10 @@ if ! grep -q '^APP_KEY=' .env || [ -z "$(grep '^APP_KEY=' .env | cut -d '=' -f2-
     php artisan key:generate --force
 fi
 
+if [ -d storage ] && [ ! -L public/storage ]; then
+    php artisan storage:link || true
+fi
+
 if [ "${SKIP_MIGRATIONS:-0}" != "1" ]; then
     if [ -n "${DB_HOST:-}" ]; then
         echo "Waiting for database ${DB_HOST:-mysql}:${DB_PORT:-3306}..."
@@ -32,8 +36,29 @@ if [ "${SKIP_MIGRATIONS:-0}" != "1" ]; then
             --silent ping >/dev/null 2>&1; do
             sleep 2
         done
+
+        if [ "${DB_CREATE_DATABASE:-1}" = "1" ]; then
+            echo "Ensuring database ${DB_DATABASE:-academy} exists"
+            MYSQL_PWD="${DB_ADMIN_PASSWORD:-${DB_PASSWORD:-}}" mysql \
+                --host="${DB_HOST:-mysql}" \
+                --port="${DB_PORT:-3306}" \
+                --user="${DB_ADMIN_USERNAME:-${DB_USERNAME:-root}}" \
+                --protocol=tcp \
+                --execute="CREATE DATABASE IF NOT EXISTS \`${DB_DATABASE:-academy}\` CHARACTER SET ${DB_CHARSET:-utf8mb4} COLLATE ${DB_COLLATION:-utf8mb4_unicode_ci};"
+        fi
     fi
+
     php artisan migrate --force --no-interaction
+
+    if [ "${RUN_DB_SEED:-0}" = "1" ]; then
+        php artisan db:seed --force
+    fi
+fi
+
+if [ "${WARM_CACHES:-1}" = "1" ]; then
+    php artisan optimize:clear
+    php artisan config:cache
+    php artisan route:cache
 fi
 
 symfony server:stop >/dev/null 2>&1 || true
