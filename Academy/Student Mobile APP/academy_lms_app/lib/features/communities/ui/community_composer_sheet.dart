@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../state/community_presence_notifier.dart';
 
 import '../models/paywall_tier.dart';
+import '../models/upload_quota_status.dart';
+import '../models/upload_quota_summary.dart';
 
 class CommunityComposerResult {
   const CommunityComposerResult({
@@ -22,6 +24,7 @@ Future<CommunityComposerResult?> showCommunityComposerSheet(
   List<PaywallTier> paywallTiers = const <PaywallTier>[],
   bool canPostPublic = true,
   CommunityPresenceNotifier? presenceNotifier,
+  UploadQuotaSummary? quotaSummary,
 }) {
   final controller = TextEditingController();
   String visibility = 'community';
@@ -104,6 +107,10 @@ Future<CommunityComposerResult?> showCommunityComposerSheet(
                           },
                   ),
                 ],
+                if (quotaSummary != null && quotaSummary.hasAnyQuota) ...[
+                  const SizedBox(height: 12),
+                  _UploadQuotaBanner(summary: quotaSummary),
+                ],
                 const SizedBox(height: 12),
                 TextField(
                   controller: controller,
@@ -156,4 +163,103 @@ Future<CommunityComposerResult?> showCommunityComposerSheet(
       );
     },
   );
+}
+
+class _UploadQuotaBanner extends StatelessWidget {
+  const _UploadQuotaBanner({required this.summary});
+
+  final UploadQuotaSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final rows = <Widget>[];
+
+    if (summary.user != null) {
+      rows.add(_QuotaRow(label: 'Your uploads', status: summary.user!));
+    }
+
+    if (summary.community != null) {
+      if (rows.isNotEmpty) {
+        rows.add(const SizedBox(height: 8));
+      }
+      rows.add(_QuotaRow(label: 'Community pool', status: summary.community!));
+    }
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceVariant.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Storage usage',
+              style: theme.textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            ...rows,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuotaRow extends StatelessWidget {
+  const _QuotaRow({required this.label, required this.status});
+
+  final String label;
+  final UploadQuotaStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final usedMb = status.usedMegabytes;
+    final limitMb = status.limitMegabytes;
+    final remainingMb = status.remainingMegabytes;
+
+    String usageLine;
+    if (status.isUnlimited || limitMb == null || limitMb <= 0) {
+      usageLine = '${usedMb.toStringAsFixed(1)} MB used (unlimited)';
+    } else {
+      final remainingPart = remainingMb != null
+          ? ' • ${remainingMb.clamp(0, double.infinity).toStringAsFixed(1)} MB left'
+          : '';
+      usageLine =
+          '${usedMb.toStringAsFixed(1)} / ${limitMb.toStringAsFixed(1)} MB used$remainingPart';
+    }
+
+    final windowDays = status.windowDurationDays;
+    final windowLine = windowDays > 0
+        ? 'Rolling $windowDays-day window'
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          usageLine,
+          style: theme.textTheme.bodySmall,
+        ),
+        if (windowLine != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            windowLine,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 }

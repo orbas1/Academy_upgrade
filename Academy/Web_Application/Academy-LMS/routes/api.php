@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V1\Profile\AnalyticsConsentController;
 use App\Http\Controllers\Api\V1\Profile\ProfileActivityController;
 use App\Http\Controllers\Api\V1\Queue\QueueHealthSummaryController;
 use App\Http\Controllers\Api\V1\Security\DeviceSessionController;
+use App\Http\Controllers\Api\V1\Security\UploadQuotaController;
 use App\Http\Controllers\Monitoring\MetricsController;
 use App\Http\Controllers\Api\Observability\MobileMetricController;
 
@@ -191,6 +192,9 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/me/analytics-consent', AnalyticsConsentController::class)
             ->middleware('throttle:60,1');
+
+        Route::get('/uploads/quota', UploadQuotaController::class)
+            ->middleware('throttle:120,1');
 
         Route::get('/me/profile-activity', [ProfileActivityController::class, 'index'])
             ->middleware(['feature.enabled:community_profile_activity', 'throttle:240,1']);

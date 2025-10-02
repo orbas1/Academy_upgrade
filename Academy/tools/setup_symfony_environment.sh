@@ -15,6 +15,13 @@ APP_URL="${APP_URL:-http://localhost:8000}"
 WAIT_TIMEOUT="${WAIT_TIMEOUT:-120}"
 RUN_SEED="${RUN_SEED:-0}"
 
+if [[ "${SYMFONY_SETUP_ALLOW_SKIP:-0}" == "1" ]]; then
+  if ! command -v docker >/dev/null 2>&1 && ! command -v podman >/dev/null 2>&1; then
+    printf '\n\033[1;33m[setup][skip]\033[0m Container runtime unavailable; skipping environment bootstrap.\n'
+    exit 0
+  fi
+fi
+
 usage() {
   cat <<USAGE
 setup_symfony_environment.sh – Orchestrates the Docker Symfony runtime

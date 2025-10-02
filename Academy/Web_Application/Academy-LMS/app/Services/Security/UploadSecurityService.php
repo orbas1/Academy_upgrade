@@ -7,6 +7,7 @@ use App\Exceptions\Security\ScanFailedException;
 use App\Exceptions\Security\UnsafeFileException;
 use App\Jobs\Security\PerformUploadScan;
 use App\Models\UploadScan;
+use Intervention\Image\Image as InterventionImage;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Filesystem\Filesystem;
@@ -15,6 +16,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Intervention\Image\ImageManagerStatic as Image;
+use App\Services\Security\UploadQuotaService;
 use Throwable;
 
 class UploadSecurityService
@@ -22,7 +24,8 @@ class UploadSecurityService
     public function __construct(
         private readonly ConfigRepository $config,
         private readonly Filesystem $files,
-        private readonly BusDispatcher $bus
+        private readonly BusDispatcher $bus,
+        private readonly UploadQuotaService $quota
     ) {
     }
 
@@ -40,11 +43,23 @@ class UploadSecurityService
 
         $tmpPath = $this->writeSanitizedFile($uploadedFile, $target['extension'], $options);
 
+        $context = [
+            'user_id' => Arr::get($options, 'user_id'),
+            'community_id' => Arr::get($options, 'community_id'),
+            'disk' => Arr::get($options, 'disk', config('filesystems.default', 'public')),
+            'visibility' => Arr::get($options, 'visibility', 'public'),
+        ];
+
+        $size = $this->files->size($tmpPath) ?: ($uploadedFile->getSize() ?: 0);
+        $this->quota->assertWithinQuota($context['user_id'], $context['community_id'], (int) $size);
+
         if (! @rename($tmpPath, $target['absolute_path'])) {
             @unlink($tmpPath);
 
             throw new UnsafeFileException('Unable to move uploaded file into place.');
         }
+
+        $finalSize = $this->files->size($target['absolute_path']) ?: $size;
 
         if ($target['optimized_path']) {
             $this->createOptimizedVariant($target, $options);
@@ -89,6 +104,18 @@ class UploadSecurityService
             }
         } else {
             $this->bus->dispatch($job);
+        }
+
+        try {
+            $this->quota->recordUsage($target['relative_path'], (int) $finalSize, $context);
+        } catch (Throwable $exception) {
+            report($exception);
+            @unlink($target['absolute_path']);
+            if ($target['optimized_path'] && file_exists($target['optimized_path'])) {
+                @unlink($target['optimized_path']);
+            }
+
+            throw new UnsafeFileException('Unable to record upload usage.');
         }
 
         return $target['relative_path'];
@@ -192,6 +219,7 @@ class UploadSecurityService
         try {
             if ($isImage) {
                 $image = Image::make($file->getRealPath())->orientate();
+                $this->stripImageMetadata($image);
                 if (! empty($options['resize_width'])) {
                     $image->resize($options['resize_width'], $options['resize_height'] ?? null, function ($constraint) {
                         $constraint->aspectRatio();
@@ -238,5 +266,13 @@ class UploadSecurityService
             $constraint->upsize();
         });
         $image->save($target['optimized_path'], (int) $this->config->get('security.uploads.image_quality', 90));
+    }
+
+    private function stripImageMetadata(InterventionImage $image): void
+    {
+        $core = $image->getCore();
+        if ($core instanceof \Imagick) {
+            $core->stripImage();
+        }
     }
 }
