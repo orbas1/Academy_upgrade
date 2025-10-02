@@ -14,7 +14,7 @@ class _NoPreviewVideoState extends State<NoPreviewVideo> {
     return Scaffold(
       appBar: AppBarOne(
         logo: "light_logo.png",
-        title: "Academy",
+        title: "Orbas Learn",
        
       ),
       body: Center(
