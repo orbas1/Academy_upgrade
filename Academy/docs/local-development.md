@@ -67,6 +67,14 @@ docker compose -f infra/docker/docker-compose.local.yml up -d mysql redis meilis
 
 Update `.env` to match the container ports if you use Docker.
 
+Need a fully containerised PHP stack instead? A Symfony CLI powered image (with MariaDB) now lives at the repo root:
+
+```bash
+docker compose -f docker-compose.symfony.yml up --build
+```
+
+The PHP container provisions `.env`, installs Composer dependencies, runs migrations, and serves the app on port `8000` so you can immediately test Blade views.
+
 ## 4. Keeping Dependencies Fresh
 
 - Run `composer outdated` and `npm outdated` monthly to track upgrades.
